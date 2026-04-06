@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/.git/
+frontend/dist/
+backend/Intex.API/*.sqlite
+backend/Intex.API/Identity.sqlite
+backend/Intex.API/App.sqlite
+**/.env.local
+**/appsettings.Development.json

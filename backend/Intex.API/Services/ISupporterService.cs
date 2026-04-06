@@ -1,0 +1,17 @@
+using Intex.API.Models;
+
+namespace Intex.API.Services;
+
+public record SupporterListItem(int SupporterId, string DisplayName, string SupporterType, string Status, decimal TotalDonated, DateOnly? FirstDonationDate);
+public record SupporterDetail(Supporter Supporter, IReadOnlyList<Donation> Donations);
+public record PagedResult<T>(IReadOnlyList<T> Items, int TotalCount, int Page, int PageSize);
+
+public interface ISupporterService
+{
+    Task<PagedResult<SupporterListItem>> GetAllAsync(int page, int pageSize, string? search, string? status);
+    Task<SupporterDetail?> GetByIdAsync(int id);
+    Task<SupporterDetail?> GetByUserIdAsync(string userId);
+    Task<Supporter> CreateAsync(Supporter supporter);
+    Task<Supporter?> UpdateAsync(int id, Supporter supporter);
+    Task<bool> DeleteAsync(int id);
+}
