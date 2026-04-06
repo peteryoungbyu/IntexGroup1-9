@@ -3,7 +3,9 @@ using Intex.API.Infrastructure;
 using Intex.API.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using DotNetEnv;
 
+Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Read config
@@ -11,12 +13,17 @@ var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:3000
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 
-// 2. Register both DbContexts
+
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("AppConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("AppConnection")
+    ));
+
+
 
 builder.Services.AddDbContext<AuthIdentityDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("IdentityConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("AppConnection")));
 
 // 3. Register Identity + roles
 builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
@@ -91,14 +98,30 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 10. Migrate databases and seed at startup
+// 10. Validate database connectivity and seed at startup
 using (var scope = app.Services.CreateScope())
 {
     var appDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await appDb.Database.MigrateAsync();
+    try
+    {
+        await appDb.Database.OpenConnectionAsync();
+        await appDb.Database.CloseConnectionAsync();
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException($"Unable to connect to SQL Server using ConnectionStrings:AppConnection. {ex.Message}", ex);
+    }
 
     var identityDb = scope.ServiceProvider.GetRequiredService<AuthIdentityDbContext>();
-    await identityDb.Database.MigrateAsync();
+    try
+    {
+        await identityDb.Database.OpenConnectionAsync();
+        await identityDb.Database.CloseConnectionAsync();
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException($"Unable to connect to SQL Server for identity using ConnectionStrings:AppConnection. {ex.Message}", ex);
+    }
 
     await AuthIdentityGenerator.GenerateDefaultIdentityAsync(scope.ServiceProvider, app.Configuration);
 }
