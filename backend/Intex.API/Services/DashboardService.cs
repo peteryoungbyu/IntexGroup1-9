@@ -27,7 +27,16 @@ public class DashboardService : IDashboardService
         var monthlyMetrics = await _db.SafehouseMonthlyMetrics
             .OrderByDescending(m => m.MonthStart)
             .Take(12)
-            .Select(m => (object)new { m.MetricId, m.SafehouseId, m.MonthStart, m.ActiveResidents, m.AvgHealthScore, m.AvgEducationProgress, m.IncidentCount })
+            .Select(m => (object)new
+            {
+                m.MetricId,
+                m.SafehouseId,
+                m.MonthStart,
+                m.ActiveResidents,
+                AvgHealthScore = m.AvgHealthScore ?? 0m,
+                AvgEducationProgress = m.AvgEducationProgress ?? 0m,
+                m.IncidentCount
+            })
             .ToListAsync();
 
         var safehouseBreakdown = await _db.Safehouses
