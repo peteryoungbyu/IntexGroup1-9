@@ -10,7 +10,13 @@ export default function DonorSelfPage() {
   useEffect(() => {
     getMyDonorHistory()
       .then(setDetail)
-      .catch(() => setError('Could not load your donation history. Make sure your account is linked to a supporter profile.'))
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Could not load your donation history. Make sure your account is linked to a supporter profile.';
+        setError(message);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -18,7 +24,8 @@ export default function DonorSelfPage() {
   if (error) return <div className="container py-5"><div className="alert alert-warning">{error}</div></div>;
   if (!detail) return <div className="container py-5"><div className="alert alert-info">No donation history found.</div></div>;
 
-  const { supporter, donations } = detail;
+  const supporter = detail.supporter;
+  const donations = Array.isArray(detail.donations) ? detail.donations : [];
   const totalMonetary = donations.filter(d => d.amount != null).reduce((sum, d) => sum + (d.amount ?? 0), 0);
 
   return (

@@ -2,6 +2,19 @@ import type { SupporterDetail, SupporterListItem, PagedResult } from '../types/S
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
+function extractErrorMessage(status: number): string {
+  switch (status) {
+    case 401:
+      return 'Your session has expired. Please sign in again.';
+    case 403:
+      return 'You do not have permission to view donor history.';
+    case 404:
+      return 'No donor history is linked to this account.';
+    default:
+      return 'Unable to load donor history right now.';
+  }
+}
+
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${BASE}${path}`, {
     credentials: 'include',
@@ -30,6 +43,9 @@ export async function getSupporterById(id: number): Promise<SupporterDetail> {
 
 export async function getMyDonorHistory(): Promise<SupporterDetail> {
   const res = await apiFetch('/api/donor/me');
+  if (!res.ok) {
+    throw new Error(extractErrorMessage(res.status));
+  }
   return res.json();
 }
 
