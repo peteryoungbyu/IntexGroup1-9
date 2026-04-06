@@ -98,6 +98,9 @@ public class AppDbContext : DbContext
             e.Property(m => m.AvgHealthScore).HasPrecision(3, 1);
         });
 
+        modelBuilder.Entity<InterventionPlan>(e =>
+            e.Property(p => p.TargetValue).HasPrecision(14, 2));
+
         modelBuilder.Entity<PredictionResult>(e =>
             e.Property(p => p.Score).HasPrecision(6, 4));
 
