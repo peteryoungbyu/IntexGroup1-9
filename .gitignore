@@ -36,3 +36,9 @@ lerna-debug.log*
 # Local environment/config files
 *.local
 backend/Intex.API/appsettings.Development.json
+
+
+.env
+
+
+
