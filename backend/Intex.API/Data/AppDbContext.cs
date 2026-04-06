@@ -1,5 +1,6 @@
 using Intex.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Intex.API.Data;
 
@@ -112,5 +113,44 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Resident>()
             .HasIndex(r => r.CaseControlNo)
             .IsUnique();
+
+        ApplySnakeCaseColumnNaming(modelBuilder);
+    }
+
+    private static void ApplySnakeCaseColumnNaming(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                var currentColumnName = property.Name;
+                property.SetColumnName(ToSnakeCase(currentColumnName));
+            }
+        }
+    }
+
+    private static string ToSnakeCase(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
+        var chars = new List<char>(value.Length + Math.Max(2, value.Length / 5));
+
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            var isUpper = char.IsUpper(c);
+
+            if (isUpper && i > 0 && !char.IsUpper(value[i - 1]))
+            {
+                chars.Add('_');
+            }
+
+            chars.Add(char.ToLowerInvariant(c));
+        }
+
+        return new string(chars.ToArray());
     }
 }

@@ -62,7 +62,15 @@ public class ReportService : IReportService
             .Include(m => m.Safehouse)
             .OrderByDescending(m => m.MonthStart)
             .Take(50)
-            .Select(m => new { m.Safehouse.Name, m.MonthStart, m.ActiveResidents, m.AvgHealthScore, m.AvgEducationProgress, m.IncidentCount })
+            .Select(m => new
+            {
+                m.Safehouse.Name,
+                m.MonthStart,
+                m.ActiveResidents,
+                AvgHealthScore = m.AvgHealthScore ?? 0m,
+                AvgEducationProgress = m.AvgEducationProgress ?? 0m,
+                m.IncidentCount
+            })
             .ToListAsync();
 
         return new ReportSection("Safehouse Comparison", "Monthly metrics across all safehouses", data);
