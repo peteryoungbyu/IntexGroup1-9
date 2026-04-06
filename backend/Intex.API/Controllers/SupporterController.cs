@@ -1,0 +1,82 @@
+using Intex.API.Data;
+using Intex.API.Models;
+using Intex.API.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Intex.API.Controllers;
+
+[ApiController]
+[Route("api/supporters")]
+[Authorize(Policy = AuthPolicies.AdminRead)]
+public class SupporterController : ControllerBase
+{
+    private readonly ISupporterService _service;
+
+    public SupporterController(ISupporterService service) => _service = service;
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null)
+        => Ok(await _service.GetAllAsync(page, pageSize, search, status));
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var result = await _service.GetByIdAsync(id);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPost]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> Create([FromBody] Supporter supporter)
+    {
+        var created = await _service.CreateAsync(supporter);
+        return CreatedAtAction(nameof(GetById), new { id = created.SupporterId }, created);
+    }
+
+    [HttpPut("{id:int}")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> Update(int id, [FromBody] Supporter supporter)
+    {
+        var result = await _service.UpdateAsync(id, supporter);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _service.DeleteAsync(id);
+        return deleted ? NoContent() : NotFound();
+    }
+}
+
+[ApiController]
+[Route("api/donor/me")]
+[Authorize(Policy = AuthPolicies.DonorSelf)]
+public class DonorSelfController : ControllerBase
+{
+    private readonly ISupporterService _service;
+    private readonly UserManager<ApplicationUser> _userManager;
+
+    public DonorSelfController(ISupporterService service, UserManager<ApplicationUser> userManager)
+    {
+        _service = service;
+        _userManager = userManager;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetMyHistory()
+    {
+        var userId = _userManager.GetUserId(User);
+        if (userId is null) return Unauthorized();
+
+        var result = await _service.GetByUserIdAsync(userId);
+        return result is null ? NotFound() : Ok(result);
+    }
+}
