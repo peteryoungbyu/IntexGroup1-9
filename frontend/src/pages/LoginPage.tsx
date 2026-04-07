@@ -206,6 +206,11 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center mt-3 small text-muted">
+            Don't have an account?{' '}
+            <Link to="/register" className="fw-semibold">Create one</Link>
+          </p>
+
+          <p className="text-center mt-1 small text-muted">
             <Link to="/privacy">Privacy Policy</Link> |{' '}
             <Link to="/cookie-policy">Cookie Policy</Link>
           </p>
