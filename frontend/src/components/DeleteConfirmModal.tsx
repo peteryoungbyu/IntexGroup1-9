@@ -58,9 +58,15 @@ export default function DeleteConfirmModal({
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
         if (e.shiftKey) {
-          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
         } else {
-          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
         }
       }
     };
@@ -76,11 +82,14 @@ export default function DeleteConfirmModal({
       {/* Backdrop */}
       <div
         style={{
-          position: 'fixed', inset: 0,
+          position: 'fixed',
+          inset: 0,
           background: 'rgba(0,0,0,0.65)',
           zIndex: 1040,
         }}
-        onClick={() => { if (!busy) onCancel(); }}
+        onClick={() => {
+          if (!busy) onCancel();
+        }}
         aria-hidden="true"
       />
 
@@ -92,7 +101,8 @@ export default function DeleteConfirmModal({
         aria-labelledby="delete-modal-title"
         style={{
           position: 'fixed',
-          top: '50%', left: '50%',
+          top: '50%',
+          left: '50%',
           transform: 'translate(-50%, -50%)',
           zIndex: 1050,
           width: '100%',
@@ -122,7 +132,9 @@ export default function DeleteConfirmModal({
           </div>
 
           <div className="px-4 py-3">
-            <p className="mb-0" style={{ color: '#343a40' }}>{message}</p>
+            <p className="mb-0" style={{ color: '#343a40' }}>
+              {message}
+            </p>
             {error && (
               <div
                 className="mt-3 mb-0 py-2 px-3 rounded-2"

@@ -13,7 +13,9 @@ function normalizeAuthSignal(value: unknown): string {
 
 function isTwoFactorRequired(body: unknown): boolean {
   if (typeof body === 'string') {
-    return normalizeAuthSignal(body) === REQUIRES_TWO_FACTOR_ERROR.toLowerCase();
+    return (
+      normalizeAuthSignal(body) === REQUIRES_TWO_FACTOR_ERROR.toLowerCase()
+    );
   }
 
   if (typeof body !== 'object' || body === null) {

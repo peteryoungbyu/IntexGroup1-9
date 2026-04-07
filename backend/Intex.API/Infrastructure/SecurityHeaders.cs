@@ -7,13 +7,14 @@ public static class SecurityHeaders
 
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
     {
-        var environment = app.ApplicationServices.GetRequiredService<IWebHostEnvironment>();
         return app.Use(async (context, next) =>
         {
             context.Response.OnStarting(() =>
             {
-                if (!(environment.IsDevelopment() && context.Request.Path.StartsWithSegments("/swagger")))
-                    context.Response.Headers["Content-Security-Policy"] = ContentSecurityPolicy;
+                context.Response.Headers["Content-Security-Policy"] = ContentSecurityPolicy;
+                context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+                context.Response.Headers["X-Frame-Options"] = "DENY";
+                context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
                 return Task.CompletedTask;
             });
             await next();

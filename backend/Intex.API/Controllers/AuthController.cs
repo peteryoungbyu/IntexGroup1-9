@@ -96,7 +96,7 @@ public class AuthController : ControllerBase
 
     private static string SanitizeReturnPath(string? path, string frontendUrl)
     {
-        if (string.IsNullOrWhiteSpace(path) || !path.StartsWith('/'))
+        if (string.IsNullOrWhiteSpace(path) || !path.StartsWith('/') || path.StartsWith("//"))
             return frontendUrl;
         return $"{frontendUrl}{path}";
     }
