@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import type { SupporterListItem, PagedResult } from '../types/SupporterDetail';
 import { getSupporters, deleteSupporter } from '../lib/supporterAPI';
 import Pagination from '../components/Pagination';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
+
+interface PendingDelete { id: number; name: string; }
 
 export default function DonorsPage() {
   const [result, setResult] = useState<PagedResult<SupporterListItem> | null>(null);
@@ -10,6 +13,10 @@ export default function DonorsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const [pending, setPending] = useState<PendingDelete | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | undefined>();
 
   const load = () => {
     setLoading(true);
@@ -20,16 +27,47 @@ export default function DonorsPage() {
 
   useEffect(() => { load(); }, [page, status]);
 
-  const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); load(); };
+  const handleSearch = (e: { preventDefault(): void }) => { e.preventDefault(); setPage(1); load(); };
 
-  const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Delete supporter "${name}"? This cannot be undone.`)) return;
-    await deleteSupporter(id);
-    load();
+  const handleDeleteClick = (id: number, name: string) => {
+    setDeleteError(undefined);
+    setPending({ id, name });
+  };
+
+  const handleConfirm = async () => {
+    if (!pending) return;
+    setBusy(true);
+    setDeleteError(undefined);
+    try {
+      await deleteSupporter(pending.id);
+      setPending(null);
+      load();
+    } catch {
+      setDeleteError('Failed to delete donor. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (busy) return;
+    setPending(null);
+    setDeleteError(undefined);
   };
 
   return (
     <div>
+      <DeleteConfirmModal
+        open={pending !== null}
+        title="Delete Donor"
+        message={<>Are you sure you want to delete <strong>{pending?.name}</strong>? This action cannot be undone.</>}
+        confirmLabel="Delete Donor"
+        busy={busy}
+        error={deleteError}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+
       <div className="page-header">
         <div className="container-fluid px-4">
           <p className="section-label">Admin</p>
@@ -82,7 +120,7 @@ export default function DonorsPage() {
                         <td>{s.firstDonationDate ?? '—'}</td>
                         <td>
                           <Link to={`/admin/donors/${s.supporterId}`} className="btn btn-sm btn-primary me-1">View</Link>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(s.supporterId, s.displayName)}>Delete</button>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteClick(s.supporterId, s.displayName)}>Delete</button>
                         </td>
                       </tr>
                     ))}

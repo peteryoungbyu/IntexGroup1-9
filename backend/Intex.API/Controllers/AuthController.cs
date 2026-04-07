@@ -43,6 +43,7 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Logout()
     {
+        await _signInManager.ForgetTwoFactorClientAsync();
         await _signInManager.SignOutAsync();
         return Ok();
     }

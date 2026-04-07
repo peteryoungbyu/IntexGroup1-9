@@ -8,7 +8,7 @@ interface AuthContextValue {
   authSession: AuthSession;
   isAuthenticated: boolean;
   isLoading: boolean;
-  refreshAuthSession: () => Promise<void>;
+  refreshAuthSession: () => Promise<AuthSession>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -21,8 +21,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const session = await getAuthSession();
       setAuthSession(session);
+      return session;
     } catch {
       setAuthSession(ANON);
+      return ANON;
     }
   };
 
