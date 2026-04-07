@@ -3,6 +3,7 @@ using Intex.API.Infrastructure;
 using Intex.API.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using DotNetEnv;
 
 Env.Load();
@@ -68,9 +69,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-        ? CookieSecurePolicy.None
-        : CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
 });
@@ -98,31 +97,17 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 10. Validate database connectivity and seed at startup
+// 10. Apply migrations and seed at startup
 using (var scope = app.Services.CreateScope())
 {
+    var logger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("Startup");
     var appDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    try
-    {
-        await appDb.Database.OpenConnectionAsync();
-        await appDb.Database.CloseConnectionAsync();
-    }
-    catch (Exception ex)
-    {
-        throw new InvalidOperationException($"Unable to connect to SQL Server using ConnectionStrings:AppConnection. {ex.Message}", ex);
-    }
-
     var identityDb = scope.ServiceProvider.GetRequiredService<AuthIdentityDbContext>();
-    try
-    {
-        await identityDb.Database.OpenConnectionAsync();
-        await identityDb.Database.CloseConnectionAsync();
-    }
-    catch (Exception ex)
-    {
-        throw new InvalidOperationException($"Unable to connect to SQL Server for identity using ConnectionStrings:AppConnection. {ex.Message}", ex);
-    }
 
+    await EnsureDatabaseReadyAsync(appDb, "application", logger);
+    await EnsureDatabaseReadyAsync(identityDb, "identity", logger);
     await AuthIdentityGenerator.GenerateDefaultIdentityAsync(scope.ServiceProvider, app.Configuration);
 }
 
@@ -155,3 +140,50 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+static async Task EnsureDatabaseReadyAsync<TContext>(TContext dbContext, string databaseName, ILogger logger)
+    where TContext : DbContext
+{
+    try
+    {
+        await MigrateDatabaseAsync(dbContext, databaseName, logger);
+    }
+    catch (InvalidOperationException ex) when (ex.InnerException is InvalidOperationException inner &&
+                                               inner.Message.Contains(nameof(RelationalEventId.PendingModelChangesWarning), StringComparison.Ordinal))
+    {
+        logger.LogWarning(
+            "Skipping automatic {DatabaseName} database migrations because the EF migration snapshot is out of sync with the mapped model. " +
+            "Verifying connectivity only.",
+            databaseName);
+
+        try
+        {
+            await dbContext.Database.OpenConnectionAsync();
+            await dbContext.Database.CloseConnectionAsync();
+            logger.LogInformation("{DatabaseName} database connection verified", databaseName);
+        }
+        catch (Exception connectionEx)
+        {
+            throw new InvalidOperationException(
+                $"Unable to verify the {databaseName} database using ConnectionStrings:AppConnection. {connectionEx.Message}",
+                connectionEx);
+        }
+    }
+}
+
+static async Task MigrateDatabaseAsync<TContext>(TContext dbContext, string databaseName, ILogger logger)
+    where TContext : DbContext
+{
+    try
+    {
+        logger.LogInformation("Applying {DatabaseName} database migrations", databaseName);
+        await dbContext.Database.MigrateAsync();
+        logger.LogInformation("{DatabaseName} database is ready", databaseName);
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException(
+            $"Unable to initialize the {databaseName} database using ConnectionStrings:AppConnection. {ex.Message}",
+            ex);
+    }
+}

@@ -67,25 +67,24 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="col-lg-6">
-            <div className="card">
-              <div className="card-header">Recent Monthly Metrics</div>
-              <div className="card-body p-0">
-                <table className="table table-sm table-hover mb-0">
-                  <thead className="table-light"><tr><th>Month</th><th>Residents</th><th>Avg Health</th><th>Incidents</th></tr></thead>
-                  <tbody>
-                    {(data?.monthlyMetrics ?? []).slice(0, 6).map((m: any) => (
-                      <tr key={m.metricId}>
-                        <td>{new Date(m.monthStart).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</td>
-                        <td>{m.activeResidents}</td>
-                        <td>{Number(m.avgHealthScore).toFixed(1)}</td>
-                        <td>{m.incidentCount}</td>
-                      </tr>
-                    ))}
-                    {data?.monthlyMetrics.length === 0 && <tr><td colSpan={4} className="text-center text-muted py-3">No metric data</td></tr>}
-                  </tbody>
-                </table>
-              </div>
+        <div className="col-lg-6">
+          <div className="card shadow-sm">
+            <div className="card-header">Recent Monthly Metrics</div>
+            <div className="card-body p-0">
+              <table className="table table-sm table-hover mb-0">
+                <thead><tr><th>Month</th><th>Residents</th><th>Avg Health</th><th>Incidents</th></tr></thead>
+                <tbody>
+                  {(data?.monthlyMetrics ?? []).slice(0, 6).map((m: any) => (
+                    <tr key={m.metricId}>
+                      <td>{new Date(m.monthStart).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</td>
+                      <td>{m.activeResidents}</td>
+                      <td>{m.avgHealthScore == null ? 'N/A' : Number(m.avgHealthScore).toFixed(1)}</td>
+                      <td>{m.incidentCount}</td>
+                    </tr>
+                  ))}
+                  {data?.monthlyMetrics.length === 0 && <tr><td colSpan={4} className="text-center text-muted py-3">No metric data</td></tr>}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 using Intex.API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using System.Text;
 
 namespace Intex.API.Data;
 
@@ -114,43 +115,48 @@ public class AppDbContext : DbContext
             .HasIndex(r => r.CaseControlNo)
             .IsUnique();
 
-        ApplySnakeCaseColumnNaming(modelBuilder);
+        ApplySnakeCaseColumnConvention(modelBuilder);
     }
 
-    private static void ApplySnakeCaseColumnNaming(ModelBuilder modelBuilder)
+    private static void ApplySnakeCaseColumnConvention(ModelBuilder modelBuilder)
     {
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             foreach (var property in entityType.GetProperties())
             {
-                var currentColumnName = property.Name;
-                property.SetColumnName(ToSnakeCase(currentColumnName));
+                property.SetColumnName(ToSnakeCase(property.Name));
             }
         }
     }
 
     private static string ToSnakeCase(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
+        if (string.IsNullOrEmpty(value))
             return value;
-        }
 
-        var chars = new List<char>(value.Length + Math.Max(2, value.Length / 5));
+        var builder = new StringBuilder(value.Length + 8);
 
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-            var isUpper = char.IsUpper(c);
-
-            if (isUpper && i > 0 && !char.IsUpper(value[i - 1]))
+            if (char.IsUpper(c))
             {
-                chars.Add('_');
-            }
+                var hasPrevious = i > 0;
+                var hasNext = i + 1 < value.Length;
+                var nextIsLower = hasNext && char.IsLower(value[i + 1]);
+                var previousIsLowerOrDigit = hasPrevious && (char.IsLower(value[i - 1]) || char.IsDigit(value[i - 1]));
 
-            chars.Add(char.ToLowerInvariant(c));
+                if (previousIsLowerOrDigit || (hasPrevious && nextIsLower))
+                    builder.Append('_');
+
+                builder.Append(char.ToLowerInvariant(c));
+            }
+            else
+            {
+                builder.Append(c);
+            }
         }
 
-        return new string(chars.ToArray());
+        return builder.ToString();
     }
 }
