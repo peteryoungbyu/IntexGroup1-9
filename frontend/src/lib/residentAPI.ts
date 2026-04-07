@@ -2,6 +2,8 @@ import type {
   ResidentDetail,
   ResidentListItem,
   PagedResult,
+  ProcessRecording,
+  HomeVisitation,
 } from '../types/ResidentDetail';
 import { API_BASE_URL } from './apiBase';
 
@@ -40,4 +42,42 @@ export async function getResidentById(id: number): Promise<ResidentDetail> {
 
 export async function deleteResident(id: number): Promise<void> {
   await apiFetch(`/api/residents/${id}`, { method: 'DELETE' });
+}
+
+export async function addRecording(
+  residentId: number,
+  data: Omit<ProcessRecording, 'recordingId'>
+): Promise<void> {
+  await apiFetch(`/api/residents/${residentId}/recordings`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteRecording(
+  residentId: number,
+  recordingId: number
+): Promise<void> {
+  await apiFetch(`/api/residents/${residentId}/recordings/${recordingId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function addVisitation(
+  residentId: number,
+  data: Omit<HomeVisitation, 'visitationId'>
+): Promise<void> {
+  await apiFetch(`/api/residents/${residentId}/visitations`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteVisitation(
+  residentId: number,
+  visitationId: number
+): Promise<void> {
+  await apiFetch(`/api/residents/${residentId}/visitations/${visitationId}`, {
+    method: 'DELETE',
+  });
 }
