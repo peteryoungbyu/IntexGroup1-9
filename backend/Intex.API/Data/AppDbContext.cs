@@ -116,6 +116,11 @@ public class AppDbContext : DbContext
             .IsUnique();
 
         ApplySnakeCaseColumnConvention(modelBuilder);
+
+        // Override columns where the auto snake_case doesn't match the actual DB column name
+        modelBuilder.Entity<Resident>()
+            .Property(r => r.FamilyIs4Ps)
+            .HasColumnName("family_is_4ps");
     }
 
     private static void ApplySnakeCaseColumnConvention(ModelBuilder modelBuilder)
