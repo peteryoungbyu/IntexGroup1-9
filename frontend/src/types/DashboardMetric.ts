@@ -8,6 +8,7 @@ export interface AdminDashboardData {
   summary: DashboardMetric[];
   monthlyMetrics: any[];
   safehouseBreakdown: any[];
+  upcomingConferences: any[];
 }
 
 export interface ImpactSnapshot {

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { ResidentDetail, ProcessRecording, HomeVisitation, CaseConference } from '../types/ResidentDetail';
-import { getResidentById, addRecording, deleteRecording, addVisitation, deleteVisitation } from '../lib/residentAPI';
+import { getResidentById, addRecording, deleteRecording, addVisitation, deleteVisitation, updateResident } from '../lib/residentAPI';
+import type { Resident } from '../types/ResidentDetail';
 import { addCaseConference, deleteCaseConference } from '../lib/caseConferenceAPI';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
@@ -67,6 +68,11 @@ export default function ResidentDetailPage() {
   const [detail, setDetail] = useState<ResidentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState<Omit<Resident, 'residentId' | 'createdAt'> | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const [showAddRecording, setShowAddRecording] = useState(false);
   const [showAddVisitation, setShowAddVisitation] = useState(false);
@@ -169,6 +175,33 @@ export default function ResidentDetailPage() {
     }
   }
 
+  function openEdit() {
+    const { residentId: _id, createdAt: _ca, ...fields } = resident as Resident;
+    setEditForm(fields);
+    setEditError(null);
+    setShowEdit(true);
+  }
+  function closeEdit() { if (editBusy) return; setShowEdit(false); setEditError(null); }
+
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editForm) return;
+    setEditBusy(true);
+    setEditError(null);
+    try {
+      await updateResident(residentId, editForm);
+      await refresh();
+      setShowEdit(false);
+    } catch {
+      setEditError('Failed to save changes. Please try again.');
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  const setEdit = (field: keyof typeof editForm & string, value: unknown) =>
+    setEditForm(f => f ? { ...f, [field]: value } : f);
+
   function closeAddRecording() { setShowAddRecording(false); setFormError(null); setRecordingForm({ ...EMPTY_RECORDING, residentId }); }
   function closeAddVisitation() { setShowAddVisitation(false); setFormError(null); setVisitationForm({ ...EMPTY_VISITATION, residentId }); }
   function closeAddConference() { setShowAddConference(false); setFormError(null); setConferenceForm({ ...EMPTY_CONFERENCE, residentId }); }
@@ -227,12 +260,276 @@ export default function ResidentDetailPage() {
           ))}
         </ul>
 
+        {/* Edit Resident Modal */}
+        {showEdit && editForm && (
+          <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeEdit}>
+            <div className="modal-dialog modal-xl modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
+              <form onSubmit={handleEditSubmit}>
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Edit Resident — {resident.caseControlNo}</h5>
+                    <button type="button" className="btn-close" onClick={closeEdit} disabled={editBusy} />
+                  </div>
+                  <div className="modal-body">
+                    {editError && <div className="alert alert-danger">{editError}</div>}
+
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Basic Information</h6>
+                    <div className="row g-3 mb-4">
+                      <div className="col-md-4">
+                        <label className="form-label">Case Control No. <span className="text-danger">*</span></label>
+                        <input type="text" className="form-control" required value={editForm.caseControlNo}
+                          onChange={e => setEdit('caseControlNo', e.target.value)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Internal Code <span className="text-danger">*</span></label>
+                        <input type="text" className="form-control" required value={editForm.internalCode}
+                          onChange={e => setEdit('internalCode', e.target.value)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Safehouse ID <span className="text-danger">*</span></label>
+                        <input type="number" className="form-control" required min={1} value={editForm.safehouseId}
+                          onChange={e => setEdit('safehouseId', Number(e.target.value))} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Sex <span className="text-danger">*</span></label>
+                        <select className="form-select" required value={editForm.sex}
+                          onChange={e => setEdit('sex', e.target.value)}>
+                          <option>Female</option>
+                          <option>Male</option>
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Date of Birth <span className="text-danger">*</span></label>
+                        <input type="date" className="form-control" required value={editForm.dateOfBirth}
+                          onChange={e => setEdit('dateOfBirth', e.target.value)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Place of Birth</label>
+                        <input type="text" className="form-control" value={editForm.placeOfBirth ?? ''}
+                          onChange={e => setEdit('placeOfBirth', e.target.value || null)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Birth Status</label>
+                        <input type="text" className="form-control" value={editForm.birthStatus ?? ''}
+                          onChange={e => setEdit('birthStatus', e.target.value || null)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Religion</label>
+                        <input type="text" className="form-control" value={editForm.religion ?? ''}
+                          onChange={e => setEdit('religion', e.target.value || null)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Case Status <span className="text-danger">*</span></label>
+                        <select className="form-select" required value={editForm.caseStatus}
+                          onChange={e => setEdit('caseStatus', e.target.value)}>
+                          <option>Active</option>
+                          <option>Closed</option>
+                          <option>Transferred</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Case Category &amp; Sub-categories</h6>
+                    <div className="row g-3 mb-4">
+                      <div className="col-md-6">
+                        <label className="form-label">Case Category <span className="text-danger">*</span></label>
+                        <select className="form-select" required value={editForm.caseCategory}
+                          onChange={e => setEdit('caseCategory', e.target.value)}>
+                          <option>Child in Need of Special Protection</option>
+                          <option>Child in Conflict with the Law</option>
+                          <option>Child at Risk</option>
+                          <option>Abandoned</option>
+                          <option>Neglected</option>
+                        </select>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label d-block">Sub-categories</label>
+                        <div className="row g-2">
+                          {([
+                            ['subCatOrphaned', 'Orphaned'],
+                            ['subCatTrafficked', 'Trafficked'],
+                            ['subCatChildLabor', 'Child Labor'],
+                            ['subCatPhysicalAbuse', 'Physical Abuse'],
+                            ['subCatSexualAbuse', 'Sexual Abuse'],
+                            ['subCatOsaec', 'OSAEC'],
+                            ['subCatCicl', 'CICL'],
+                            ['subCatAtRisk', 'At Risk'],
+                            ['subCatStreetChild', 'Street Child'],
+                            ['subCatChildWithHiv', 'Child with HIV'],
+                          ] as const).map(([field, label]) => (
+                            <div key={field} className="col-6">
+                              <div className="form-check">
+                                <input type="checkbox" className="form-check-input" id={`edit-${field}`}
+                                  checked={editForm[field] as boolean}
+                                  onChange={e => setEdit(field, e.target.checked)} />
+                                <label className="form-check-label" htmlFor={`edit-${field}`}>{label}</label>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Disability Information</h6>
+                    <div className="row g-3 mb-4">
+                      <div className="col-md-3">
+                        <div className="form-check mt-2">
+                          <input type="checkbox" className="form-check-input" id="edit-isPwd"
+                            checked={editForm.isPwd}
+                            onChange={e => setEdit('isPwd', e.target.checked)} />
+                          <label className="form-check-label" htmlFor="edit-isPwd">Person with Disability (PWD)</label>
+                        </div>
+                      </div>
+                      {editForm.isPwd && (
+                        <div className="col-md-4">
+                          <label className="form-label">PWD Type</label>
+                          <input type="text" className="form-control" value={editForm.pwdType ?? ''}
+                            onChange={e => setEdit('pwdType', e.target.value || null)} />
+                        </div>
+                      )}
+                      <div className="col-md-3">
+                        <div className="form-check mt-2">
+                          <input type="checkbox" className="form-check-input" id="edit-hasSpecialNeeds"
+                            checked={editForm.hasSpecialNeeds}
+                            onChange={e => setEdit('hasSpecialNeeds', e.target.checked)} />
+                          <label className="form-check-label" htmlFor="edit-hasSpecialNeeds">Has Special Needs</label>
+                        </div>
+                      </div>
+                      {editForm.hasSpecialNeeds && (
+                        <div className="col-md-4">
+                          <label className="form-label">Diagnosis</label>
+                          <input type="text" className="form-control" value={editForm.specialNeedsDiagnosis ?? ''}
+                            onChange={e => setEdit('specialNeedsDiagnosis', e.target.value || null)} />
+                        </div>
+                      )}
+                    </div>
+
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Family Socio-demographic Profile</h6>
+                    <div className="row g-2 mb-4">
+                      {([
+                        ['familyIs4Ps', '4Ps Beneficiary'],
+                        ['familySoloParent', 'Solo Parent'],
+                        ['familyIndigenous', 'Indigenous Group'],
+                        ['familyParentPwd', 'Parent with Disability'],
+                        ['familyInformalSettler', 'Informal Settler'],
+                      ] as const).map(([field, label]) => (
+                        <div key={field} className="col-md-4">
+                          <div className="form-check">
+                            <input type="checkbox" className="form-check-input" id={`edit-${field}`}
+                              checked={editForm[field] as boolean}
+                              onChange={e => setEdit(field, e.target.checked)} />
+                            <label className="form-check-label" htmlFor={`edit-${field}`}>{label}</label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Admission &amp; Referral</h6>
+                    <div className="row g-3 mb-4">
+                      <div className="col-md-4">
+                        <label className="form-label">Date of Admission <span className="text-danger">*</span></label>
+                        <input type="date" className="form-control" required value={editForm.dateOfAdmission}
+                          onChange={e => setEdit('dateOfAdmission', e.target.value)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Assigned Social Worker</label>
+                        <input type="text" className="form-control" value={editForm.assignedSocialWorker ?? ''}
+                          onChange={e => setEdit('assignedSocialWorker', e.target.value || null)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Referral Source</label>
+                        <input type="text" className="form-control" value={editForm.referralSource ?? ''}
+                          onChange={e => setEdit('referralSource', e.target.value || null)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Referring Agency / Person</label>
+                        <input type="text" className="form-control" value={editForm.referringAgencyPerson ?? ''}
+                          onChange={e => setEdit('referringAgencyPerson', e.target.value || null)} />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Initial Risk Level</label>
+                        <select className="form-select" value={editForm.initialRiskLevel ?? ''}
+                          onChange={e => setEdit('initialRiskLevel', e.target.value || null)}>
+                          <option value="">— None —</option>
+                          <option>Low</option>
+                          <option>Medium</option>
+                          <option>High</option>
+                          <option>Critical</option>
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Current Risk Level</label>
+                        <select className="form-select" value={editForm.currentRiskLevel ?? ''}
+                          onChange={e => setEdit('currentRiskLevel', e.target.value || null)}>
+                          <option value="">— None —</option>
+                          <option>Low</option>
+                          <option>Medium</option>
+                          <option>High</option>
+                          <option>Critical</option>
+                        </select>
+                      </div>
+                      <div className="col-12">
+                        <label className="form-label">Initial Case Assessment</label>
+                        <textarea className="form-control" rows={2} value={editForm.initialCaseAssessment ?? ''}
+                          onChange={e => setEdit('initialCaseAssessment', e.target.value || null)} />
+                      </div>
+                    </div>
+
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Reintegration</h6>
+                    <div className="row g-3">
+                      <div className="col-md-4">
+                        <label className="form-label">Reintegration Type</label>
+                        <select className="form-select" value={editForm.reintegrationType ?? ''}
+                          onChange={e => setEdit('reintegrationType', e.target.value || null)}>
+                          <option value="">— None —</option>
+                          <option>Family Reintegration</option>
+                          <option>Community Reintegration</option>
+                          <option>Independent Living</option>
+                          <option>Foster Care</option>
+                          <option>Adoption</option>
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Reintegration Status</label>
+                        <select className="form-select" value={editForm.reintegrationStatus ?? ''}
+                          onChange={e => setEdit('reintegrationStatus', e.target.value || null)}>
+                          <option value="">— None —</option>
+                          <option>Ongoing</option>
+                          <option>Completed</option>
+                          <option>Failed</option>
+                          <option>Pending</option>
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label">Date Closed</label>
+                        <input type="date" className="form-control" value={editForm.dateClosed ?? ''}
+                          onChange={e => setEdit('dateClosed', e.target.value || null)} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={closeEdit} disabled={editBusy}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-primary" disabled={editBusy}>
+                      {editBusy ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : 'Save Changes'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Overview */}
         {activeTab === 'overview' && (
           <div className="row g-3">
             <div className="col-md-6">
               <div className="card">
-                <div className="card-header">Case Information</div>
+                <div className="card-header d-flex justify-content-between align-items-center">
+                  <span>Case Information</span>
+                  <button className="btn btn-sm btn-outline-primary" onClick={openEdit}>Edit</button>
+                </div>
                 <div className="card-body">
                   <dl className="row mb-0">
                     <dt className="col-sm-5">Category</dt>
