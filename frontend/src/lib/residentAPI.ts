@@ -1,6 +1,12 @@
-import type { ResidentDetail, ResidentListItem, PagedResult } from '../types/ResidentDetail';
+import type {
+  ResidentDetail,
+  ResidentListItem,
+  PagedResult,
+} from '../types/ResidentDetail';
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+const BASE =
+  import.meta.env.VITE_API_BASE_URL ??
+  'https://newdawnapp-bsb6bbg4akbjhgg2.francecentral-01.azurewebsites.net';
 
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${BASE}${path}`, {
@@ -17,7 +23,10 @@ export async function getResidents(
   status?: string,
   safehouseId?: number
 ): Promise<PagedResult<ResidentListItem>> {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
   if (search) params.set('search', search);
   if (status) params.set('status', status);
   if (safehouseId) params.set('safehouseId', String(safehouseId));
