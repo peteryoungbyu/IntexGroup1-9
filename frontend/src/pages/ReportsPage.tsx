@@ -52,7 +52,9 @@ export default function ReportsPage() {
   const year = new Date().getFullYear();
   const [annual, setAnnual] = useState<ReportSection[] | null>(null);
   const [trends, setTrends] = useState<ReportSection | null>(null);
-  const [reintegration, setReintegration] = useState<ReportSection | null>(null);
+  const [reintegration, setReintegration] = useState<ReportSection | null>(
+    null
+  );
   const [comparison, setComparison] = useState<ReportSection | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -84,40 +86,42 @@ export default function ReportsPage() {
   }
 
   const trendRows: any[] = (trends?.data as any[]) ?? [];
-  const trendChartData = trendRows.map((row) => ({
-    label: `${MONTH_NAMES[(row.month ?? 1) - 1]} ${row.year}`,
-    total: Number(row.total ?? 0),
-    count: Number(row.count ?? 0),
+  const trendChartData = trendRows.map((r) => ({
+    label: `${MONTH_NAMES[(r.month ?? 1) - 1]} ${r.year}`,
+    total: Number(r.total ?? 0),
+    count: Number(r.count ?? 0),
   }));
 
   const reintRows: any[] = (reintegration?.data as any[]) ?? [];
-  const reintChartData = reintRows.map((row) => ({
-    name: row.status ?? 'Unknown',
-    value: Number(row.count ?? 0),
+  const reintChartData = reintRows.map((r) => ({
+    name: r.status ?? 'Unknown',
+    value: Number(r.count ?? 0),
   }));
 
   const compRows: any[] = (comparison?.data as any[]) ?? [];
-  const safehouseMap: Record<string, { residents: number; incidents: number }> = {};
-  for (const row of compRows) {
-    const key = row.name ?? `Safehouse ${row.safehouseId}`;
-    if (!safehouseMap[key]) {
-      safehouseMap[key] = { residents: 0, incidents: 0 };
-    }
-    safehouseMap[key].residents += Number(row.activeResidents ?? 0);
-    safehouseMap[key].incidents += Number(row.incidentCount ?? 0);
+  const safehouseMap: Record<string, { residents: number; incidents: number }> =
+    {};
+  for (const r of compRows) {
+    const key = r.name ?? `Safehouse ${r.safehouseId}`;
+    if (!safehouseMap[key]) safehouseMap[key] = { residents: 0, incidents: 0 };
+    safehouseMap[key].residents += Number(r.activeResidents ?? 0);
+    safehouseMap[key].incidents += Number(r.incidentCount ?? 0);
   }
-  const compChartData = Object.entries(safehouseMap).map(([name, value]) => ({
+  const compChartData = Object.entries(safehouseMap).map(([name, v]) => ({
     name,
-    ...value,
+    ...v,
   }));
 
-  const donationSummarySection = annual?.find((section) =>
-    section.title.toLowerCase().includes('donation')
+  // Annual report — find "Donation Summary" section for a bar chart
+  const donationSummarySection = annual?.find((s) =>
+    s.title.toLowerCase().includes('donation')
   );
-  const donationSummaryRows: any[] = (donationSummarySection?.data as any[]) ?? [];
+  const donationSummaryRows: any[] =
+    (donationSummarySection?.data as any[]) ?? [];
 
-  const servicesSection = annual?.find((section) =>
-    section.title.toLowerCase().includes('service')
+  // Annual services section (caring/healing/teaching counts)
+  const servicesSection = annual?.find((s) =>
+    s.title.toLowerCase().includes('service')
   );
   const servicesRows: any[] = (servicesSection?.data as any[]) ?? [];
 
@@ -132,6 +136,7 @@ export default function ReportsPage() {
       </div>
 
       <div className="container-fluid py-4">
+        {/* Donation Trends — Line Chart */}
         <div className="card mb-4">
           <div className="card-header fw-semibold">
             {trends?.title ?? 'Donation Trends'}
@@ -149,9 +154,20 @@ export default function ReportsPage() {
                   <YAxis
                     yAxisId="left"
                     tick={{ fontSize: 12 }}
-                    tickFormatter={(value) =>
-                      `PHP ${Number(value).toLocaleString()}`
-                    }
+                    tickFormatter={(v) => `₱${Number(v).toLocaleString()}`}
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => {
+                      const numericValue = Number(value ?? 0);
+                      return name === 'total'
+                        ? [`₱${numericValue.toLocaleString()}`, 'Total (PHP)']
+                        : [numericValue, 'Donations'];
+                    }}
                   />
                   <YAxis
                     yAxisId="right"
@@ -217,10 +233,10 @@ export default function ReportsPage() {
                         label={({ name, value }) => `${name}: ${value}`}
                         labelLine={false}
                       >
-                        {reintChartData.map((_, index) => (
+                        {reintChartData.map((_, i) => (
                           <Cell
-                            key={index}
-                            fill={BRAND_COLORS[index % BRAND_COLORS.length]}
+                            key={i}
+                            fill={BRAND_COLORS[i % BRAND_COLORS.length]}
                           />
                         ))}
                       </Pie>
@@ -241,7 +257,9 @@ export default function ReportsPage() {
                 {comparison?.title ?? 'Safehouse Comparison'}
               </div>
               <div className="card-body">
-                <p className="text-muted small mb-3">{comparison?.description}</p>
+                <p className="text-muted small mb-3">
+                  {comparison?.description}
+                </p>
                 {compChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart
@@ -279,7 +297,7 @@ export default function ReportsPage() {
 
         <div className="card mb-4">
           <div className="card-header fw-semibold">
-            Annual Accomplishment Report - {year}
+            Annual Accomplishment Report — {year}
           </div>
           <div className="card-body">
             {donationSummaryRows.length > 0 && (
@@ -300,9 +318,7 @@ export default function ReportsPage() {
                     <XAxis
                       type="number"
                       tick={{ fontSize: 12 }}
-                      tickFormatter={(value) =>
-                        `PHP ${Number(value).toLocaleString()}`
-                      }
+                      tickFormatter={(v) => `₱${Number(v).toLocaleString()}`}
                     />
                     <YAxis
                       type="category"
@@ -311,16 +327,12 @@ export default function ReportsPage() {
                       width={120}
                     />
                     <Tooltip
-                      formatter={(value) => {
-                        const numericValue = Number(value ?? 0);
-                        return [`PHP ${numericValue.toLocaleString()}`, 'Total'];
-                      }}
+                      formatter={(v) => [
+                        `₱${Number(v ?? 0).toLocaleString()}`,
+                        'Total',
+                      ]}
                     />
-                    <Bar
-                      dataKey="total"
-                      fill="#2563eb"
-                      radius={[0, 4, 4, 0]}
-                    />
+                    <Bar dataKey="total" fill="#2563eb" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -347,42 +359,39 @@ export default function ReportsPage() {
               </div>
             )}
 
+            {/* Remaining sections as data tables */}
             {annual
               ?.filter(
-                (section) =>
-                  !section.title.toLowerCase().includes('donation') &&
-                  !section.title.toLowerCase().includes('service')
+                (s) =>
+                  !s.title.toLowerCase().includes('donation') &&
+                  !s.title.toLowerCase().includes('service')
               )
-              .map((section) => (
-                <div key={section.title} className="mb-4">
+              .map((s) => (
+                <div key={s.title} className="mb-4">
                   <h6
                     className="fw-semibold"
                     style={{ color: 'var(--brand-dark)' }}
                   >
-                    {section.title}
+                    {s.title}
                   </h6>
-                  <p className="text-muted small mb-2">
-                    {section.description}
-                  </p>
-                  {Array.isArray(section.data) && section.data.length > 0 ? (
+                  <p className="text-muted small mb-2">{s.description}</p>
+                  {Array.isArray(s.data) && s.data.length > 0 ? (
                     <div className="table-responsive">
                       <table className="table table-sm table-bordered mb-0">
                         <thead className="table-light">
                           <tr>
-                            {Object.keys((section.data as any[])[0]).map((key) => (
-                              <th key={key} className="text-capitalize">
-                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                            {Object.keys((s.data as any[])[0]).map((k) => (
+                              <th key={k} className="text-capitalize">
+                                {k.replace(/([A-Z])/g, ' $1').trim()}
                               </th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
-                          {(section.data as any[]).map((row, index) => (
-                            <tr key={index}>
-                              {Object.values(row).map((value, valueIndex) => (
-                                <td key={valueIndex}>
-                                  {value == null ? '-' : String(value)}
-                                </td>
+                          {(s.data as any[]).map((row, i) => (
+                            <tr key={i}>
+                              {Object.values(row).map((v, j) => (
+                                <td key={j}>{v == null ? '—' : String(v)}</td>
                               ))}
                             </tr>
                           ))}

@@ -1,10 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { ResidentDetail, ProcessRecording, HomeVisitation, CaseConference } from '../types/ResidentDetail';
-import { getResidentById, addRecording, deleteRecording, addVisitation, deleteVisitation, updateResident } from '../lib/residentAPI';
+import type {
+  ResidentDetail,
+  ProcessRecording,
+  HomeVisitation,
+  CaseConference,
+} from '../types/ResidentDetail';
+import {
+  getResidentById,
+  addRecording,
+  deleteRecording,
+  addVisitation,
+  deleteVisitation,
+  updateResident,
+} from '../lib/residentAPI';
 import type { Resident } from '../types/ResidentDetail';
-import { addCaseConference, deleteCaseConference } from '../lib/caseConferenceAPI';
-import { RESIDENT_CASE_CATEGORIES } from '../lib/residentOptions';
+import {
+  addCaseConference,
+  deleteCaseConference,
+} from '../lib/caseConferenceAPI';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const RISK_COLORS: Record<string, string> = {
@@ -62,6 +76,8 @@ type DeleteTarget =
   | { type: 'visitation'; id: number }
   | { type: 'conference'; id: number };
 
+type EditableResident = Omit<Resident, 'residentId' | 'createdAt'>;
+
 export default function ResidentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const residentId = Number(id);
@@ -71,7 +87,7 @@ export default function ResidentDetailPage() {
   const [activeTab, setActiveTab] = useState('overview');
 
   const [showEdit, setShowEdit] = useState(false);
-  const [editForm, setEditForm] = useState<Omit<Resident, 'residentId' | 'createdAt'> | null>(null);
+  const [editForm, setEditForm] = useState<EditableResident | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -79,9 +95,18 @@ export default function ResidentDetailPage() {
   const [showAddVisitation, setShowAddVisitation] = useState(false);
   const [showAddConference, setShowAddConference] = useState(false);
 
-  const [recordingForm, setRecordingForm] = useState({ ...EMPTY_RECORDING, residentId });
-  const [visitationForm, setVisitationForm] = useState({ ...EMPTY_VISITATION, residentId });
-  const [conferenceForm, setConferenceForm] = useState({ ...EMPTY_CONFERENCE, residentId });
+  const [recordingForm, setRecordingForm] = useState({
+    ...EMPTY_RECORDING,
+    residentId,
+  });
+  const [visitationForm, setVisitationForm] = useState({
+    ...EMPTY_VISITATION,
+    residentId,
+  });
+  const [conferenceForm, setConferenceForm] = useState({
+    ...EMPTY_CONFERENCE,
+    residentId,
+  });
 
   const [formBusy, setFormBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -100,13 +125,26 @@ export default function ResidentDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    setRecordingForm(f => ({ ...f, residentId }));
-    setVisitationForm(f => ({ ...f, residentId }));
-    setConferenceForm(f => ({ ...f, residentId }));
+    setRecordingForm((f) => ({ ...f, residentId }));
+    setVisitationForm((f) => ({ ...f, residentId }));
+    setConferenceForm((f) => ({ ...f, residentId }));
   }, [residentId]);
 
-  if (loading) return <div className="container py-5 text-center"><div className="spinner-border" style={{ color: 'var(--brand-primary)' }} /></div>;
-  if (!detail) return <div className="container py-5"><div className="alert alert-danger">Resident not found.</div></div>;
+  if (loading)
+    return (
+      <div className="container py-5 text-center">
+        <div
+          className="spinner-border"
+          style={{ color: 'var(--brand-primary)' }}
+        />
+      </div>
+    );
+  if (!detail)
+    return (
+      <div className="container py-5">
+        <div className="alert alert-danger">Resident not found.</div>
+      </div>
+    );
 
   const { resident, recordings, visitations, plans, conferences, predictions } =
     detail;
@@ -164,8 +202,10 @@ export default function ResidentDetailPage() {
     setDeleteBusy(true);
     setDeleteError(null);
     try {
-      if (deleteTarget.type === 'recording') await deleteRecording(residentId, deleteTarget.id);
-      else if (deleteTarget.type === 'visitation') await deleteVisitation(residentId, deleteTarget.id);
+      if (deleteTarget.type === 'recording')
+        await deleteRecording(residentId, deleteTarget.id);
+      else if (deleteTarget.type === 'visitation')
+        await deleteVisitation(residentId, deleteTarget.id);
       else await deleteCaseConference(deleteTarget.id);
       await refresh();
       setDeleteTarget(null);
@@ -182,7 +222,11 @@ export default function ResidentDetailPage() {
     setEditError(null);
     setShowEdit(true);
   }
-  function closeEdit() { if (editBusy) return; setShowEdit(false); setEditError(null); }
+  function closeEdit() {
+    if (editBusy) return;
+    setShowEdit(false);
+    setEditError(null);
+  }
 
   async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -200,14 +244,26 @@ export default function ResidentDetailPage() {
     }
   }
 
-  const setEdit = <K extends keyof Omit<Resident, 'residentId' | 'createdAt'>>(
+  const setEdit = <K extends keyof EditableResident>(
     field: K,
-    value: Omit<Resident, 'residentId' | 'createdAt'>[K]
-  ) => setEditForm(f => f ? { ...f, [field]: value } : f);
+    value: EditableResident[K]
+  ) => setEditForm((f) => (f ? { ...f, [field]: value } : f));
 
-  function closeAddRecording() { setShowAddRecording(false); setFormError(null); setRecordingForm({ ...EMPTY_RECORDING, residentId }); }
-  function closeAddVisitation() { setShowAddVisitation(false); setFormError(null); setVisitationForm({ ...EMPTY_VISITATION, residentId }); }
-  function closeAddConference() { setShowAddConference(false); setFormError(null); setConferenceForm({ ...EMPTY_CONFERENCE, residentId }); }
+  function closeAddRecording() {
+    setShowAddRecording(false);
+    setFormError(null);
+    setRecordingForm({ ...EMPTY_RECORDING, residentId });
+  }
+  function closeAddVisitation() {
+    setShowAddVisitation(false);
+    setFormError(null);
+    setVisitationForm({ ...EMPTY_VISITATION, residentId });
+  }
+  function closeAddConference() {
+    setShowAddConference(false);
+    setFormError(null);
+    setConferenceForm({ ...EMPTY_CONFERENCE, residentId });
+  }
 
   return (
     <div>
@@ -265,66 +321,154 @@ export default function ResidentDetailPage() {
 
         {/* Edit Resident Modal */}
         {showEdit && editForm && (
-          <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeEdit}>
-            <div className="modal-dialog modal-xl modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
+          <div
+            className="modal d-block"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+            onClick={closeEdit}
+          >
+            <div
+              className="modal-dialog modal-xl modal-dialog-scrollable"
+              onClick={(e) => e.stopPropagation()}
+            >
               <form onSubmit={handleEditSubmit}>
                 <div className="modal-content">
                   <div className="modal-header">
-                    <h5 className="modal-title">Edit Resident — {resident.caseControlNo}</h5>
-                    <button type="button" className="btn-close" onClick={closeEdit} disabled={editBusy} />
+                    <h5 className="modal-title">
+                      Edit Resident — {resident.caseControlNo}
+                    </h5>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={closeEdit}
+                      disabled={editBusy}
+                    />
                   </div>
                   <div className="modal-body">
-                    {editError && <div className="alert alert-danger">{editError}</div>}
+                    {editError && (
+                      <div className="alert alert-danger">{editError}</div>
+                    )}
 
-                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Basic Information</h6>
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                      Basic Information
+                    </h6>
                     <div className="row g-3 mb-4">
                       <div className="col-md-4">
-                        <label className="form-label">Case Control No. <span className="text-danger">*</span></label>
-                        <input type="text" className="form-control" required value={editForm.caseControlNo}
-                          onChange={e => setEdit('caseControlNo', e.target.value)} />
+                        <label className="form-label">
+                          Case Control No.{' '}
+                          <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          required
+                          value={editForm.caseControlNo}
+                          onChange={(e) =>
+                            setEdit('caseControlNo', e.target.value)
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Internal Code <span className="text-danger">*</span></label>
-                        <input type="text" className="form-control" required value={editForm.internalCode}
-                          onChange={e => setEdit('internalCode', e.target.value)} />
+                        <label className="form-label">
+                          Internal Code <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          required
+                          value={editForm.internalCode}
+                          onChange={(e) =>
+                            setEdit('internalCode', e.target.value)
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Safehouse ID <span className="text-danger">*</span></label>
-                        <input type="number" className="form-control" required min={1} value={editForm.safehouseId}
-                          onChange={e => setEdit('safehouseId', Number(e.target.value))} />
+                        <label className="form-label">
+                          Safehouse ID <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          required
+                          min={1}
+                          value={editForm.safehouseId}
+                          onChange={(e) =>
+                            setEdit('safehouseId', Number(e.target.value))
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Sex <span className="text-danger">*</span></label>
-                        <select className="form-select" required value={editForm.sex}
-                          onChange={e => setEdit('sex', e.target.value)}>
+                        <label className="form-label">
+                          Sex <span className="text-danger">*</span>
+                        </label>
+                        <select
+                          className="form-select"
+                          required
+                          value={editForm.sex}
+                          onChange={(e) => setEdit('sex', e.target.value)}
+                        >
                           <option>Female</option>
                           <option>Male</option>
                         </select>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Date of Birth <span className="text-danger">*</span></label>
-                        <input type="date" className="form-control" required value={editForm.dateOfBirth}
-                          onChange={e => setEdit('dateOfBirth', e.target.value)} />
+                        <label className="form-label">
+                          Date of Birth <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          required
+                          value={editForm.dateOfBirth}
+                          onChange={(e) =>
+                            setEdit('dateOfBirth', e.target.value)
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Place of Birth</label>
-                        <input type="text" className="form-control" value={editForm.placeOfBirth ?? ''}
-                          onChange={e => setEdit('placeOfBirth', e.target.value || null)} />
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={editForm.placeOfBirth ?? ''}
+                          onChange={(e) =>
+                            setEdit('placeOfBirth', e.target.value || null)
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Birth Status</label>
-                        <input type="text" className="form-control" value={editForm.birthStatus ?? ''}
-                          onChange={e => setEdit('birthStatus', e.target.value || null)} />
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={editForm.birthStatus ?? ''}
+                          onChange={(e) =>
+                            setEdit('birthStatus', e.target.value || null)
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Religion</label>
-                        <input type="text" className="form-control" value={editForm.religion ?? ''}
-                          onChange={e => setEdit('religion', e.target.value || null)} />
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={editForm.religion ?? ''}
+                          onChange={(e) =>
+                            setEdit('religion', e.target.value || null)
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Case Status <span className="text-danger">*</span></label>
-                        <select className="form-select" required value={editForm.caseStatus}
-                          onChange={e => setEdit('caseStatus', e.target.value)}>
+                        <label className="form-label">
+                          Case Status <span className="text-danger">*</span>
+                        </label>
+                        <select
+                          className="form-select"
+                          required
+                          value={editForm.caseStatus}
+                          onChange={(e) =>
+                            setEdit('caseStatus', e.target.value)
+                          }
+                        >
                           <option>Active</option>
                           <option>Closed</option>
                           <option>Transferred</option>
@@ -332,40 +476,65 @@ export default function ResidentDetailPage() {
                       </div>
                     </div>
 
-                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Case Category &amp; Sub-categories</h6>
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                      Case Category &amp; Sub-categories
+                    </h6>
                     <div className="row g-3 mb-4">
                       <div className="col-md-6">
-                        <label className="form-label">Case Category <span className="text-danger">*</span></label>
-                        <select className="form-select" required value={editForm.caseCategory}
-                          onChange={e => setEdit('caseCategory', e.target.value)}>
-                          {RESIDENT_CASE_CATEGORIES.map(category => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
+                        <label className="form-label">
+                          Case Category <span className="text-danger">*</span>
+                        </label>
+                        <select
+                          className="form-select"
+                          required
+                          value={editForm.caseCategory}
+                          onChange={(e) =>
+                            setEdit('caseCategory', e.target.value)
+                          }
+                        >
+                          <option>Child in Need of Special Protection</option>
+                          <option>Child in Conflict with the Law</option>
+                          <option>Child at Risk</option>
+                          <option>Abandoned</option>
+                          <option>Neglected</option>
                         </select>
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label d-block">Sub-categories</label>
+                        <label className="form-label d-block">
+                          Sub-categories
+                        </label>
                         <div className="row g-2">
-                          {([
-                            ['subCatOrphaned', 'Orphaned'],
-                            ['subCatTrafficked', 'Trafficked'],
-                            ['subCatChildLabor', 'Child Labor'],
-                            ['subCatPhysicalAbuse', 'Physical Abuse'],
-                            ['subCatSexualAbuse', 'Sexual Abuse'],
-                            ['subCatOsaec', 'OSAEC'],
-                            ['subCatCicl', 'CICL'],
-                            ['subCatAtRisk', 'At Risk'],
-                            ['subCatStreetChild', 'Street Child'],
-                            ['subCatChildWithHiv', 'Child with HIV'],
-                          ] as const).map(([field, label]) => (
+                          {(
+                            [
+                              ['subCatOrphaned', 'Orphaned'],
+                              ['subCatTrafficked', 'Trafficked'],
+                              ['subCatChildLabor', 'Child Labor'],
+                              ['subCatPhysicalAbuse', 'Physical Abuse'],
+                              ['subCatSexualAbuse', 'Sexual Abuse'],
+                              ['subCatOsaec', 'OSAEC'],
+                              ['subCatCicl', 'CICL'],
+                              ['subCatAtRisk', 'At Risk'],
+                              ['subCatStreetChild', 'Street Child'],
+                              ['subCatChildWithHiv', 'Child with HIV'],
+                            ] as const
+                          ).map(([field, label]) => (
                             <div key={field} className="col-6">
                               <div className="form-check">
-                                <input type="checkbox" className="form-check-input" id={`edit-${field}`}
+                                <input
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  id={`edit-${field}`}
                                   checked={editForm[field] as boolean}
-                                  onChange={e => setEdit(field, e.target.checked)} />
-                                <label className="form-check-label" htmlFor={`edit-${field}`}>{label}</label>
+                                  onChange={(e) =>
+                                    setEdit(field, e.target.checked)
+                                  }
+                                />
+                                <label
+                                  className="form-check-label"
+                                  htmlFor={`edit-${field}`}
+                                >
+                                  {label}
+                                </label>
                               </div>
                             </div>
                           ))}
@@ -373,86 +542,181 @@ export default function ResidentDetailPage() {
                       </div>
                     </div>
 
-                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Disability Information</h6>
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                      Disability Information
+                    </h6>
                     <div className="row g-3 mb-4">
                       <div className="col-md-3">
                         <div className="form-check mt-2">
-                          <input type="checkbox" className="form-check-input" id="edit-isPwd"
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            id="edit-isPwd"
                             checked={editForm.isPwd}
-                            onChange={e => setEdit('isPwd', e.target.checked)} />
-                          <label className="form-check-label" htmlFor="edit-isPwd">Person with Disability (PWD)</label>
+                            onChange={(e) => setEdit('isPwd', e.target.checked)}
+                          />
+                          <label
+                            className="form-check-label"
+                            htmlFor="edit-isPwd"
+                          >
+                            Person with Disability (PWD)
+                          </label>
                         </div>
                       </div>
                       {editForm.isPwd && (
                         <div className="col-md-4">
                           <label className="form-label">PWD Type</label>
-                          <input type="text" className="form-control" value={editForm.pwdType ?? ''}
-                            onChange={e => setEdit('pwdType', e.target.value || null)} />
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={editForm.pwdType ?? ''}
+                            onChange={(e) =>
+                              setEdit('pwdType', e.target.value || null)
+                            }
+                          />
                         </div>
                       )}
                       <div className="col-md-3">
                         <div className="form-check mt-2">
-                          <input type="checkbox" className="form-check-input" id="edit-hasSpecialNeeds"
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            id="edit-hasSpecialNeeds"
                             checked={editForm.hasSpecialNeeds}
-                            onChange={e => setEdit('hasSpecialNeeds', e.target.checked)} />
-                          <label className="form-check-label" htmlFor="edit-hasSpecialNeeds">Has Special Needs</label>
+                            onChange={(e) =>
+                              setEdit('hasSpecialNeeds', e.target.checked)
+                            }
+                          />
+                          <label
+                            className="form-check-label"
+                            htmlFor="edit-hasSpecialNeeds"
+                          >
+                            Has Special Needs
+                          </label>
                         </div>
                       </div>
                       {editForm.hasSpecialNeeds && (
                         <div className="col-md-4">
                           <label className="form-label">Diagnosis</label>
-                          <input type="text" className="form-control" value={editForm.specialNeedsDiagnosis ?? ''}
-                            onChange={e => setEdit('specialNeedsDiagnosis', e.target.value || null)} />
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={editForm.specialNeedsDiagnosis ?? ''}
+                            onChange={(e) =>
+                              setEdit(
+                                'specialNeedsDiagnosis',
+                                e.target.value || null
+                              )
+                            }
+                          />
                         </div>
                       )}
                     </div>
 
-                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Family Socio-demographic Profile</h6>
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                      Family Socio-demographic Profile
+                    </h6>
                     <div className="row g-2 mb-4">
-                      {([
-                        ['familyIs4Ps', '4Ps Beneficiary'],
-                        ['familySoloParent', 'Solo Parent'],
-                        ['familyIndigenous', 'Indigenous Group'],
-                        ['familyParentPwd', 'Parent with Disability'],
-                        ['familyInformalSettler', 'Informal Settler'],
-                      ] as const).map(([field, label]) => (
+                      {(
+                        [
+                          ['familyIs4Ps', '4Ps Beneficiary'],
+                          ['familySoloParent', 'Solo Parent'],
+                          ['familyIndigenous', 'Indigenous Group'],
+                          ['familyParentPwd', 'Parent with Disability'],
+                          ['familyInformalSettler', 'Informal Settler'],
+                        ] as const
+                      ).map(([field, label]) => (
                         <div key={field} className="col-md-4">
                           <div className="form-check">
-                            <input type="checkbox" className="form-check-input" id={`edit-${field}`}
+                            <input
+                              type="checkbox"
+                              className="form-check-input"
+                              id={`edit-${field}`}
                               checked={editForm[field] as boolean}
-                              onChange={e => setEdit(field, e.target.checked)} />
-                            <label className="form-check-label" htmlFor={`edit-${field}`}>{label}</label>
+                              onChange={(e) => setEdit(field, e.target.checked)}
+                            />
+                            <label
+                              className="form-check-label"
+                              htmlFor={`edit-${field}`}
+                            >
+                              {label}
+                            </label>
                           </div>
                         </div>
                       ))}
                     </div>
 
-                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Admission &amp; Referral</h6>
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                      Admission &amp; Referral
+                    </h6>
                     <div className="row g-3 mb-4">
                       <div className="col-md-4">
-                        <label className="form-label">Date of Admission <span className="text-danger">*</span></label>
-                        <input type="date" className="form-control" required value={editForm.dateOfAdmission}
-                          onChange={e => setEdit('dateOfAdmission', e.target.value)} />
+                        <label className="form-label">
+                          Date of Admission{' '}
+                          <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          required
+                          value={editForm.dateOfAdmission}
+                          onChange={(e) =>
+                            setEdit('dateOfAdmission', e.target.value)
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Assigned Social Worker</label>
-                        <input type="text" className="form-control" value={editForm.assignedSocialWorker ?? ''}
-                          onChange={e => setEdit('assignedSocialWorker', e.target.value || null)} />
+                        <label className="form-label">
+                          Assigned Social Worker
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={editForm.assignedSocialWorker ?? ''}
+                          onChange={(e) =>
+                            setEdit(
+                              'assignedSocialWorker',
+                              e.target.value || null
+                            )
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Referral Source</label>
-                        <input type="text" className="form-control" value={editForm.referralSource ?? ''}
-                          onChange={e => setEdit('referralSource', e.target.value || null)} />
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={editForm.referralSource ?? ''}
+                          onChange={(e) =>
+                            setEdit('referralSource', e.target.value || null)
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Referring Agency / Person</label>
-                        <input type="text" className="form-control" value={editForm.referringAgencyPerson ?? ''}
-                          onChange={e => setEdit('referringAgencyPerson', e.target.value || null)} />
+                        <label className="form-label">
+                          Referring Agency / Person
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={editForm.referringAgencyPerson ?? ''}
+                          onChange={(e) =>
+                            setEdit(
+                              'referringAgencyPerson',
+                              e.target.value || null
+                            )
+                          }
+                        />
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Initial Risk Level</label>
-                        <select className="form-select" value={editForm.initialRiskLevel ?? ''}
-                          onChange={e => setEdit('initialRiskLevel', e.target.value || null)}>
+                        <select
+                          className="form-select"
+                          value={editForm.initialRiskLevel ?? ''}
+                          onChange={(e) =>
+                            setEdit('initialRiskLevel', e.target.value || null)
+                          }
+                        >
                           <option value="">— None —</option>
                           <option>Low</option>
                           <option>Medium</option>
@@ -462,8 +726,13 @@ export default function ResidentDetailPage() {
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Current Risk Level</label>
-                        <select className="form-select" value={editForm.currentRiskLevel ?? ''}
-                          onChange={e => setEdit('currentRiskLevel', e.target.value || null)}>
+                        <select
+                          className="form-select"
+                          value={editForm.currentRiskLevel ?? ''}
+                          onChange={(e) =>
+                            setEdit('currentRiskLevel', e.target.value || null)
+                          }
+                        >
                           <option value="">— None —</option>
                           <option>Low</option>
                           <option>Medium</option>
@@ -472,18 +741,36 @@ export default function ResidentDetailPage() {
                         </select>
                       </div>
                       <div className="col-12">
-                        <label className="form-label">Initial Case Assessment</label>
-                        <textarea className="form-control" rows={2} value={editForm.initialCaseAssessment ?? ''}
-                          onChange={e => setEdit('initialCaseAssessment', e.target.value || null)} />
+                        <label className="form-label">
+                          Initial Case Assessment
+                        </label>
+                        <textarea
+                          className="form-control"
+                          rows={2}
+                          value={editForm.initialCaseAssessment ?? ''}
+                          onChange={(e) =>
+                            setEdit(
+                              'initialCaseAssessment',
+                              e.target.value || null
+                            )
+                          }
+                        />
                       </div>
                     </div>
 
-                    <h6 className="fw-semibold border-bottom pb-1 mb-3">Reintegration</h6>
+                    <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                      Reintegration
+                    </h6>
                     <div className="row g-3">
                       <div className="col-md-4">
                         <label className="form-label">Reintegration Type</label>
-                        <select className="form-select" value={editForm.reintegrationType ?? ''}
-                          onChange={e => setEdit('reintegrationType', e.target.value || null)}>
+                        <select
+                          className="form-select"
+                          value={editForm.reintegrationType ?? ''}
+                          onChange={(e) =>
+                            setEdit('reintegrationType', e.target.value || null)
+                          }
+                        >
                           <option value="">— None —</option>
                           <option>Family Reintegration</option>
                           <option>Community Reintegration</option>
@@ -493,9 +780,19 @@ export default function ResidentDetailPage() {
                         </select>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Reintegration Status</label>
-                        <select className="form-select" value={editForm.reintegrationStatus ?? ''}
-                          onChange={e => setEdit('reintegrationStatus', e.target.value || null)}>
+                        <label className="form-label">
+                          Reintegration Status
+                        </label>
+                        <select
+                          className="form-select"
+                          value={editForm.reintegrationStatus ?? ''}
+                          onChange={(e) =>
+                            setEdit(
+                              'reintegrationStatus',
+                              e.target.value || null
+                            )
+                          }
+                        >
                           <option value="">— None —</option>
                           <option>Ongoing</option>
                           <option>Completed</option>
@@ -505,17 +802,39 @@ export default function ResidentDetailPage() {
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Date Closed</label>
-                        <input type="date" className="form-control" value={editForm.dateClosed ?? ''}
-                          onChange={e => setEdit('dateClosed', e.target.value || null)} />
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={editForm.dateClosed ?? ''}
+                          onChange={(e) =>
+                            setEdit('dateClosed', e.target.value || null)
+                          }
+                        />
                       </div>
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={closeEdit} disabled={editBusy}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={closeEdit}
+                      disabled={editBusy}
+                    >
                       Cancel
                     </button>
-                    <button type="submit" className="btn btn-primary" disabled={editBusy}>
-                      {editBusy ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : 'Save Changes'}
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={editBusy}
+                    >
+                      {editBusy ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" />
+                          Saving…
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
                     </button>
                   </div>
                 </div>
@@ -531,7 +850,12 @@ export default function ResidentDetailPage() {
               <div className="card">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <span>Case Information</span>
-                  <button className="btn btn-sm btn-outline-primary" onClick={openEdit}>Edit</button>
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={openEdit}
+                  >
+                    Edit
+                  </button>
                 </div>
                 <div className="card-body">
                   <dl className="row mb-0">
@@ -596,33 +920,73 @@ export default function ResidentDetailPage() {
             <div className="card">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <span>Process Recordings ({recordings.length})</span>
-                <button className="btn btn-sm btn-primary" onClick={() => { setFormError(null); setShowAddRecording(true); }}>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    setFormError(null);
+                    setShowAddRecording(true);
+                  }}
+                >
                   + Add Recording
                 </button>
               </div>
               <div className="card-body">
-                {recordings.length === 0 ? <p className="text-muted">No recordings yet.</p> : (
+                {recordings.length === 0 ? (
+                  <p className="text-muted">No recordings yet.</p>
+                ) : (
                   <div className="list-group list-group-flush">
-                    {recordings.map(r => (
+                    {recordings.map((r) => (
                       <div key={r.recordingId} className="list-group-item px-0">
                         <div className="d-flex justify-content-between align-items-start">
                           <div>
                             <div className="d-flex align-items-center gap-2 mb-1">
                               <strong>{r.sessionDate}</strong>
-                              <span className="text-muted small">{r.sessionType} · {r.sessionDurationMinutes} min · {r.socialWorker}</span>
+                              <span className="text-muted small">
+                                {r.sessionType} · {r.sessionDurationMinutes} min
+                                · {r.socialWorker}
+                              </span>
                             </div>
-                            {r.sessionNarrative && <p className="mb-1 small">{r.sessionNarrative}</p>}
-                            {r.interventionsApplied && <p className="mb-1 small text-muted"><strong>Interventions:</strong> {r.interventionsApplied}</p>}
-                            {r.followUpActions && <p className="mb-1 small text-muted"><strong>Follow-up:</strong> {r.followUpActions}</p>}
+                            {r.sessionNarrative && (
+                              <p className="mb-1 small">{r.sessionNarrative}</p>
+                            )}
+                            {r.interventionsApplied && (
+                              <p className="mb-1 small text-muted">
+                                <strong>Interventions:</strong>{' '}
+                                {r.interventionsApplied}
+                              </p>
+                            )}
+                            {r.followUpActions && (
+                              <p className="mb-1 small text-muted">
+                                <strong>Follow-up:</strong> {r.followUpActions}
+                              </p>
+                            )}
                             <div className="d-flex gap-2 mt-1">
-                              {r.progressNoted && <span className="badge bg-success">Progress</span>}
-                              {r.concernsFlagged && <span className="badge bg-warning text-dark">Concerns Flagged</span>}
-                              {r.referralMade && <span className="badge bg-primary">Referral Made</span>}
+                              {r.progressNoted && (
+                                <span className="badge bg-success">
+                                  Progress
+                                </span>
+                              )}
+                              {r.concernsFlagged && (
+                                <span className="badge bg-warning text-dark">
+                                  Concerns Flagged
+                                </span>
+                              )}
+                              {r.referralMade && (
+                                <span className="badge bg-primary">
+                                  Referral Made
+                                </span>
+                              )}
                             </div>
                           </div>
                           <button
                             className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                            onClick={() => { setDeleteError(null); setDeleteTarget({ type: 'recording', id: r.recordingId }); }}
+                            onClick={() => {
+                              setDeleteError(null);
+                              setDeleteTarget({
+                                type: 'recording',
+                                id: r.recordingId,
+                              });
+                            }}
                           >
                             Delete
                           </button>
@@ -635,88 +999,269 @@ export default function ResidentDetailPage() {
             </div>
 
             {showAddRecording && (
-              <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeAddRecording}>
-                <div className="modal-dialog modal-lg" onClick={e => e.stopPropagation()}>
+              <div
+                className="modal d-block"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                onClick={closeAddRecording}
+              >
+                <div
+                  className="modal-dialog modal-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <form onSubmit={handleAddRecording}>
                     <div className="modal-content">
                       <div className="modal-header">
                         <h5 className="modal-title">Add Process Recording</h5>
-                        <button type="button" className="btn-close" onClick={closeAddRecording} disabled={formBusy} />
+                        <button
+                          type="button"
+                          className="btn-close"
+                          onClick={closeAddRecording}
+                          disabled={formBusy}
+                        />
                       </div>
                       <div className="modal-body">
-                        {formError && <div className="alert alert-danger">{formError}</div>}
+                        {formError && (
+                          <div className="alert alert-danger">{formError}</div>
+                        )}
                         <div className="row g-3">
                           <div className="col-md-4">
-                            <label className="form-label">Session Date <span className="text-danger">*</span></label>
-                            <input type="date" className="form-control" required value={recordingForm.sessionDate}
-                              onChange={e => setRecordingForm(f => ({ ...f, sessionDate: e.target.value }))} />
+                            <label className="form-label">
+                              Session Date{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              required
+                              value={recordingForm.sessionDate}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  sessionDate: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Social Worker <span className="text-danger">*</span></label>
-                            <input type="text" className="form-control" required value={recordingForm.socialWorker}
-                              onChange={e => setRecordingForm(f => ({ ...f, socialWorker: e.target.value }))} />
+                            <label className="form-label">
+                              Social Worker{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              required
+                              value={recordingForm.socialWorker}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  socialWorker: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Session Type <span className="text-danger">*</span></label>
-                            <select className="form-select" required value={recordingForm.sessionType}
-                              onChange={e => setRecordingForm(f => ({ ...f, sessionType: e.target.value }))}>
+                            <label className="form-label">
+                              Session Type{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              required
+                              value={recordingForm.sessionType}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  sessionType: e.target.value,
+                                }))
+                              }
+                            >
                               <option>Individual</option>
                               <option>Group</option>
                             </select>
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Duration (minutes) <span className="text-danger">*</span></label>
-                            <input type="number" className="form-control" min={1} required value={recordingForm.sessionDurationMinutes}
-                              onChange={e => setRecordingForm(f => ({ ...f, sessionDurationMinutes: Number(e.target.value) }))} />
+                            <label className="form-label">
+                              Duration (minutes){' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              className="form-control"
+                              min={1}
+                              required
+                              value={recordingForm.sessionDurationMinutes}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  sessionDurationMinutes: Number(
+                                    e.target.value
+                                  ),
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Emotional State (Start)</label>
-                            <input type="text" className="form-control" value={recordingForm.emotionalStateObserved ?? ''}
-                              onChange={e => setRecordingForm(f => ({ ...f, emotionalStateObserved: e.target.value }))} />
+                            <label className="form-label">
+                              Emotional State (Start)
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={recordingForm.emotionalStateObserved ?? ''}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  emotionalStateObserved: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Emotional State (End)</label>
-                            <input type="text" className="form-control" value={recordingForm.emotionalStateEnd ?? ''}
-                              onChange={e => setRecordingForm(f => ({ ...f, emotionalStateEnd: e.target.value }))} />
+                            <label className="form-label">
+                              Emotional State (End)
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={recordingForm.emotionalStateEnd ?? ''}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  emotionalStateEnd: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
-                            <label className="form-label">Session Narrative</label>
-                            <textarea className="form-control" rows={3} value={recordingForm.sessionNarrative ?? ''}
-                              onChange={e => setRecordingForm(f => ({ ...f, sessionNarrative: e.target.value }))} />
+                            <label className="form-label">
+                              Session Narrative
+                            </label>
+                            <textarea
+                              className="form-control"
+                              rows={3}
+                              value={recordingForm.sessionNarrative ?? ''}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  sessionNarrative: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
-                            <label className="form-label">Interventions Applied</label>
-                            <textarea className="form-control" rows={2} value={recordingForm.interventionsApplied ?? ''}
-                              onChange={e => setRecordingForm(f => ({ ...f, interventionsApplied: e.target.value }))} />
+                            <label className="form-label">
+                              Interventions Applied
+                            </label>
+                            <textarea
+                              className="form-control"
+                              rows={2}
+                              value={recordingForm.interventionsApplied ?? ''}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  interventionsApplied: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
-                            <label className="form-label">Follow-Up Actions</label>
-                            <textarea className="form-control" rows={2} value={recordingForm.followUpActions ?? ''}
-                              onChange={e => setRecordingForm(f => ({ ...f, followUpActions: e.target.value }))} />
+                            <label className="form-label">
+                              Follow-Up Actions
+                            </label>
+                            <textarea
+                              className="form-control"
+                              rows={2}
+                              value={recordingForm.followUpActions ?? ''}
+                              onChange={(e) =>
+                                setRecordingForm((f) => ({
+                                  ...f,
+                                  followUpActions: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12 d-flex gap-4">
                             <div className="form-check">
-                              <input type="checkbox" className="form-check-input" id="progressNoted" checked={recordingForm.progressNoted}
-                                onChange={e => setRecordingForm(f => ({ ...f, progressNoted: e.target.checked }))} />
-                              <label className="form-check-label" htmlFor="progressNoted">Progress Noted</label>
+                              <input
+                                type="checkbox"
+                                className="form-check-input"
+                                id="progressNoted"
+                                checked={recordingForm.progressNoted}
+                                onChange={(e) =>
+                                  setRecordingForm((f) => ({
+                                    ...f,
+                                    progressNoted: e.target.checked,
+                                  }))
+                                }
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor="progressNoted"
+                              >
+                                Progress Noted
+                              </label>
                             </div>
                             <div className="form-check">
-                              <input type="checkbox" className="form-check-input" id="concernsFlagged" checked={recordingForm.concernsFlagged}
-                                onChange={e => setRecordingForm(f => ({ ...f, concernsFlagged: e.target.checked }))} />
-                              <label className="form-check-label" htmlFor="concernsFlagged">Concerns Flagged</label>
+                              <input
+                                type="checkbox"
+                                className="form-check-input"
+                                id="concernsFlagged"
+                                checked={recordingForm.concernsFlagged}
+                                onChange={(e) =>
+                                  setRecordingForm((f) => ({
+                                    ...f,
+                                    concernsFlagged: e.target.checked,
+                                  }))
+                                }
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor="concernsFlagged"
+                              >
+                                Concerns Flagged
+                              </label>
                             </div>
                             <div className="form-check">
-                              <input type="checkbox" className="form-check-input" id="referralMade" checked={recordingForm.referralMade}
-                                onChange={e => setRecordingForm(f => ({ ...f, referralMade: e.target.checked }))} />
-                              <label className="form-check-label" htmlFor="referralMade">Referral Made</label>
+                              <input
+                                type="checkbox"
+                                className="form-check-input"
+                                id="referralMade"
+                                checked={recordingForm.referralMade}
+                                onChange={(e) =>
+                                  setRecordingForm((f) => ({
+                                    ...f,
+                                    referralMade: e.target.checked,
+                                  }))
+                                }
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor="referralMade"
+                              >
+                                Referral Made
+                              </label>
                             </div>
                           </div>
                         </div>
                       </div>
                       <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={closeAddRecording} disabled={formBusy}>Cancel</button>
-                        <button type="submit" className="btn btn-primary" disabled={formBusy}>
-                          {formBusy ? <span className="spinner-border spinner-border-sm me-1" /> : null}
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={closeAddRecording}
+                          disabled={formBusy}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={formBusy}
+                        >
+                          {formBusy ? (
+                            <span className="spinner-border spinner-border-sm me-1" />
+                          ) : null}
                           Save Recording
                         </button>
                       </div>
@@ -734,33 +1279,74 @@ export default function ResidentDetailPage() {
             <div className="card">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <span>Home Visitations ({visitations.length})</span>
-                <button className="btn btn-sm btn-primary" onClick={() => { setFormError(null); setShowAddVisitation(true); }}>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    setFormError(null);
+                    setShowAddVisitation(true);
+                  }}
+                >
                   + Add Visitation
                 </button>
               </div>
               <div className="card-body">
-                {visitations.length === 0 ? <p className="text-muted">No visitations yet.</p> : (
+                {visitations.length === 0 ? (
+                  <p className="text-muted">No visitations yet.</p>
+                ) : (
                   <div className="list-group list-group-flush">
-                    {visitations.map(v => (
-                      <div key={v.visitationId} className="list-group-item px-0">
+                    {visitations.map((v) => (
+                      <div
+                        key={v.visitationId}
+                        className="list-group-item px-0"
+                      >
                         <div className="d-flex justify-content-between align-items-start">
                           <div>
                             <div className="d-flex align-items-center gap-2 mb-1">
                               <strong>{v.visitDate}</strong>
-                              <span className="text-muted small">{v.visitType} · {v.socialWorker}</span>
+                              <span className="text-muted small">
+                                {v.visitType} · {v.socialWorker}
+                              </span>
                             </div>
-                            {v.locationVisited && <p className="mb-1 small">{v.locationVisited}</p>}
-                            {v.observations && <p className="mb-1 small text-muted">{v.observations}</p>}
-                            {v.followUpNotes && <p className="mb-1 small text-muted"><strong>Follow-up:</strong> {v.followUpNotes}</p>}
+                            {v.locationVisited && (
+                              <p className="mb-1 small">{v.locationVisited}</p>
+                            )}
+                            {v.observations && (
+                              <p className="mb-1 small text-muted">
+                                {v.observations}
+                              </p>
+                            )}
+                            {v.followUpNotes && (
+                              <p className="mb-1 small text-muted">
+                                <strong>Follow-up:</strong> {v.followUpNotes}
+                              </p>
+                            )}
                             <div className="d-flex gap-2">
-                              <span className={`badge bg-${v.visitOutcome === 'Favorable' ? 'success' : v.visitOutcome === 'Unfavorable' ? 'danger' : 'secondary'}`}>{v.visitOutcome}</span>
-                              {v.safetyConcernsNoted && <span className="badge bg-danger">Safety Concerns</span>}
-                              {v.followUpNeeded && <span className="badge bg-warning text-dark">Follow-Up Needed</span>}
+                              <span
+                                className={`badge bg-${v.visitOutcome === 'Favorable' ? 'success' : v.visitOutcome === 'Unfavorable' ? 'danger' : 'secondary'}`}
+                              >
+                                {v.visitOutcome}
+                              </span>
+                              {v.safetyConcernsNoted && (
+                                <span className="badge bg-danger">
+                                  Safety Concerns
+                                </span>
+                              )}
+                              {v.followUpNeeded && (
+                                <span className="badge bg-warning text-dark">
+                                  Follow-Up Needed
+                                </span>
+                              )}
                             </div>
                           </div>
                           <button
                             className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                            onClick={() => { setDeleteError(null); setDeleteTarget({ type: 'visitation', id: v.visitationId }); }}
+                            onClick={() => {
+                              setDeleteError(null);
+                              setDeleteTarget({
+                                type: 'visitation',
+                                id: v.visitationId,
+                              });
+                            }}
                           >
                             Delete
                           </button>
@@ -773,31 +1359,81 @@ export default function ResidentDetailPage() {
             </div>
 
             {showAddVisitation && (
-              <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeAddVisitation}>
-                <div className="modal-dialog modal-lg" onClick={e => e.stopPropagation()}>
+              <div
+                className="modal d-block"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                onClick={closeAddVisitation}
+              >
+                <div
+                  className="modal-dialog modal-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <form onSubmit={handleAddVisitation}>
                     <div className="modal-content">
                       <div className="modal-header">
                         <h5 className="modal-title">Add Home Visitation</h5>
-                        <button type="button" className="btn-close" onClick={closeAddVisitation} disabled={formBusy} />
+                        <button
+                          type="button"
+                          className="btn-close"
+                          onClick={closeAddVisitation}
+                          disabled={formBusy}
+                        />
                       </div>
                       <div className="modal-body">
-                        {formError && <div className="alert alert-danger">{formError}</div>}
+                        {formError && (
+                          <div className="alert alert-danger">{formError}</div>
+                        )}
                         <div className="row g-3">
                           <div className="col-md-4">
-                            <label className="form-label">Visit Date <span className="text-danger">*</span></label>
-                            <input type="date" className="form-control" required value={visitationForm.visitDate}
-                              onChange={e => setVisitationForm(f => ({ ...f, visitDate: e.target.value }))} />
+                            <label className="form-label">
+                              Visit Date <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              required
+                              value={visitationForm.visitDate}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  visitDate: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Social Worker <span className="text-danger">*</span></label>
-                            <input type="text" className="form-control" required value={visitationForm.socialWorker}
-                              onChange={e => setVisitationForm(f => ({ ...f, socialWorker: e.target.value }))} />
+                            <label className="form-label">
+                              Social Worker{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              required
+                              value={visitationForm.socialWorker}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  socialWorker: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Visit Type <span className="text-danger">*</span></label>
-                            <select className="form-select" required value={visitationForm.visitType}
-                              onChange={e => setVisitationForm(f => ({ ...f, visitType: e.target.value }))}>
+                            <label className="form-label">
+                              Visit Type <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              required
+                              value={visitationForm.visitType}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  visitType: e.target.value,
+                                }))
+                              }
+                            >
                               <option>Initial Assessment</option>
                               <option>Routine Follow-Up</option>
                               <option>Reintegration Assessment</option>
@@ -806,29 +1442,82 @@ export default function ResidentDetailPage() {
                             </select>
                           </div>
                           <div className="col-md-6">
-                            <label className="form-label">Location Visited</label>
-                            <input type="text" className="form-control" value={visitationForm.locationVisited ?? ''}
-                              onChange={e => setVisitationForm(f => ({ ...f, locationVisited: e.target.value }))} />
+                            <label className="form-label">
+                              Location Visited
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={visitationForm.locationVisited ?? ''}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  locationVisited: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-6">
-                            <label className="form-label">Family Members Present</label>
-                            <input type="text" className="form-control" value={visitationForm.familyMembersPresent ?? ''}
-                              onChange={e => setVisitationForm(f => ({ ...f, familyMembersPresent: e.target.value }))} />
+                            <label className="form-label">
+                              Family Members Present
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={visitationForm.familyMembersPresent ?? ''}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  familyMembersPresent: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
                             <label className="form-label">Purpose</label>
-                            <input type="text" className="form-control" value={visitationForm.purpose ?? ''}
-                              onChange={e => setVisitationForm(f => ({ ...f, purpose: e.target.value }))} />
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={visitationForm.purpose ?? ''}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  purpose: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
                             <label className="form-label">Observations</label>
-                            <textarea className="form-control" rows={3} value={visitationForm.observations ?? ''}
-                              onChange={e => setVisitationForm(f => ({ ...f, observations: e.target.value }))} />
+                            <textarea
+                              className="form-control"
+                              rows={3}
+                              value={visitationForm.observations ?? ''}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  observations: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Family Cooperation Level</label>
-                            <select className="form-select" value={visitationForm.familyCooperationLevel ?? 'Moderate'}
-                              onChange={e => setVisitationForm(f => ({ ...f, familyCooperationLevel: e.target.value }))}>
+                            <label className="form-label">
+                              Family Cooperation Level
+                            </label>
+                            <select
+                              className="form-select"
+                              value={
+                                visitationForm.familyCooperationLevel ??
+                                'Moderate'
+                              }
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  familyCooperationLevel: e.target.value,
+                                }))
+                              }
+                            >
                               <option>High</option>
                               <option>Moderate</option>
                               <option>Low</option>
@@ -837,8 +1526,16 @@ export default function ResidentDetailPage() {
                           </div>
                           <div className="col-md-4">
                             <label className="form-label">Visit Outcome</label>
-                            <select className="form-select" value={visitationForm.visitOutcome ?? 'Neutral'}
-                              onChange={e => setVisitationForm(f => ({ ...f, visitOutcome: e.target.value }))}>
+                            <select
+                              className="form-select"
+                              value={visitationForm.visitOutcome ?? 'Neutral'}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  visitOutcome: e.target.value,
+                                }))
+                              }
+                            >
                               <option>Favorable</option>
                               <option>Neutral</option>
                               <option>Unfavorable</option>
@@ -846,28 +1543,82 @@ export default function ResidentDetailPage() {
                             </select>
                           </div>
                           <div className="col-12">
-                            <label className="form-label">Follow-Up Notes</label>
-                            <textarea className="form-control" rows={2} value={visitationForm.followUpNotes ?? ''}
-                              onChange={e => setVisitationForm(f => ({ ...f, followUpNotes: e.target.value }))} />
+                            <label className="form-label">
+                              Follow-Up Notes
+                            </label>
+                            <textarea
+                              className="form-control"
+                              rows={2}
+                              value={visitationForm.followUpNotes ?? ''}
+                              onChange={(e) =>
+                                setVisitationForm((f) => ({
+                                  ...f,
+                                  followUpNotes: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12 d-flex gap-4">
                             <div className="form-check">
-                              <input type="checkbox" className="form-check-input" id="safetyConcerns" checked={visitationForm.safetyConcernsNoted}
-                                onChange={e => setVisitationForm(f => ({ ...f, safetyConcernsNoted: e.target.checked }))} />
-                              <label className="form-check-label" htmlFor="safetyConcerns">Safety Concerns Noted</label>
+                              <input
+                                type="checkbox"
+                                className="form-check-input"
+                                id="safetyConcerns"
+                                checked={visitationForm.safetyConcernsNoted}
+                                onChange={(e) =>
+                                  setVisitationForm((f) => ({
+                                    ...f,
+                                    safetyConcernsNoted: e.target.checked,
+                                  }))
+                                }
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor="safetyConcerns"
+                              >
+                                Safety Concerns Noted
+                              </label>
                             </div>
                             <div className="form-check">
-                              <input type="checkbox" className="form-check-input" id="followUpNeeded" checked={visitationForm.followUpNeeded}
-                                onChange={e => setVisitationForm(f => ({ ...f, followUpNeeded: e.target.checked }))} />
-                              <label className="form-check-label" htmlFor="followUpNeeded">Follow-Up Needed</label>
+                              <input
+                                type="checkbox"
+                                className="form-check-input"
+                                id="followUpNeeded"
+                                checked={visitationForm.followUpNeeded}
+                                onChange={(e) =>
+                                  setVisitationForm((f) => ({
+                                    ...f,
+                                    followUpNeeded: e.target.checked,
+                                  }))
+                                }
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor="followUpNeeded"
+                              >
+                                Follow-Up Needed
+                              </label>
                             </div>
                           </div>
                         </div>
                       </div>
                       <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={closeAddVisitation} disabled={formBusy}>Cancel</button>
-                        <button type="submit" className="btn btn-primary" disabled={formBusy}>
-                          {formBusy ? <span className="spinner-border spinner-border-sm me-1" /> : null}
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={closeAddVisitation}
+                          disabled={formBusy}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={formBusy}
+                        >
+                          {formBusy ? (
+                            <span className="spinner-border spinner-border-sm me-1" />
+                          ) : null}
                           Save Visitation
                         </button>
                       </div>
@@ -915,29 +1666,62 @@ export default function ResidentDetailPage() {
             <div className="card">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <span>Case Conferences ({conferences.length})</span>
-                <button className="btn btn-sm btn-primary" onClick={() => { setFormError(null); setShowAddConference(true); }}>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    setFormError(null);
+                    setShowAddConference(true);
+                  }}
+                >
                   + Add Conference
                 </button>
               </div>
               <div className="card-body">
-                {conferences.length === 0 ? <p className="text-muted">No conferences yet.</p> : (
+                {conferences.length === 0 ? (
+                  <p className="text-muted">No conferences yet.</p>
+                ) : (
                   <div className="list-group list-group-flush">
-                    {conferences.map(c => (
-                      <div key={c.conferenceId} className="list-group-item px-0">
+                    {conferences.map((c) => (
+                      <div
+                        key={c.conferenceId}
+                        className="list-group-item px-0"
+                      >
                         <div className="d-flex justify-content-between align-items-start">
                           <div>
                             <div className="d-flex align-items-center gap-2 mb-1">
                               <strong>{c.conferenceDate}</strong>
-                              <span className="text-muted small">{c.facilitatedBy}</span>
+                              <span className="text-muted small">
+                                {c.facilitatedBy}
+                              </span>
                             </div>
-                            <p className="mb-1 small"><strong>Agenda:</strong> {c.agenda}</p>
-                            {c.decisions && <p className="mb-1 small"><strong>Decisions:</strong> {c.decisions}</p>}
-                            {c.nextSteps && <p className="mb-0 small"><strong>Next Steps:</strong> {c.nextSteps}</p>}
-                            {c.nextReviewDate && <p className="mb-0 small text-muted">Next review: {c.nextReviewDate}</p>}
+                            <p className="mb-1 small">
+                              <strong>Agenda:</strong> {c.agenda}
+                            </p>
+                            {c.decisions && (
+                              <p className="mb-1 small">
+                                <strong>Decisions:</strong> {c.decisions}
+                              </p>
+                            )}
+                            {c.nextSteps && (
+                              <p className="mb-0 small">
+                                <strong>Next Steps:</strong> {c.nextSteps}
+                              </p>
+                            )}
+                            {c.nextReviewDate && (
+                              <p className="mb-0 small text-muted">
+                                Next review: {c.nextReviewDate}
+                              </p>
+                            )}
                           </div>
                           <button
                             className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                            onClick={() => { setDeleteError(null); setDeleteTarget({ type: 'conference', id: c.conferenceId }); }}
+                            onClick={() => {
+                              setDeleteError(null);
+                              setDeleteTarget({
+                                type: 'conference',
+                                id: c.conferenceId,
+                              });
+                            }}
                           >
                             Delete
                           </button>
@@ -950,58 +1734,164 @@ export default function ResidentDetailPage() {
             </div>
 
             {showAddConference && (
-              <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeAddConference}>
-                <div className="modal-dialog modal-lg" onClick={e => e.stopPropagation()}>
+              <div
+                className="modal d-block"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                onClick={closeAddConference}
+              >
+                <div
+                  className="modal-dialog modal-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <form onSubmit={handleAddConference}>
                     <div className="modal-content">
                       <div className="modal-header">
                         <h5 className="modal-title">Add Case Conference</h5>
-                        <button type="button" className="btn-close" onClick={closeAddConference} disabled={formBusy} />
+                        <button
+                          type="button"
+                          className="btn-close"
+                          onClick={closeAddConference}
+                          disabled={formBusy}
+                        />
                       </div>
                       <div className="modal-body">
-                        {formError && <div className="alert alert-danger">{formError}</div>}
+                        {formError && (
+                          <div className="alert alert-danger">{formError}</div>
+                        )}
                         <div className="row g-3">
                           <div className="col-md-4">
-                            <label className="form-label">Conference Date <span className="text-danger">*</span></label>
-                            <input type="date" className="form-control" required value={conferenceForm.conferenceDate}
-                              onChange={e => setConferenceForm(f => ({ ...f, conferenceDate: e.target.value }))} />
+                            <label className="form-label">
+                              Conference Date{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              required
+                              value={conferenceForm.conferenceDate}
+                              onChange={(e) =>
+                                setConferenceForm((f) => ({
+                                  ...f,
+                                  conferenceDate: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Facilitated By <span className="text-danger">*</span></label>
-                            <input type="text" className="form-control" required value={conferenceForm.facilitatedBy}
-                              onChange={e => setConferenceForm(f => ({ ...f, facilitatedBy: e.target.value }))} />
+                            <label className="form-label">
+                              Facilitated By{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              required
+                              value={conferenceForm.facilitatedBy}
+                              onChange={(e) =>
+                                setConferenceForm((f) => ({
+                                  ...f,
+                                  facilitatedBy: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-md-4">
-                            <label className="form-label">Next Review Date</label>
-                            <input type="date" className="form-control" value={conferenceForm.nextReviewDate ?? ''}
-                              onChange={e => setConferenceForm(f => ({ ...f, nextReviewDate: e.target.value || null }))} />
+                            <label className="form-label">
+                              Next Review Date
+                            </label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              value={conferenceForm.nextReviewDate ?? ''}
+                              onChange={(e) =>
+                                setConferenceForm((f) => ({
+                                  ...f,
+                                  nextReviewDate: e.target.value || null,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
-                            <label className="form-label">Attendees <span className="text-danger">*</span></label>
-                            <input type="text" className="form-control" required value={conferenceForm.attendees}
-                              onChange={e => setConferenceForm(f => ({ ...f, attendees: e.target.value }))} />
+                            <label className="form-label">
+                              Attendees <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              required
+                              value={conferenceForm.attendees}
+                              onChange={(e) =>
+                                setConferenceForm((f) => ({
+                                  ...f,
+                                  attendees: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
-                            <label className="form-label">Agenda <span className="text-danger">*</span></label>
-                            <textarea className="form-control" rows={2} required value={conferenceForm.agenda}
-                              onChange={e => setConferenceForm(f => ({ ...f, agenda: e.target.value }))} />
+                            <label className="form-label">
+                              Agenda <span className="text-danger">*</span>
+                            </label>
+                            <textarea
+                              className="form-control"
+                              rows={2}
+                              required
+                              value={conferenceForm.agenda}
+                              onChange={(e) =>
+                                setConferenceForm((f) => ({
+                                  ...f,
+                                  agenda: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
                             <label className="form-label">Decisions</label>
-                            <textarea className="form-control" rows={2} value={conferenceForm.decisions ?? ''}
-                              onChange={e => setConferenceForm(f => ({ ...f, decisions: e.target.value }))} />
+                            <textarea
+                              className="form-control"
+                              rows={2}
+                              value={conferenceForm.decisions ?? ''}
+                              onChange={(e) =>
+                                setConferenceForm((f) => ({
+                                  ...f,
+                                  decisions: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                           <div className="col-12">
                             <label className="form-label">Next Steps</label>
-                            <textarea className="form-control" rows={2} value={conferenceForm.nextSteps ?? ''}
-                              onChange={e => setConferenceForm(f => ({ ...f, nextSteps: e.target.value }))} />
+                            <textarea
+                              className="form-control"
+                              rows={2}
+                              value={conferenceForm.nextSteps ?? ''}
+                              onChange={(e) =>
+                                setConferenceForm((f) => ({
+                                  ...f,
+                                  nextSteps: e.target.value,
+                                }))
+                              }
+                            />
                           </div>
                         </div>
                       </div>
                       <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={closeAddConference} disabled={formBusy}>Cancel</button>
-                        <button type="submit" className="btn btn-primary" disabled={formBusy}>
-                          {formBusy ? <span className="spinner-border spinner-border-sm me-1" /> : null}
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={closeAddConference}
+                          disabled={formBusy}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={formBusy}
+                        >
+                          {formBusy ? (
+                            <span className="spinner-border spinner-border-sm me-1" />
+                          ) : null}
                           Save Conference
                         </button>
                       </div>
@@ -1057,7 +1947,10 @@ export default function ResidentDetailPage() {
         busy={deleteBusy}
         error={deleteError ?? undefined}
         onConfirm={handleDelete}
-        onCancel={() => { setDeleteTarget(null); setDeleteError(null); }}
+        onCancel={() => {
+          setDeleteTarget(null);
+          setDeleteError(null);
+        }}
       />
     </div>
   );
