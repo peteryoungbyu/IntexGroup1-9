@@ -2,6 +2,7 @@ import type {
   Resident,
   ResidentDetail,
   ResidentListItem,
+  ResidentSafehouseOption,
   PagedResult,
   ProcessRecording,
   HomeVisitation,
@@ -23,7 +24,8 @@ export async function getResidents(
   pageSize = 20,
   search?: string,
   status?: string,
-  safehouseId?: number
+  safehouseId?: number,
+  caseCategory?: string
 ): Promise<PagedResult<ResidentListItem>> {
   const params = new URLSearchParams({
     page: String(page),
@@ -32,7 +34,13 @@ export async function getResidents(
   if (search) params.set('search', search);
   if (status) params.set('status', status);
   if (safehouseId) params.set('safehouseId', String(safehouseId));
+  if (caseCategory) params.set('caseCategory', caseCategory);
   const res = await apiFetch(`/api/residents?${params}`);
+  return res.json();
+}
+
+export async function getResidentSafehouseOptions(): Promise<ResidentSafehouseOption[]> {
+  const res = await apiFetch('/api/residents/filter-options');
   return res.json();
 }
 

@@ -28,8 +28,23 @@ public class ResidentController : ControllerBase
         [FromQuery][Range(1, 100)] int pageSize = 20,
         [FromQuery] string? search = null,
         [FromQuery] string? status = null,
-        [FromQuery] int? safehouseId = null)
-        => Ok(await _service.GetAllAsync(page, pageSize, search, status, safehouseId));
+        [FromQuery] int? safehouseId = null,
+        [FromQuery] string? caseCategory = null)
+        => Ok(await _service.GetAllAsync(page, pageSize, search, status, safehouseId, caseCategory));
+
+    [HttpGet("filter-options")]
+    public async Task<IActionResult> GetFilterOptions()
+    {
+        var safehouses = await _db.Safehouses
+            .AsNoTracking()
+            .Where(s => s.Status == "Active")
+            .OrderBy(s => s.Name)
+            .ThenBy(s => s.SafehouseId)
+            .Select(s => new ResidentSafehouseOption(s.SafehouseId, s.Name))
+            .ToListAsync();
+
+        return Ok(safehouses);
+    }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)

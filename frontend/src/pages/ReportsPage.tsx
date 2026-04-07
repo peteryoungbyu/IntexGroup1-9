@@ -65,16 +65,16 @@ export default function ReportsPage() {
       getReintegrationOutcomes(),
       getSafehouseComparison(),
     ])
-      .then(([a, t, r, c]) => {
-        setAnnual(a);
-        setTrends(t);
-        setReintegration(r);
-        setComparison(c);
+      .then(([annualReport, donationTrends, reintegrationOutcomes, safehouseComparison]) => {
+        setAnnual(annualReport);
+        setTrends(donationTrends);
+        setReintegration(reintegrationOutcomes);
+        setComparison(safehouseComparison);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [year]);
 
-  if (loading)
+  if (loading) {
     return (
       <div className="container py-5 text-center">
         <div
@@ -83,8 +83,8 @@ export default function ReportsPage() {
         />
       </div>
     );
+  }
 
-  // Shape donation trend data for chart
   const trendRows: any[] = (trends?.data as any[]) ?? [];
   const trendChartData = trendRows.map((r) => ({
     label: `${MONTH_NAMES[(r.month ?? 1) - 1]} ${r.year}`,
@@ -92,14 +92,12 @@ export default function ReportsPage() {
     count: Number(r.count ?? 0),
   }));
 
-  // Reintegration pie data
   const reintRows: any[] = (reintegration?.data as any[]) ?? [];
   const reintChartData = reintRows.map((r) => ({
     name: r.status ?? 'Unknown',
     value: Number(r.count ?? 0),
   }));
 
-  // Safehouse comparison – aggregate by safehouse name
   const compRows: any[] = (comparison?.data as any[]) ?? [];
   const safehouseMap: Record<string, { residents: number; incidents: number }> =
     {};
@@ -171,6 +169,19 @@ export default function ReportsPage() {
                         : [numericValue, 'Donations'];
                     }}
                   />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => {
+                      const numericValue = Number(value ?? 0);
+                      return name === 'total'
+                        ? [`PHP ${numericValue.toLocaleString()}`, 'Total (PHP)']
+                        : [numericValue.toLocaleString(), 'Donations'];
+                    }}
+                  />
                   <Legend />
                   <Line
                     yAxisId="left"
@@ -198,7 +209,6 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Reintegration + Safehouse — side by side */}
         <div className="row g-4 mb-4">
           <div className="col-md-5">
             <div className="card h-100">
@@ -285,13 +295,11 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Annual Accomplishment */}
         <div className="card mb-4">
           <div className="card-header fw-semibold">
             Annual Accomplishment Report — {year}
           </div>
           <div className="card-body">
-            {/* Donation by type bar chart if available */}
             {donationSummaryRows.length > 0 && (
               <div className="mb-4">
                 <h6 className="fw-semibold mb-2">
@@ -330,7 +338,6 @@ export default function ReportsPage() {
               </div>
             )}
 
-            {/* Services section if available */}
             {servicesRows.length > 0 && (
               <div className="mb-4">
                 <h6 className="fw-semibold mb-2">{servicesSection?.title}</h6>
