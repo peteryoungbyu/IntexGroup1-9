@@ -63,59 +63,73 @@ export default function ManageMFAPage() {
     }
   };
 
-  if (loading) return <div className="container py-5 text-center"><div className="spinner-border" /></div>;
+  if (loading) return <div className="container py-5 text-center"><div className="spinner-border" style={{ color: 'var(--brand-primary)' }} /></div>;
 
   return (
-    <div className="container py-5" style={{ maxWidth: 600 }}>
-      <h1 className="mb-4">Manage Two-Factor Authentication</h1>
+    <div>
+      <div className="page-header">
+        <div className="container">
+          <p className="section-label">Account Settings</p>
+          <h1>Two-Factor Authentication</h1>
+          <p>Secure your account with an authenticator app</p>
+        </div>
+      </div>
 
-      {message && <div className="alert alert-success">{message}</div>}
-      {error && <div className="alert alert-danger">{error}</div>}
+      <div style={{ background: 'var(--brand-light)', minHeight: '60vh', padding: '2.5rem 0' }}>
+        <div className="container" style={{ maxWidth: 600 }}>
+          {message && <div className="alert alert-success mb-3">{message}</div>}
+          {error && <div className="alert alert-danger mb-3">{error}</div>}
 
-      {status?.isTwoFactorEnabled ? (
-        <div>
-          <div className="alert alert-success">Two-factor authentication is <strong>enabled</strong>.</div>
-          <p>Recovery codes remaining: <strong>{status.recoveryCodesLeft}</strong></p>
-          {status.recoveryCodes && (
-            <div className="mb-3">
-              <h5>Recovery Codes</h5>
-              <p className="text-muted small">Store these somewhere safe. Each code can only be used once.</p>
-              <div className="bg-light p-3 rounded font-monospace">
-                {status.recoveryCodes.map(c => <div key={c}>{c}</div>)}
-              </div>
+          <div className="card">
+            <div className="card-body p-4">
+              {status?.isTwoFactorEnabled ? (
+                <div>
+                  <div className="alert alert-success">Two-factor authentication is <strong>enabled</strong>.</div>
+                  <p>Recovery codes remaining: <strong>{status.recoveryCodesLeft}</strong></p>
+                  {status.recoveryCodes && (
+                    <div className="mb-4">
+                      <h6 className="fw-bold" style={{ color: 'var(--brand-dark)' }}>Recovery Codes</h6>
+                      <p className="text-muted small">Store these somewhere safe. Each code can only be used once.</p>
+                      <div className="p-3 rounded font-monospace small" style={{ background: 'var(--brand-light)', border: '1px solid rgba(26,82,118,0.15)' }}>
+                        {status.recoveryCodes.map(c => <div key={c}>{c}</div>)}
+                      </div>
+                    </div>
+                  )}
+                  <div className="d-flex gap-2">
+                    <button className="btn btn-outline-secondary" onClick={handleResetCodes}>Reset Recovery Codes</button>
+                    <button className="btn btn-outline-danger" onClick={handleDisable}>Disable 2FA</button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="alert alert-warning">Two-factor authentication is <strong>not enabled</strong>.</div>
+                  <p className="text-muted">Scan this QR code with an authenticator app (Google Authenticator, Authy, etc.):</p>
+                  {qrDataUrl && <img src={qrDataUrl} alt="QR code for MFA setup" className="mb-3 d-block rounded" style={{ border: '2px solid var(--brand-light)' }} />}
+                  {status?.sharedKey && (
+                    <p className="text-muted small mb-3">Manual key: <code>{status.sharedKey}</code></p>
+                  )}
+                  <form onSubmit={handleEnable}>
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">Verification Code</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={code}
+                        onChange={e => setCode(e.target.value)}
+                        placeholder="Enter 6-digit code"
+                        inputMode="numeric"
+                        maxLength={6}
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="btn btn-primary fw-semibold">Enable 2FA</button>
+                  </form>
+                </div>
+              )}
             </div>
-          )}
-          <div className="d-flex gap-2">
-            <button className="btn btn-outline-secondary" onClick={handleResetCodes}>Reset Recovery Codes</button>
-            <button className="btn btn-outline-danger" onClick={handleDisable}>Disable 2FA</button>
           </div>
         </div>
-      ) : (
-        <div>
-          <div className="alert alert-warning">Two-factor authentication is <strong>not enabled</strong>.</div>
-          <p>Scan this QR code with an authenticator app (Google Authenticator, Authy, etc.):</p>
-          {qrDataUrl && <img src={qrDataUrl} alt="QR code for MFA setup" className="mb-3 d-block border p-2 rounded" />}
-          {status?.sharedKey && (
-            <p className="text-muted small">Manual key: <code>{status.sharedKey}</code></p>
-          )}
-          <form onSubmit={handleEnable}>
-            <div className="mb-3">
-              <label className="form-label">Verification Code</label>
-              <input
-                type="text"
-                className="form-control"
-                value={code}
-                onChange={e => setCode(e.target.value)}
-                placeholder="Enter 6-digit code"
-                inputMode="numeric"
-                maxLength={6}
-                required
-              />
-            </div>
-            <button type="submit" className="btn btn-primary">Enable 2FA</button>
-          </form>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

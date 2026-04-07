@@ -32,59 +32,65 @@ export default function SocialMediaPage() {
   };
 
   return (
-    <div className="container-fluid py-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h1>Social Media Management</h1>
-      </div>
-
-      <div className="row g-2 mb-3">
-        <div className="col-sm-3">
-          <select className="form-select" value={platform} onChange={e => setPlatform(e.target.value)}>
-            <option value="">All Platforms</option>
-            {['Facebook', 'Instagram', 'Twitter', 'TikTok', 'LinkedIn', 'YouTube', 'WhatsApp'].map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+    <div>
+      <div className="page-header">
+        <div className="container-fluid px-4">
+          <p className="section-label">Admin</p>
+          <h1>Social Media Management</h1>
+          <p>Track and manage social media performance across platforms</p>
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-5"><div className="spinner-border" /></div>
-      ) : (
-        <>
-          <div className="card shadow-sm">
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr><th>Date</th><th>Platform</th><th>Type</th><th>Caption</th><th>Reach</th><th>Engagement</th><th>Donations</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {result?.items.map((p: any) => (
-                    <tr key={p.postId}>
-                      <td>{new Date(p.createdAt).toLocaleDateString()}</td>
-                      <td>{p.platform}</td>
-                      <td><span className="badge bg-secondary">{p.postType}</span></td>
-                      <td className="text-truncate" style={{ maxWidth: 200 }}>{p.caption}</td>
-                      <td>{p.reach?.toLocaleString()}</td>
-                      <td>{(p.engagementRate * 100).toFixed(1)}%</td>
-                      <td>{p.donationReferrals}</td>
-                      <td>
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(p.postId)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))}
-                  {result?.items.length === 0 && (
-                    <tr><td colSpan={8} className="text-center text-muted py-4">No posts found.</td></tr>
-                  )}
-                </tbody>
-              </table>
+      <div className="container-fluid py-4">
+        <div className="row g-2 mb-4">
+          <div className="col-sm-3">
+            <select className="form-select" value={platform} onChange={e => setPlatform(e.target.value)}>
+              <option value="">All Platforms</option>
+              {['Facebook', 'Instagram', 'Twitter', 'TikTok', 'LinkedIn', 'YouTube', 'WhatsApp'].map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-5"><div className="spinner-border" style={{ color: 'var(--brand-primary)' }} /></div>
+        ) : (
+          <>
+            <div className="card">
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="table-light">
+                    <tr><th>Date</th><th>Platform</th><th>Type</th><th>Caption</th><th>Reach</th><th>Engagement</th><th>Donations</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    {result?.items.map((p: any) => (
+                      <tr key={p.postId}>
+                        <td>{new Date(p.createdAt).toLocaleDateString()}</td>
+                        <td>{p.platform}</td>
+                        <td><span className="badge bg-primary">{p.postType}</span></td>
+                        <td className="text-truncate" style={{ maxWidth: 200 }}>{p.caption}</td>
+                        <td>{p.reach?.toLocaleString()}</td>
+                        <td>{(p.engagementRate * 100).toFixed(1)}%</td>
+                        <td>{p.donationReferrals}</td>
+                        <td>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(p.postId)}>Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                    {result?.items.length === 0 && (
+                      <tr><td colSpan={8} className="text-center text-muted py-4">No posts found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <Pagination page={page} totalCount={result?.total ?? 0} pageSize={20} onPageChange={setPage} />
-          </div>
-        </>
-      )}
+            <div className="mt-3">
+              <Pagination page={page} totalCount={result?.total ?? 0} pageSize={20} onPageChange={setPage} />
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,12 @@
-import type { SupporterDetail, SupporterListItem, PagedResult } from '../types/SupporterDetail';
+import type {
+  SupporterDetail,
+  SupporterListItem,
+  PagedResult,
+} from '../types/SupporterDetail';
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+const BASE =
+  import.meta.env.VITE_API_BASE_URL ??
+  'https://newdawnapp-bsb6bbg4akbjhgg2.francecentral-01.azurewebsites.net';
 
 function extractErrorMessage(status: number): string {
   switch (status) {
@@ -29,7 +35,10 @@ export async function getSupporters(
   search?: string,
   status?: string
 ): Promise<PagedResult<SupporterListItem>> {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
   if (search) params.set('search', search);
   if (status) params.set('status', status);
   const res = await apiFetch(`/api/supporters?${params}`);

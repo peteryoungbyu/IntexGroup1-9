@@ -1,7 +1,14 @@
 import type { AuthSession } from '../types/AuthSession';
 import type { TwoFactorStatus } from '../types/TwoFactorStatus';
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+const BASE =
+  import.meta.env.VITE_API_BASE_URL ??
+  'https://newdawnapp-bsb6bbg4akbjhgg2.francecentral-01.azurewebsites.net';
+
+if (import.meta.env.DEV) {
+  // Helps verify which API host the frontend actually targets in development.
+  console.info('[authAPI] BASE URL:', BASE || '(same-origin)');
+}
 
 function extractError(body: unknown): string {
   if (typeof body !== 'object' || body === null) return 'An error occurred';
@@ -39,7 +46,12 @@ export async function loginUser(
   const param = rememberMe ? '?useCookies=true' : '?useSessionCookies=true';
   const res = await apiFetch(`/api/auth/login${param}`, {
     method: 'POST',
-    body: JSON.stringify({ email, password, twoFactorCode, twoFactorRecoveryCode }),
+    body: JSON.stringify({
+      email,
+      password,
+      twoFactorCode,
+      twoFactorRecoveryCode,
+    }),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -47,7 +59,10 @@ export async function loginUser(
   }
 }
 
-export async function registerUser(email: string, password: string): Promise<void> {
+export async function registerUser(
+  email: string,
+  password: string
+): Promise<void> {
   const res = await apiFetch('/api/auth/register', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
@@ -62,12 +77,17 @@ export async function logoutUser(): Promise<void> {
   await apiFetch('/api/auth/logout', { method: 'POST' });
 }
 
-export async function getExternalProviders(): Promise<{ name: string; displayName: string }[]> {
+export async function getExternalProviders(): Promise<
+  { name: string; displayName: string }[]
+> {
   const res = await apiFetch('/api/auth/providers');
   return res.ok ? res.json() : [];
 }
 
-export function buildExternalLoginUrl(provider: string, returnPath: string): string {
+export function buildExternalLoginUrl(
+  provider: string,
+  returnPath: string
+): string {
   return `${BASE}/api/auth/external-login?provider=${encodeURIComponent(provider)}&returnPath=${encodeURIComponent(returnPath)}`;
 }
 
@@ -82,7 +102,11 @@ export async function getTwoFactorStatus(): Promise<TwoFactorStatus> {
 export async function enableTwoFactor(code: string): Promise<TwoFactorStatus> {
   const res = await apiFetch('/api/auth/manage/2fa', {
     method: 'POST',
-    body: JSON.stringify({ enable: true, twoFactorCode: code, resetRecoveryCodes: true }),
+    body: JSON.stringify({
+      enable: true,
+      twoFactorCode: code,
+      resetRecoveryCodes: true,
+    }),
   });
   return res.json();
 }
