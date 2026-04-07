@@ -1,9 +1,8 @@
 import type { ReportSection } from '../types/ReportSection';
 import type { ImpactSnapshot } from '../types/DashboardMetric';
+import { API_BASE_URL } from './apiBase';
 
-const BASE =
-  import.meta.env.VITE_API_BASE_URL ??
-  'https://newdawnapp-bsb6bbg4akbjhgg2.francecentral-01.azurewebsites.net';
+const BASE = API_BASE_URL;
 
 async function apiFetch(path: string): Promise<Response> {
   return fetch(`${BASE}${path}`, { credentials: 'include' });
