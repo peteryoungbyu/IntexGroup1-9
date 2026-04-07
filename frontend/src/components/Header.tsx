@@ -57,6 +57,7 @@ export default function Header() {
               <NavLink
                 className="nav-link px-3 py-2 rounded-2"
                 to="/"
+                end
                 style={({ isActive }) => ({
                   color: isActive
                     ? 'var(--brand-accent)'
@@ -72,6 +73,7 @@ export default function Header() {
               <NavLink
                 className="nav-link px-3 py-2 rounded-2"
                 to="/impact"
+                end
                 style={({ isActive }) => ({
                   color: isActive
                     ? 'var(--brand-accent)'
@@ -87,7 +89,7 @@ export default function Header() {
             {isAdmin && (
               <>
                 {[
-                  { to: '/admin', label: 'Dashboard' },
+                  { to: '/admin', label: 'Dashboard', end: true },
                   { to: '/admin/donors', label: 'Donors' },
                   { to: '/admin/residents', label: 'Residents' },
                   { to: '/admin/reports', label: 'Reports' },
@@ -98,6 +100,7 @@ export default function Header() {
                     <NavLink
                       className="nav-link px-3 py-2 rounded-2"
                       to={link.to}
+                      end={link.end}
                       style={({ isActive }) => ({
                         color: isActive
                           ? 'var(--brand-accent)'
