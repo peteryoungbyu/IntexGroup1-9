@@ -113,8 +113,6 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
 
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -136,12 +134,6 @@ using (var scope = app.Services.CreateScope())
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
-}
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
 }
 
 app.UseSecurityHeaders();
