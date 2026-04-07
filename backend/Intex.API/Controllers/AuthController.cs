@@ -12,11 +12,13 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly string _frontendUrl;
 
-    public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _frontendUrl = configuration["FrontendUrl"] ?? "http://localhost:3000";
     }
 
     [HttpGet("me")]
@@ -67,35 +69,35 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> ExternalCallback([FromQuery] string? returnPath)
     {
         var info = await _signInManager.GetExternalLoginInfoAsync();
-        if (info is null) return Redirect("/login?error=external_failed");
+        if (info is null) return Redirect($"{_frontendUrl}/login?error=external_failed");
 
         var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: false);
 
         if (result.Succeeded)
-            return Redirect(SanitizeReturnPath(returnPath));
+            return Redirect(SanitizeReturnPath(returnPath, _frontendUrl));
 
         // New user — create account
         var email = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-        if (email is null) return Redirect("/login?error=no_email");
+        if (email is null) return Redirect($"{_frontendUrl}/login?error=no_email");
 
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
             user = new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true };
             var createResult = await _userManager.CreateAsync(user);
-            if (!createResult.Succeeded) return Redirect("/login?error=create_failed");
+            if (!createResult.Succeeded) return Redirect($"{_frontendUrl}/login?error=create_failed");
             await _userManager.AddToRoleAsync(user, AuthRoles.Donor);
         }
 
         await _userManager.AddLoginAsync(user, info);
         await _signInManager.SignInAsync(user, isPersistent: true);
-        return Redirect(SanitizeReturnPath(returnPath));
+        return Redirect(SanitizeReturnPath(returnPath, _frontendUrl));
     }
 
-    private static string SanitizeReturnPath(string? path)
+    private static string SanitizeReturnPath(string? path, string frontendUrl)
     {
         if (string.IsNullOrWhiteSpace(path) || !path.StartsWith('/'))
-            return "/";
-        return path;
+            return frontendUrl;
+        return $"{frontendUrl}{path}";
     }
 }
