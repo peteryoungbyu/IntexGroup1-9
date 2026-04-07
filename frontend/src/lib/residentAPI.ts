@@ -1,4 +1,5 @@
 import type {
+  Resident,
   ResidentDetail,
   ResidentListItem,
   PagedResult,
@@ -37,6 +38,22 @@ export async function getResidents(
 
 export async function getResidentById(id: number): Promise<ResidentDetail> {
   const res = await apiFetch(`/api/residents/${id}`);
+  return res.json();
+}
+
+export async function createResident(data: Omit<Resident, 'residentId' | 'createdAt'>): Promise<Resident> {
+  const res = await apiFetch('/api/residents', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateResident(id: number, data: Omit<Resident, 'residentId' | 'createdAt'>): Promise<Resident> {
+  const res = await apiFetch(`/api/residents/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
   return res.json();
 }
 

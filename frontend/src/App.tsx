@@ -21,6 +21,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import CaseloadPage from './pages/CaseloadPage';
 import ResidentDetailPage from './pages/ResidentDetailPage';
 import DonorsPage from './pages/DonorsPage';
+import DonorDetailPage from './pages/DonorDetailPage';
 import DonorSelfPage from './pages/DonorSelfPage';
 import ReportsPage from './pages/ReportsPage';
 import SocialMediaPage from './pages/SocialMediaPage';
@@ -85,6 +86,14 @@ export default function App() {
                     element={
                       <ProtectedRoute roles={['Admin']}>
                         <DonorsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/donors/:id"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <DonorDetailPage />
                       </ProtectedRoute>
                     }
                   />

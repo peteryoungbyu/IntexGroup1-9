@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react';
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
 import type { ReportSection } from '../types/ReportSection';
 import {
   getAnnualReport,
@@ -7,13 +11,19 @@ import {
   getSafehouseComparison,
 } from '../lib/reportAPI';
 
+const BRAND_COLORS = [
+  '#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed',
+  '#0891b2', '#be185d', '#65a30d',
+];
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export default function ReportsPage() {
   const year = new Date().getFullYear();
   const [annual, setAnnual] = useState<ReportSection[] | null>(null);
   const [trends, setTrends] = useState<ReportSection | null>(null);
-  const [reintegration, setReintegration] = useState<ReportSection | null>(
-    null
-  );
+  const [reintegration, setReintegration] = useState<ReportSection | null>(null);
   const [comparison, setComparison] = useState<ReportSection | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -36,12 +46,40 @@ export default function ReportsPage() {
   if (loading)
     return (
       <div className="container py-5 text-center">
-        <div
-          className="spinner-border"
-          style={{ color: 'var(--brand-primary)' }}
-        />
+        <div className="spinner-border" style={{ color: 'var(--brand-primary)' }} />
       </div>
     );
+
+  // Shape donation trend data for chart
+  const trendRows: any[] = (trends?.data as any[]) ?? [];
+  const trendChartData = trendRows.map(r => ({
+    label: `${MONTH_NAMES[(r.month ?? 1) - 1]} ${r.year}`,
+    total: Number(r.total ?? 0),
+    count: Number(r.count ?? 0),
+  }));
+
+  // Reintegration pie data
+  const reintRows: any[] = (reintegration?.data as any[]) ?? [];
+  const reintChartData = reintRows.map(r => ({ name: r.status ?? 'Unknown', value: Number(r.count ?? 0) }));
+
+  // Safehouse comparison – aggregate by safehouse name
+  const compRows: any[] = (comparison?.data as any[]) ?? [];
+  const safehouseMap: Record<string, { residents: number; incidents: number }> = {};
+  for (const r of compRows) {
+    const key = r.name ?? `Safehouse ${r.safehouseId}`;
+    if (!safehouseMap[key]) safehouseMap[key] = { residents: 0, incidents: 0 };
+    safehouseMap[key].residents += Number(r.activeResidents ?? 0);
+    safehouseMap[key].incidents += Number(r.incidentCount ?? 0);
+  }
+  const compChartData = Object.entries(safehouseMap).map(([name, v]) => ({ name, ...v }));
+
+  // Annual report — find "Donation Summary" section for a bar chart
+  const donationSummarySection = annual?.find(s => s.title.toLowerCase().includes('donation'));
+  const donationSummaryRows: any[] = (donationSummarySection?.data as any[]) ?? [];
+
+  // Annual services section (caring/healing/teaching counts)
+  const servicesSection = annual?.find(s => s.title.toLowerCase().includes('service'));
+  const servicesRows: any[] = (servicesSection?.data as any[]) ?? [];
 
   return (
     <div>
@@ -54,120 +92,171 @@ export default function ReportsPage() {
       </div>
 
       <div className="container-fluid py-4">
+
+        {/* Donation Trends — Line Chart */}
+        <div className="card mb-4">
+          <div className="card-header fw-semibold">{trends?.title ?? 'Donation Trends'}</div>
+          <div className="card-body">
+            <p className="text-muted small mb-3">{trends?.description}</p>
+            {trendChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={trendChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 12 }} tickFormatter={v => `₱${Number(v).toLocaleString()}`} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+                  <Tooltip
+                    formatter={(value: number, name: string) =>
+                      name === 'total' ? [`₱${value.toLocaleString()}`, 'Total (PHP)'] : [value, 'Donations']
+                    }
+                  />
+                  <Legend />
+                  <Line yAxisId="left" type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={2} dot={false} name="Total (PHP)" />
+                  <Line yAxisId="right" type="monotone" dataKey="count" stroke="#16a34a" strokeWidth={2} dot={false} name="# Donations" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-muted">No donation trend data available.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Reintegration + Safehouse — side by side */}
+        <div className="row g-4 mb-4">
+          <div className="col-md-5">
+            <div className="card h-100">
+              <div className="card-header fw-semibold">{reintegration?.title ?? 'Reintegration Outcomes'}</div>
+              <div className="card-body">
+                <p className="text-muted small mb-3">{reintegration?.description}</p>
+                {reintChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={reintChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={3}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                        labelLine={false}
+                      >
+                        {reintChartData.map((_, i) => (
+                          <Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-muted">No reintegration data available.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-7">
+            <div className="card h-100">
+              <div className="card-header fw-semibold">{comparison?.title ?? 'Safehouse Comparison'}</div>
+              <div className="card-body">
+                <p className="text-muted small mb-3">{comparison?.description}</p>
+                {compChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={compChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="residents" fill="#2563eb" name="Residents" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="incidents" fill="#dc2626" name="Incidents" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-muted">No safehouse comparison data available.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Annual Accomplishment */}
         <div className="card mb-4">
-          <div className="card-header">
-            Annual Accomplishment Report — {year}
-          </div>
+          <div className="card-header fw-semibold">Annual Accomplishment Report — {year}</div>
           <div className="card-body">
-            {annual?.map((s) => (
-              <div key={s.title} className="mb-3">
-                <h6 className="fw-bold" style={{ color: 'var(--brand-dark)' }}>
-                  {s.title}
-                </h6>
-                <p className="text-muted small mb-1">{s.description}</p>
-                <pre
-                  className="rounded small p-2"
-                  style={{
-                    background: 'var(--brand-light)',
-                    fontSize: '0.8rem',
-                  }}
-                >
-                  {JSON.stringify(s.data, null, 2)}
-                </pre>
+            {/* Donation by type bar chart if available */}
+            {donationSummaryRows.length > 0 && (
+              <div className="mb-4">
+                <h6 className="fw-semibold mb-2">{donationSummarySection?.title}</h6>
+                <p className="text-muted small mb-2">{donationSummarySection?.description}</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={donationSummaryRows} layout="vertical" margin={{ left: 20, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={v => `₱${Number(v).toLocaleString()}`} />
+                    <YAxis type="category" dataKey="donationType" tick={{ fontSize: 12 }} width={120} />
+                    <Tooltip formatter={(v: number) => [`₱${v.toLocaleString()}`, 'Total']} />
+                    <Bar dataKey="total" fill="#2563eb" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Services section if available */}
+            {servicesRows.length > 0 && (
+              <div className="mb-4">
+                <h6 className="fw-semibold mb-2">{servicesSection?.title}</h6>
+                <p className="text-muted small mb-2">{servicesSection?.description}</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={servicesRows} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="serviceType" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Remaining sections as data tables */}
+            {annual?.filter(s =>
+              !s.title.toLowerCase().includes('donation') &&
+              !s.title.toLowerCase().includes('service')
+            ).map(s => (
+              <div key={s.title} className="mb-4">
+                <h6 className="fw-semibold" style={{ color: 'var(--brand-dark)' }}>{s.title}</h6>
+                <p className="text-muted small mb-2">{s.description}</p>
+                {Array.isArray(s.data) && s.data.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="table table-sm table-bordered mb-0">
+                      <thead className="table-light">
+                        <tr>
+                          {Object.keys((s.data as any[])[0]).map(k => (
+                            <th key={k} className="text-capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(s.data as any[]).map((row, i) => (
+                          <tr key={i}>
+                            {Object.values(row).map((v, j) => (
+                              <td key={j}>{v == null ? '—' : String(v)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-muted small">No data available.</p>
+                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Donation Trends */}
-        <div className="card mb-4">
-          <div className="card-header">{trends?.title}</div>
-          <div className="card-body">
-            <p className="text-muted small">{trends?.description}</p>
-            <div className="table-responsive">
-              <table className="table table-sm">
-                <thead className="table-light">
-                  <tr>
-                    <th>Year</th>
-                    <th>Month</th>
-                    <th>Count</th>
-                    <th>Total (PHP)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {((trends?.data as any[]) ?? []).map((row: any) => (
-                    <tr key={`${row.year}-${row.month}`}>
-                      <td>{row.year}</td>
-                      <td>{row.month}</td>
-                      <td>{row.count}</td>
-                      <td>₱{Number(row.total).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Reintegration + Safehouse Comparison */}
-        <div className="row g-4">
-          <div className="col-md-6">
-            <div className="card h-100">
-              <div className="card-header">{reintegration?.title}</div>
-              <div className="card-body">
-                <p className="text-muted small">{reintegration?.description}</p>
-                {((reintegration?.data as any[]) ?? []).map((row: any) => (
-                  <div
-                    key={row.status}
-                    className="d-flex justify-content-between py-2"
-                    style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
-                  >
-                    <span>{row.status}</span>
-                    <span
-                      className="fw-bold"
-                      style={{ color: 'var(--brand-primary)' }}
-                    >
-                      {row.count}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-6">
-            <div className="card h-100">
-              <div className="card-header">{comparison?.title}</div>
-              <div className="card-body p-0">
-                <div className="table-responsive">
-                  <table className="table table-sm mb-0">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Safehouse</th>
-                        <th>Month</th>
-                        <th>Residents</th>
-                        <th>Incidents</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {((comparison?.data as any[]) ?? [])
-                        .slice(0, 10)
-                        .map((row: any, i: number) => (
-                          <tr key={i}>
-                            <td>{row.name}</td>
-                            <td>{row.monthStart}</td>
-                            <td>{row.activeResidents}</td>
-                            <td>{row.incidentCount}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

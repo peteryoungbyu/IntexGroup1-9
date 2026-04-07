@@ -66,7 +66,7 @@ export default function AdminDashboardPage() {
 
         {/* Safehouse Breakdown */}
         <div className="row g-4">
-          <div className="col-lg-6">
+          <div className="col-lg-4">
             <div className="card">
               <div className="card-header">Safehouse Status</div>
               <div className="card-body p-0">
@@ -109,7 +109,42 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="col-lg-6">
+          <div className="col-lg-4">
+            <div className="card">
+              <div className="card-header">Upcoming Case Conferences</div>
+              <div className="card-body p-0">
+                <table className="table table-sm table-hover mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Date</th>
+                      <th>Resident ID</th>
+                      <th>Facilitated By</th>
+                      <th>Agenda</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(data?.upcomingConferences ?? []).map((c: any) => (
+                      <tr key={c.conferenceId}>
+                        <td>{c.conferenceDate}</td>
+                        <td>{c.residentId}</td>
+                        <td>{c.facilitatedBy}</td>
+                        <td className="text-truncate" style={{ maxWidth: 180 }}>{c.agenda}</td>
+                      </tr>
+                    ))}
+                    {(data?.upcomingConferences ?? []).length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="text-center text-muted py-3">
+                          No upcoming conferences
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-4">
             <div className="card shadow-sm">
               <div className="card-header">Recent Monthly Metrics</div>
               <div className="card-body p-0">

@@ -94,4 +94,22 @@ public class SupporterService : ISupporterService
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<Donation> AddDonationAsync(int supporterId, Donation donation)
+    {
+        donation.SupporterId = supporterId;
+        _db.Donations.Add(donation);
+        await _db.SaveChangesAsync();
+        return donation;
+    }
+
+    public async Task<bool> DeleteDonationAsync(int supporterId, int donationId)
+    {
+        var donation = await _db.Donations
+            .FirstOrDefaultAsync(d => d.DonationId == donationId && d.SupporterId == supporterId);
+        if (donation is null) return false;
+        _db.Donations.Remove(donation);
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }
