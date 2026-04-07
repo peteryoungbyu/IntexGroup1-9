@@ -6,6 +6,12 @@ export interface ResidentListItem {
   caseCategory: string;
   currentRiskLevel: string | null;
   safehouseId: number;
+  safehouseName: string | null;
+}
+
+export interface ResidentSafehouseOption {
+  safehouseId: number;
+  name: string;
 }
 
 export interface Resident {

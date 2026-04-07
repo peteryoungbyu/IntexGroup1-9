@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { Resident, ResidentListItem, PagedResult } from '../types/ResidentDetail';
-import { getResidents, deleteResident, createResident } from '../lib/residentAPI';
+import type {
+  Resident,
+  ResidentListItem,
+  ResidentSafehouseOption,
+  PagedResult,
+} from '../types/ResidentDetail';
+import {
+  getResidents,
+  deleteResident,
+  createResident,
+  getResidentSafehouseOptions,
+} from '../lib/residentAPI';
+import { RESIDENT_CASE_CATEGORIES } from '../lib/residentOptions';
 import Pagination from '../components/Pagination';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
@@ -16,6 +27,20 @@ interface PendingDelete {
   id: number;
   label: string;
 }
+
+interface ResidentFilters {
+  search: string;
+  status: string;
+  safehouseId: string;
+  caseCategory: string;
+}
+
+const EMPTY_FILTERS: ResidentFilters = {
+  search: '',
+  status: '',
+  safehouseId: '',
+  caseCategory: '',
+};
 
 const EMPTY_RESIDENT: Omit<Resident, 'residentId' | 'createdAt'> = {
   caseControlNo: '',
@@ -71,8 +96,11 @@ export default function CaseloadPage() {
   const navigate = useNavigate();
   const [result, setResult] = useState<PagedResult<ResidentListItem> | null>(null);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [filters, setFilters] = useState<ResidentFilters>({ ...EMPTY_FILTERS });
+  const [draftFilters, setDraftFilters] = useState<ResidentFilters>({ ...EMPTY_FILTERS });
+  const [safehouseOptions, setSafehouseOptions] = useState<ResidentSafehouseOption[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
 
   const [pending, setPending] = useState<PendingDelete | null>(null);
@@ -84,21 +112,67 @@ export default function CaseloadPage() {
   const [addBusy, setAddBusy] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  const load = () => {
+  const load = (
+    nextPage = page,
+    nextFilters = filters
+  ) => {
     setLoading(true);
-    getResidents(page, 20, search || undefined, status || undefined)
+    const safehouseId = nextFilters.safehouseId
+      ? Number(nextFilters.safehouseId)
+      : undefined;
+
+    getResidents(
+      nextPage,
+      20,
+      nextFilters.search || undefined,
+      nextFilters.status || undefined,
+      safehouseId,
+      nextFilters.caseCategory || undefined
+    )
       .then(setResult)
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
-  }, [page, status]);
+  }, [page, filters]);
+
+  useEffect(() => {
+    getResidentSafehouseOptions()
+      .then(setSafehouseOptions)
+      .catch(() => setSafehouseOptions([]));
+  }, []);
 
   const handleSearch = (e: { preventDefault(): void }) => {
     e.preventDefault();
     setPage(1);
-    load();
+    setFilters((current) => ({
+      ...current,
+      search: draftFilters.search,
+    }));
+  };
+
+  const handleResetFilters = () => {
+    setDraftFilters({ ...EMPTY_FILTERS });
+    setFilters({ ...EMPTY_FILTERS });
+    setPage(1);
+  };
+
+  const handleFilterChange = <
+    K extends Exclude<keyof ResidentFilters, 'search'>
+  >(
+    field: K,
+    value: ResidentFilters[K]
+  ) => {
+    setPage(1);
+    setDraftFilters((current) => ({
+      ...current,
+      [field]: value,
+    }));
+    setFilters((current) => ({
+      ...current,
+      [field]: value,
+    }));
   };
 
   const handleDeleteClick = (id: number, label: string) => {
@@ -252,11 +326,11 @@ export default function CaseloadPage() {
                       <label className="form-label">Case Category <span className="text-danger">*</span></label>
                       <select className="form-select" required value={addForm.caseCategory}
                         onChange={e => set('caseCategory', e.target.value)}>
-                        <option>Child in Need of Special Protection</option>
-                        <option>Child in Conflict with the Law</option>
-                        <option>Child at Risk</option>
-                        <option>Abandoned</option>
-                        <option>Neglected</option>
+                        {RESIDENT_CASE_CATEGORIES.map(category => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
@@ -451,21 +525,28 @@ export default function CaseloadPage() {
       </div>
 
       <div className="container-fluid py-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <form className="row g-2 mb-0" onSubmit={handleSearch}>
-            <div className="col-sm-4">
+        <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+          <form className="row g-2 mb-0 flex-grow-1" onSubmit={handleSearch}>
+            <div className="col-lg-3 col-md-6">
               <input
                 className="form-control"
                 placeholder="Search case number or code…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={draftFilters.search}
+                onChange={(e) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    search: e.target.value,
+                  }))
+                }
               />
             </div>
-            <div className="col-sm-3">
+            <div className="col-lg-2 col-md-6">
               <select
                 className="form-select"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                value={draftFilters.status}
+                onChange={(e) =>
+                  handleFilterChange('status', e.target.value)
+                }
               >
                 <option value="">All Statuses</option>
                 <option value="Active">Active</option>
@@ -473,9 +554,51 @@ export default function CaseloadPage() {
                 <option value="Transferred">Transferred</option>
               </select>
             </div>
-            <div className="col-auto">
-              <button type="submit" className="btn btn-primary">
+            <div className="col-lg-3 col-md-6">
+              <select
+                className="form-select"
+                value={draftFilters.safehouseId}
+                onChange={(e) =>
+                  handleFilterChange('safehouseId', e.target.value)
+                }
+              >
+                <option value="">All Safehouses</option>
+                {safehouseOptions.map((safehouse) => (
+                  <option
+                    key={safehouse.safehouseId}
+                    value={String(safehouse.safehouseId)}
+                  >
+                    {safehouse.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-lg-2 col-md-6">
+              <select
+                className="form-select"
+                value={draftFilters.caseCategory}
+                onChange={(e) =>
+                  handleFilterChange('caseCategory', e.target.value)
+                }
+              >
+                <option value="">All Categories</option>
+                {RESIDENT_CASE_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-lg-2 col-md-12 d-flex gap-2">
+              <button type="submit" className="btn btn-primary flex-fill">
                 Search
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={handleResetFilters}
+              >
+                Reset
               </button>
             </div>
           </form>
@@ -539,7 +662,7 @@ export default function CaseloadPage() {
                             </span>
                           )}
                         </td>
-                        <td>{r.safehouseId}</td>
+                        <td>{r.safehouseName ?? `Safehouse ${r.safehouseId}`}</td>
                         <td>
                           <Link
                             to={`/admin/residents/${r.residentId}`}

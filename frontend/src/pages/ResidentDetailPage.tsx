@@ -4,6 +4,7 @@ import type { ResidentDetail, ProcessRecording, HomeVisitation, CaseConference }
 import { getResidentById, addRecording, deleteRecording, addVisitation, deleteVisitation, updateResident } from '../lib/residentAPI';
 import type { Resident } from '../types/ResidentDetail';
 import { addCaseConference, deleteCaseConference } from '../lib/caseConferenceAPI';
+import { RESIDENT_CASE_CATEGORIES } from '../lib/residentOptions';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const RISK_COLORS: Record<string, string> = {
@@ -199,8 +200,10 @@ export default function ResidentDetailPage() {
     }
   }
 
-  const setEdit = (field: keyof typeof editForm & string, value: unknown) =>
-    setEditForm(f => f ? { ...f, [field]: value } : f);
+  const setEdit = <K extends keyof Omit<Resident, 'residentId' | 'createdAt'>>(
+    field: K,
+    value: Omit<Resident, 'residentId' | 'createdAt'>[K]
+  ) => setEditForm(f => f ? { ...f, [field]: value } : f);
 
   function closeAddRecording() { setShowAddRecording(false); setFormError(null); setRecordingForm({ ...EMPTY_RECORDING, residentId }); }
   function closeAddVisitation() { setShowAddVisitation(false); setFormError(null); setVisitationForm({ ...EMPTY_VISITATION, residentId }); }
@@ -335,11 +338,11 @@ export default function ResidentDetailPage() {
                         <label className="form-label">Case Category <span className="text-danger">*</span></label>
                         <select className="form-select" required value={editForm.caseCategory}
                           onChange={e => setEdit('caseCategory', e.target.value)}>
-                          <option>Child in Need of Special Protection</option>
-                          <option>Child in Conflict with the Law</option>
-                          <option>Child at Risk</option>
-                          <option>Abandoned</option>
-                          <option>Neglected</option>
+                          {RESIDENT_CASE_CATEGORIES.map(category => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-6">
