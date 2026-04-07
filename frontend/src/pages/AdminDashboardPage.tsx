@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { AdminDashboardData, DashboardMetric } from '../types/DashboardMetric';
+import type {
+  AdminDashboardData,
+  DashboardMetric,
+} from '../types/DashboardMetric';
 import { getAdminDashboard } from '../lib/reportAPI';
 
 export default function AdminDashboardPage() {
@@ -14,8 +17,21 @@ export default function AdminDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="container py-5 text-center"><div className="spinner-border" style={{ color: 'var(--brand-primary)' }} /></div>;
-  if (error) return <div className="container py-5"><div className="alert alert-danger">{error}</div></div>;
+  if (loading)
+    return (
+      <div className="container py-5 text-center">
+        <div
+          className="spinner-border"
+          style={{ color: 'var(--brand-primary)' }}
+        />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="container py-5">
+        <div className="alert alert-danger">{error}</div>
+      </div>
+    );
 
   return (
     <div>
@@ -35,7 +51,12 @@ export default function AdminDashboardPage() {
               <div className="card text-center">
                 <div className="card-body py-4">
                   <p className="section-label mb-1">{m.label}</p>
-                  <h2 className="mb-0 fw-bold" style={{ color: 'var(--brand-dark)' }}>{m.value}</h2>
+                  <h2
+                    className="mb-0 fw-bold"
+                    style={{ color: 'var(--brand-dark)' }}
+                  >
+                    {m.value}
+                  </h2>
                   {m.trend && <small className="text-muted">{m.trend}</small>}
                 </div>
               </div>
@@ -50,45 +71,88 @@ export default function AdminDashboardPage() {
               <div className="card-header">Safehouse Status</div>
               <div className="card-body p-0">
                 <table className="table table-sm table-hover mb-0">
-                  <thead className="table-light"><tr><th>Name</th><th>Region</th><th>Occupancy</th><th>Status</th></tr></thead>
+                  <thead className="table-light">
+                    <tr>
+                      <th>Name</th>
+                      <th>Region</th>
+                      <th>Occupancy</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {(data?.safehouseBreakdown ?? []).map((s: any) => (
                       <tr key={s.safehouseId}>
                         <td>{s.name}</td>
                         <td>{s.region}</td>
-                        <td>{s.currentOccupancy}/{s.capacityGirls}</td>
-                        <td><span className={`badge bg-${s.status === 'Active' ? 'success' : 'secondary'}`}>{s.status}</span></td>
+                        <td>
+                          {s.currentOccupancy}/{s.capacityGirls}
+                        </td>
+                        <td>
+                          <span
+                            className={`badge bg-${s.status === 'Active' ? 'success' : 'secondary'}`}
+                          >
+                            {s.status}
+                          </span>
+                        </td>
                       </tr>
                     ))}
-                    {data?.safehouseBreakdown.length === 0 && <tr><td colSpan={4} className="text-center text-muted py-3">No safehouse data</td></tr>}
+                    {data?.safehouseBreakdown.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="text-center text-muted py-3">
+                          No safehouse data
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
 
-        <div className="col-lg-6">
-          <div className="card shadow-sm">
-            <div className="card-header">Recent Monthly Metrics</div>
-            <div className="card-body p-0">
-              <table className="table table-sm table-hover mb-0">
-                <thead><tr><th>Month</th><th>Residents</th><th>Avg Health</th><th>Incidents</th></tr></thead>
-                <tbody>
-                  {(data?.monthlyMetrics ?? []).slice(0, 6).map((m: any) => (
-                    <tr key={m.metricId}>
-                      <td>{new Date(m.monthStart).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</td>
-                      <td>{m.activeResidents}</td>
-                      <td>{m.avgHealthScore == null ? 'N/A' : Number(m.avgHealthScore).toFixed(1)}</td>
-                      <td>{m.incidentCount}</td>
+          <div className="col-lg-6">
+            <div className="card shadow-sm">
+              <div className="card-header">Recent Monthly Metrics</div>
+              <div className="card-body p-0">
+                <table className="table table-sm table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Month</th>
+                      <th>Residents</th>
+                      <th>Avg Health</th>
+                      <th>Incidents</th>
                     </tr>
-                  ))}
-                  {data?.monthlyMetrics.length === 0 && <tr><td colSpan={4} className="text-center text-muted py-3">No metric data</td></tr>}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {(data?.monthlyMetrics ?? []).slice(0, 6).map((m: any) => (
+                      <tr key={m.metricId}>
+                        <td>
+                          {new Date(m.monthStart).toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td>{m.activeResidents}</td>
+                        <td>
+                          {m.avgHealthScore == null
+                            ? 'N/A'
+                            : Number(m.avgHealthScore).toFixed(1)}
+                        </td>
+                        <td>{m.incidentCount}</td>
+                      </tr>
+                    ))}
+                    {data?.monthlyMetrics.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="text-center text-muted py-3">
+                          No metric data
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
     </div>
   );
