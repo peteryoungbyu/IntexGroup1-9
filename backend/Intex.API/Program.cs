@@ -9,7 +9,7 @@ Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Read config
-var frontendUrl = builder.Configuration["FrontendUrl"] ?? "https://ambitious-hill-0611b8403.2.azurestaticapps.net";
+var frontendUrl = builder.Configuration["FrontendUrl"] ?? "https://red-bush-08c20d303.4.azurestaticapps.net";
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 

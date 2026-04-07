@@ -3,6 +3,11 @@ import type { TwoFactorStatus } from '../types/TwoFactorStatus';
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
+if (import.meta.env.DEV) {
+  // Helps verify which API host the frontend actually targets in development.
+  console.info('[authAPI] BASE URL:', BASE || '(same-origin)');
+}
+
 function extractError(body: unknown): string {
   if (typeof body !== 'object' || body === null) return 'An error occurred';
   const b = body as Record<string, unknown>;
