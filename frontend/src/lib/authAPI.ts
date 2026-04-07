@@ -3,6 +3,33 @@ import type { TwoFactorStatus } from '../types/TwoFactorStatus';
 import { API_BASE_URL } from './apiBase';
 
 const BASE = API_BASE_URL;
+export const REQUIRES_TWO_FACTOR_ERROR = 'requiresTwoFactor';
+
+function normalizeAuthSignal(value: unknown): string {
+  return typeof value === 'string'
+    ? value.replace(/[^a-z0-9]/gi, '').toLowerCase()
+    : '';
+}
+
+function isTwoFactorRequired(body: unknown): boolean {
+  if (typeof body === 'string') {
+    return normalizeAuthSignal(body) === REQUIRES_TWO_FACTOR_ERROR.toLowerCase();
+  }
+
+  if (typeof body !== 'object' || body === null) {
+    return false;
+  }
+
+  const b = body as Record<string, unknown>;
+  if (b['requiresTwoFactor'] === true) {
+    return true;
+  }
+
+  return [b['title'], b['detail'], b['message']].some(
+    (value) =>
+      normalizeAuthSignal(value) === REQUIRES_TWO_FACTOR_ERROR.toLowerCase()
+  );
+}
 
 function extractError(body: unknown): string {
   if (typeof body !== 'object' || body === null) return 'An error occurred';
@@ -47,8 +74,11 @@ export async function loginUser(
       twoFactorRecoveryCode,
     }),
   });
+  const body = await res.json().catch(() => ({}));
+  if (isTwoFactorRequired(body)) {
+    throw new Error(REQUIRES_TWO_FACTOR_ERROR);
+  }
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
     throw new Error(extractError(body));
   }
 }

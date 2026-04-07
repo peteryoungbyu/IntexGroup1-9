@@ -153,3 +153,115 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* ===== DARK MODE FIXES ===== */
+
+[data-bs-theme="dark"] body {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+[data-bs-theme="dark"] .card {
+  background-color: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+[data-bs-theme="dark"] .card h1,
+[data-bs-theme="dark"] .card h2,
+[data-bs-theme="dark"] .card h3,
+[data-bs-theme="dark"] .card h4,
+[data-bs-theme="dark"] .card h5,
+[data-bs-theme="dark"] .card h6 {
+  color: #f1f5f9 !important;
+}
+
+[data-bs-theme="dark"] .card .text-muted {
+  color: #94a3b8 !important;
+}
+
+[data-bs-theme="dark"] .card-body {
+  color: #f1f5f9 !important;
+}
+
+/* Metric stat numbers — direct children of card-body only (not content headings) */
+[data-bs-theme="dark"] .card-body > h2,
+[data-bs-theme="dark"] .card-body > .display-6 {
+  color: var(--brand-accent) !important;
+}
+
+/* Tables */
+[data-bs-theme="dark"] .table {
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+[data-bs-theme="dark"] .table thead th {
+  background-color: #0d2d44 !important;
+  color: #fff !important;
+  border-color: #334155 !important;
+}
+[data-bs-theme="dark"] .table tbody tr {
+  border-color: #334155 !important;
+}
+[data-bs-theme="dark"] .table tbody tr:hover {
+  background-color: #1e293b !important;
+}
+[data-bs-theme="dark"] .table tbody td {
+  color: #f1f5f9 !important;
+}
+
+/* Form controls */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+  border-color: var(--brand-accent) !important;
+  box-shadow: 0 0 0 3px rgba(232,168,56,0.15) !important;
+}
+
+/* Backgrounds */
+[data-bs-theme="dark"] .bg-white,
+[data-bs-theme="dark"] .bg-light {
+  background-color: #1e293b !important;
+}
+[data-bs-theme="dark"] section[style*="brand-light"],
+[data-bs-theme="dark"] div[style*="brand-light"] {
+  background-color: #1a2540 !important;
+}
+
+/* Badges — keep them readable */
+[data-bs-theme="dark"] .badge.bg-secondary {
+  background-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Links in tables */
+[data-bs-theme="dark"] a {
+  color: #7dd3fc !important;
+}
+[data-bs-theme="dark"] a:hover {
+  color: var(--brand-accent) !important;
+}
+
+/* Section label */
+[data-bs-theme="dark"] .section-label {
+  color: var(--brand-accent) !important;
+}
+
+/* Page header stays the same dark navy */
+[data-bs-theme="dark"] .page-header {
+  background: #0a0f1e !important;
+}
+
+/* Buttons */
+[data-bs-theme="dark"] .btn-outline-secondary {
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+[data-bs-theme="dark"] .btn-outline-secondary:hover {
+  background-color: #334155 !important;
+}
