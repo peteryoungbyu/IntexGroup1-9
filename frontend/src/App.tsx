@@ -1,4 +1,5 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import { CookieConsentProvider } from './context/CookieConsentContext';
@@ -21,6 +22,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import CaseloadPage from './pages/CaseloadPage';
 import ResidentDetailPage from './pages/ResidentDetailPage';
 import DonorsPage from './pages/DonorsPage';
+import DonorDetailPage from './pages/DonorDetailPage';
 import DonorSelfPage from './pages/DonorSelfPage';
 import ReportsPage from './pages/ReportsPage';
 import SocialMediaPage from './pages/SocialMediaPage';
@@ -85,6 +87,14 @@ export default function App() {
                     element={
                       <ProtectedRoute roles={['Admin']}>
                         <DonorsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/donors/:id"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <DonorDetailPage />
                       </ProtectedRoute>
                     }
                   />

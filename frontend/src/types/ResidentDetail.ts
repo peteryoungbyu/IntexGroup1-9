@@ -6,6 +6,12 @@ export interface ResidentListItem {
   caseCategory: string;
   currentRiskLevel: string | null;
   safehouseId: number;
+  safehouseName: string | null;
+}
+
+export interface ResidentSafehouseOption {
+  safehouseId: number;
+  name: string;
 }
 
 export interface Resident {
@@ -16,16 +22,47 @@ export interface Resident {
   caseStatus: string;
   sex: string;
   dateOfBirth: string;
+  birthStatus: string | null;
+  placeOfBirth: string | null;
+  religion: string | null;
   caseCategory: string;
-  currentRiskLevel: string | null;
-  initialRiskLevel: string | null;
-  reintegrationStatus: string | null;
-  reintegrationType: string | null;
-  assignedSocialWorker: string | null;
+  subCatOrphaned: boolean;
+  subCatTrafficked: boolean;
+  subCatChildLabor: boolean;
+  subCatPhysicalAbuse: boolean;
+  subCatSexualAbuse: boolean;
+  subCatOsaec: boolean;
+  subCatCicl: boolean;
+  subCatAtRisk: boolean;
+  subCatStreetChild: boolean;
+  subCatChildWithHiv: boolean;
+  isPwd: boolean;
+  pwdType: string | null;
+  hasSpecialNeeds: boolean;
+  specialNeedsDiagnosis: string | null;
+  familyIs4Ps: boolean;
+  familySoloParent: boolean;
+  familyIndigenous: boolean;
+  familyParentPwd: boolean;
+  familyInformalSettler: boolean;
   dateOfAdmission: string;
+  ageUponAdmission: string | null;
+  presentAge: string | null;
+  lengthOfStay: string | null;
+  referralSource: string | null;
+  referringAgencyPerson: string | null;
+  dateColbRegistered: string | null;
+  dateColbObtained: string | null;
+  assignedSocialWorker: string | null;
+  initialCaseAssessment: string | null;
+  dateCaseStudyPrepared: string | null;
+  reintegrationType: string | null;
+  reintegrationStatus: string | null;
+  initialRiskLevel: string | null;
+  currentRiskLevel: string | null;
   dateEnrolled: string | null;
   dateClosed: string | null;
-  referralSource: string | null;
+  notesRestricted: string | null;
   createdAt: string;
 }
 

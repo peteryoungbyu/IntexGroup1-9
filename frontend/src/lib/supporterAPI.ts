@@ -1,4 +1,6 @@
 import type {
+  Supporter,
+  Donation,
   SupporterDetail,
   SupporterListItem,
   PagedResult,
@@ -59,4 +61,32 @@ export async function getMyDonorHistory(): Promise<SupporterDetail> {
 
 export async function deleteSupporter(id: number): Promise<void> {
   await apiFetch(`/api/supporters/${id}`, { method: 'DELETE' });
+}
+
+export async function createSupporter(data: Omit<Supporter, 'supporterId' | 'createdAt'>): Promise<Supporter> {
+  const res = await apiFetch('/api/supporters', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateSupporter(id: number, data: Omit<Supporter, 'supporterId' | 'createdAt'>): Promise<Supporter> {
+  const res = await apiFetch(`/api/supporters/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function addDonation(supporterId: number, data: Omit<Donation, 'donationId'>): Promise<Donation> {
+  const res = await apiFetch(`/api/supporters/${supporterId}/donations`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteDonation(supporterId: number, donationId: number): Promise<void> {
+  await apiFetch(`/api/supporters/${supporterId}/donations/${donationId}`, { method: 'DELETE' });
 }

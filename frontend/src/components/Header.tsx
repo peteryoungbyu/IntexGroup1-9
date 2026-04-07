@@ -1,16 +1,11 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { logoutUser } from '../lib/authAPI';
 import textOnlyLogo from '../assets/text_only.png';
 
 export default function Header() {
   const { authSession, isAuthenticated, refreshAuthSession } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-
-  const isAdmin = authSession.roles.includes('Admin');
-  const isDonor = authSession.roles.includes('Donor');
 
   const handleLogout = async () => {
     await logoutUser();
@@ -18,16 +13,19 @@ export default function Header() {
     navigate('/');
   };
 
+  const isAdmin = authSession.roles.includes('Admin');
+  const isDonor = authSession.roles.includes('Donor');
+
   return (
     <nav
-      className="navbar navbar-expand-lg"
+      className="navbar navbar-expand-xl"
       style={{
         background: 'var(--brand-dark)',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         padding: '0.75rem 0',
       }}
     >
-      <div className="container">
+      <div className="container-fluid px-3 d-flex align-items-center justify-content-between flex-wrap">
         {/* Brand */}
         <Link to="/">
           <img
@@ -52,11 +50,12 @@ export default function Header() {
 
         <div className="collapse navbar-collapse" id="navbarNav">
           {/* Left links */}
-          <ul className="navbar-nav me-auto align-items-lg-center gap-1">
+          <ul className="navbar-nav me-auto align-items-xl-center gap-0">
             <li className="nav-item">
               <NavLink
-                className="nav-link px-3 py-2 rounded-2"
+                className="nav-link px-2 py-2 rounded-2"
                 to="/"
+                end
                 style={({ isActive }) => ({
                   color: isActive
                     ? 'var(--brand-accent)'
@@ -70,8 +69,9 @@ export default function Header() {
             </li>
             <li className="nav-item">
               <NavLink
-                className="nav-link px-3 py-2 rounded-2"
+                className="nav-link px-2 py-2 rounded-2"
                 to="/impact"
+                end
                 style={({ isActive }) => ({
                   color: isActive
                     ? 'var(--brand-accent)'
@@ -87,7 +87,7 @@ export default function Header() {
             {isAdmin && (
               <>
                 {[
-                  { to: '/admin', label: 'Dashboard' },
+                  { to: '/admin', label: 'Dashboard', end: true },
                   { to: '/admin/donors', label: 'Donors' },
                   { to: '/admin/residents', label: 'Residents' },
                   { to: '/admin/reports', label: 'Reports' },
@@ -96,8 +96,9 @@ export default function Header() {
                 ].map((link) => (
                   <li key={link.to} className="nav-item">
                     <NavLink
-                      className="nav-link px-3 py-2 rounded-2"
+                      className="nav-link px-2 py-2 rounded-2"
                       to={link.to}
+                      end={link.end}
                       style={({ isActive }) => ({
                         color: isActive
                           ? 'var(--brand-accent)'
@@ -116,7 +117,7 @@ export default function Header() {
             {isDonor && !isAdmin && (
               <li className="nav-item">
                 <NavLink
-                  className="nav-link px-3 py-2 rounded-2"
+                  className="nav-link px-2 py-2 rounded-2"
                   to="/donor/history"
                   style={({ isActive }) => ({
                     color: isActive
@@ -133,68 +134,68 @@ export default function Header() {
           </ul>
 
           {/* Right side */}
-          <ul className="navbar-nav ms-auto align-items-lg-center gap-2">
-            <li className="nav-item">
-              <button
-                className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                onClick={toggleTheme}
-                title="Toggle theme"
-                style={{
-                  width: '34px',
-                  height: '34px',
-                  background: 'rgba(255,255,255,0.1)',
-                  border: 'none',
-                  color: 'white',
-                  fontSize: '0.9rem',
-                }}
-              >
-                {theme === 'light' ? '🌙' : '☀️'}
-              </button>
-            </li>
-
+          <ul className="navbar-nav ms-auto align-items-xl-center gap-2">
             {isAuthenticated ? (
               <>
-                <li className="nav-item">
-                  <NavLink
-                    className="nav-link px-3 py-1 rounded-2 d-flex align-items-center gap-2"
-                    to="/account/mfa"
+                <li className="nav-item dropdown">
+                  <button
+                    className="nav-link dropdown-toggle px-2 py-2 rounded-2"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
                     style={{
-                      color: 'rgba(255,255,255,0.85)',
+                      color: 'rgba(255,255,255,0.8)',
                       fontSize: '0.92rem',
+                      background: 'none',
+                      border: 'none',
                     }}
                   >
-                    <span
-                      style={{
-                        background: 'var(--brand-accent)',
-                        borderRadius: '50%',
-                        width: '28px',
-                        height: '28px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                        fontWeight: '700',
-                        color: 'var(--brand-dark)',
-                      }}
-                    >
-                      {authSession.userName?.charAt(0).toUpperCase()}
-                    </span>
-                    {authSession.userName}
-                  </NavLink>
+                    My Account
+                  </button>
+                  <ul
+                    className="dropdown-menu"
+                    style={{
+                      background: '#1e293b',
+                      borderColor: '#334155',
+                    }}
+                  >
+                    <li>
+                      <Link
+                        className="dropdown-item"
+                        to="/account/mfa"
+                        style={{ color: '#f1f5f9' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#334155')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        Set Up Two-Step Verification
+                      </Link>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        onClick={handleLogout}
+                        style={{ color: '#f1f5f9', width: '100%', textAlign: 'left' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#334155')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        Logout
+                      </button>
+                    </li>
+                  </ul>
                 </li>
                 <li className="nav-item">
-                  <button
-                    className="btn btn-sm fw-semibold px-3"
-                    onClick={handleLogout}
+                  <Link
+                    className="btn btn-sm px-4"
+                    to="/donate"
                     style={{
-                      background: 'rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: 'white',
+                      background: 'var(--brand-accent)',
+                      color: 'var(--brand-dark)',
                       borderRadius: '8px',
+                      fontWeight: 700,
+                      border: 'none',
                     }}
                   >
-                    Logout
-                  </button>
+                    Donate Now
+                  </Link>
                 </li>
               </>
             ) : (

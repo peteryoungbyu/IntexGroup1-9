@@ -2,7 +2,16 @@ using Intex.API.Models;
 
 namespace Intex.API.Services;
 
-public record ResidentListItem(int ResidentId, string CaseControlNo, string InternalCode, string CaseStatus, string CaseCategory, string? CurrentRiskLevel, int SafehouseId);
+public record ResidentListItem(
+    int ResidentId,
+    string CaseControlNo,
+    string InternalCode,
+    string CaseStatus,
+    string CaseCategory,
+    string? CurrentRiskLevel,
+    int SafehouseId,
+    string? SafehouseName);
+public record ResidentSafehouseOption(int SafehouseId, string Name);
 public record ResidentDetail(
     Resident Resident,
     IReadOnlyList<ProcessRecording> Recordings,
@@ -13,7 +22,7 @@ public record ResidentDetail(
 
 public interface IResidentService
 {
-    Task<PagedResult<ResidentListItem>> GetAllAsync(int page, int pageSize, string? search, string? status, int? safehouseId);
+    Task<PagedResult<ResidentListItem>> GetAllAsync(int page, int pageSize, string? search, string? status, int? safehouseId, string? caseCategory);
     Task<ResidentDetail?> GetByIdAsync(int id);
     Task<Resident> CreateAsync(Resident resident);
     Task<Resident?> UpdateAsync(int id, Resident resident);
