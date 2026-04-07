@@ -1,5 +1,7 @@
 using Intex.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using System.Text;
 
 namespace Intex.API.Data;
 
@@ -112,5 +114,49 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Resident>()
             .HasIndex(r => r.CaseControlNo)
             .IsUnique();
+
+        ApplySnakeCaseColumnConvention(modelBuilder);
+    }
+
+    private static void ApplySnakeCaseColumnConvention(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                property.SetColumnName(ToSnakeCase(property.Name));
+            }
+        }
+    }
+
+    private static string ToSnakeCase(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+
+        var builder = new StringBuilder(value.Length + 8);
+
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (char.IsUpper(c))
+            {
+                var hasPrevious = i > 0;
+                var hasNext = i + 1 < value.Length;
+                var nextIsLower = hasNext && char.IsLower(value[i + 1]);
+                var previousIsLowerOrDigit = hasPrevious && (char.IsLower(value[i - 1]) || char.IsDigit(value[i - 1]));
+
+                if (previousIsLowerOrDigit || (hasPrevious && nextIsLower))
+                    builder.Append('_');
+
+                builder.Append(char.ToLowerInvariant(c));
+            }
+            else
+            {
+                builder.Append(c);
+            }
+        }
+
+        return builder.ToString();
     }
 }

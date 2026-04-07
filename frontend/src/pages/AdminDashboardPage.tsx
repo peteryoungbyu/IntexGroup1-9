@@ -71,7 +71,7 @@ export default function AdminDashboardPage() {
                     <tr key={m.metricId}>
                       <td>{new Date(m.monthStart).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</td>
                       <td>{m.activeResidents}</td>
-                      <td>{Number(m.avgHealthScore).toFixed(1)}</td>
+                      <td>{m.avgHealthScore == null ? 'N/A' : Number(m.avgHealthScore).toFixed(1)}</td>
                       <td>{m.incidentCount}</td>
                     </tr>
                   ))}

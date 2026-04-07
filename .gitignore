@@ -35,10 +35,12 @@ lerna-debug.log*
 
 # Local environment/config files
 *.local
+.env
+frontend/.env
+backend/Intex.API/.env
 backend/Intex.API/appsettings.Development.json
 
 
-.env
 AssignmentInstructions.md
 Claude.md
 DatabaseKeys.md
