@@ -32,55 +32,106 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-            <Header />
-            <main style={{ flex: 1 }}>
-              <Routes>
-                {/* Public */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/impact" element={<PublicDashboardPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/logout" element={<LogoutPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: '100vh',
+              }}
+            >
+              <Header />
+              <main style={{ flex: 1 }}>
+                <Routes>
+                  {/* Public */}
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/impact" element={<PublicDashboardPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/logout" element={<LogoutPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                  <Route path="/cookie-policy" element={<CookiePolicyPage />} />
 
-                {/* Authenticated */}
-                <Route path="/account/mfa" element={
-                  <ProtectedRoute><ManageMFAPage /></ProtectedRoute>
-                } />
+                  {/* Authenticated */}
+                  <Route
+                    path="/account/mfa"
+                    element={
+                      <ProtectedRoute>
+                        <ManageMFAPage />
+                      </ProtectedRoute>
+                    }
+                  />
 
-                {/* Donor */}
-                <Route path="/donor/history" element={
-                  <ProtectedRoute roles={['Donor', 'Admin']}><DonorSelfPage /></ProtectedRoute>
-                } />
+                  {/* Donor */}
+                  <Route
+                    path="/donor/history"
+                    element={
+                      <ProtectedRoute roles={['Donor', 'Admin']}>
+                        <DonorSelfPage />
+                      </ProtectedRoute>
+                    }
+                  />
 
-                {/* Admin */}
-                <Route path="/admin" element={
-                  <ProtectedRoute roles={['Admin']}><AdminDashboardPage /></ProtectedRoute>
-                } />
-                <Route path="/admin/donors" element={
-                  <ProtectedRoute roles={['Admin']}><DonorsPage /></ProtectedRoute>
-                } />
-                <Route path="/admin/residents" element={
-                  <ProtectedRoute roles={['Admin']}><CaseloadPage /></ProtectedRoute>
-                } />
-                <Route path="/admin/residents/:id" element={
-                  <ProtectedRoute roles={['Admin']}><ResidentDetailPage /></ProtectedRoute>
-                } />
-                <Route path="/admin/reports" element={
-                  <ProtectedRoute roles={['Admin']}><ReportsPage /></ProtectedRoute>
-                } />
-                <Route path="/admin/social-media" element={
-                  <ProtectedRoute roles={['Admin']}><SocialMediaPage /></ProtectedRoute>
-                } />
-                <Route path="/admin/partners" element={
-                  <ProtectedRoute roles={['Admin']}><PartnersPage /></ProtectedRoute>
-                } />
-              </Routes>
-            </main>
-            <Footer />
-            <CookieConsentBanner />
+                  {/* Admin */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <AdminDashboardPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/donors"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <DonorsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/residents"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <CaseloadPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/residents/:id"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <ResidentDetailPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/reports"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <ReportsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/social-media"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <SocialMediaPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/partners"
+                    element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <PartnersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </main>
+              <Footer />
+              <CookieConsentBanner />
             </div>
           </Router>
         </AuthProvider>

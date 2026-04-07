@@ -13,10 +13,17 @@ export default function CookieConsentBanner() {
       role="alert"
     >
       <p className="mb-0 small">
-        We use cookies to keep you signed in and remember your preferences. See our{' '}
-        <Link to="/cookie-policy" className="text-warning">Cookie Policy</Link> for details.
+        We use cookies to keep you signed in and remember your preferences. See
+        our{' '}
+        <Link to="/cookie-policy" className="text-warning">
+          Cookie Policy
+        </Link>{' '}
+        for details.
       </p>
-      <button className="btn btn-sm btn-warning flex-shrink-0" onClick={acknowledgeConsent}>
+      <button
+        className="btn btn-sm btn-warning flex-shrink-0"
+        onClick={acknowledgeConsent}
+      >
         Accept
       </button>
     </div>
