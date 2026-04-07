@@ -1,14 +1,8 @@
 import type { AuthSession } from '../types/AuthSession';
 import type { TwoFactorStatus } from '../types/TwoFactorStatus';
+import { API_BASE_URL } from './apiBase';
 
-const BASE =
-  import.meta.env.VITE_API_BASE_URL ??
-  'https://newdawnapp-bsb6bbg4akbjhgg2.francecentral-01.azurewebsites.net';
-
-if (import.meta.env.DEV) {
-  // Helps verify which API host the frontend actually targets in development.
-  console.info('[authAPI] BASE URL:', BASE || '(same-origin)');
-}
+const BASE = API_BASE_URL;
 
 function extractError(body: unknown): string {
   if (typeof body !== 'object' || body === null) return 'An error occurred';
