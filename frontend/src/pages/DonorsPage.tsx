@@ -5,10 +5,15 @@ import { getSupporters, deleteSupporter } from '../lib/supporterAPI';
 import Pagination from '../components/Pagination';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
-interface PendingDelete { id: number; name: string; }
+interface PendingDelete {
+  id: number;
+  name: string;
+}
 
 export default function DonorsPage() {
-  const [result, setResult] = useState<PagedResult<SupporterListItem> | null>(null);
+  const [result, setResult] = useState<PagedResult<SupporterListItem> | null>(
+    null
+  );
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -25,9 +30,15 @@ export default function DonorsPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [page, status]);
+  useEffect(() => {
+    load();
+  }, [page, status]);
 
-  const handleSearch = (e: { preventDefault(): void }) => { e.preventDefault(); setPage(1); load(); };
+  const handleSearch = (e: { preventDefault(): void }) => {
+    e.preventDefault();
+    setPage(1);
+    load();
+  };
 
   const handleDeleteClick = (id: number, name: string) => {
     setDeleteError(undefined);
@@ -60,7 +71,12 @@ export default function DonorsPage() {
       <DeleteConfirmModal
         open={pending !== null}
         title="Delete Donor"
-        message={<>Are you sure you want to delete <strong>{pending?.name}</strong>? This action cannot be undone.</>}
+        message={
+          <>
+            Are you sure you want to delete <strong>{pending?.name}</strong>?
+            This action cannot be undone.
+          </>
+        }
         confirmLabel="Delete Donor"
         busy={busy}
         error={deleteError}
@@ -79,22 +95,38 @@ export default function DonorsPage() {
       <div className="container-fluid py-4">
         <form className="row g-2 mb-4" onSubmit={handleSearch}>
           <div className="col-sm-4">
-            <input className="form-control" placeholder="Search name or email…" value={search} onChange={e => setSearch(e.target.value)} />
+            <input
+              className="form-control"
+              placeholder="Search name or email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
           <div className="col-sm-3">
-            <select className="form-select" value={status} onChange={e => setStatus(e.target.value)}>
+            <select
+              className="form-select"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
               <option value="">All Statuses</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>
           </div>
           <div className="col-auto">
-            <button type="submit" className="btn btn-primary">Search</button>
+            <button type="submit" className="btn btn-primary">
+              Search
+            </button>
           </div>
         </form>
 
         {loading ? (
-          <div className="text-center py-5"><div className="spinner-border" style={{ color: 'var(--brand-primary)' }} /></div>
+          <div className="text-center py-5">
+            <div
+              className="spinner-border"
+              style={{ color: 'var(--brand-primary)' }}
+            />
+          </div>
         ) : (
           <>
             <div className="card">
@@ -111,28 +143,65 @@ export default function DonorsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {result?.items.map(s => (
+                    {result?.items.map((s) => (
                       <tr key={s.supporterId}>
-                        <td><Link to={`/admin/donors/${s.supporterId}`} style={{ color: 'var(--brand-primary)', fontWeight: 500 }}>{s.displayName}</Link></td>
+                        <td>
+                          <Link
+                            to={`/admin/donors/${s.supporterId}`}
+                            style={{
+                              color: 'var(--brand-primary)',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {s.displayName}
+                          </Link>
+                        </td>
                         <td>{s.supporterType}</td>
-                        <td><span className={`badge bg-${s.status === 'Active' ? 'success' : 'secondary'}`}>{s.status}</span></td>
+                        <td>
+                          <span
+                            className={`badge bg-${s.status === 'Active' ? 'success' : 'secondary'}`}
+                          >
+                            {s.status}
+                          </span>
+                        </td>
                         <td>{s.totalDonated.toLocaleString()}</td>
                         <td>{s.firstDonationDate ?? '—'}</td>
                         <td>
-                          <Link to={`/admin/donors/${s.supporterId}`} className="btn btn-sm btn-primary me-1">View</Link>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteClick(s.supporterId, s.displayName)}>Delete</button>
+                          <Link
+                            to={`/admin/donors/${s.supporterId}`}
+                            className="btn btn-sm btn-primary me-1"
+                          >
+                            View
+                          </Link>
+                          <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() =>
+                              handleDeleteClick(s.supporterId, s.displayName)
+                            }
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}
                     {result?.items.length === 0 && (
-                      <tr><td colSpan={6} className="text-center text-muted py-4">No donors found.</td></tr>
+                      <tr>
+                        <td colSpan={6} className="text-center text-muted py-4">
+                          No donors found.
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
             <div className="mt-3">
-              <Pagination page={page} totalCount={result?.totalCount ?? 0} pageSize={20} onPageChange={setPage} />
+              <Pagination
+                page={page}
+                totalCount={result?.totalCount ?? 0}
+                pageSize={20}
+                onPageChange={setPage}
+              />
             </div>
           </>
         )}
