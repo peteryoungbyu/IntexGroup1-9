@@ -25,28 +25,50 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="container py-5" style={{ maxWidth: 440 }}>
-      <h1 className="mb-4 text-center">Create Account</h1>
-      {error && <div className="alert alert-danger">{error}</div>}
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label">Email</label>
-          <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
+    <div>
+      <div className="page-header">
+        <div className="container text-center">
+          <img
+            src="/src/assets/horizontal_light.png"
+            alt="New Dawn Foundation"
+            style={{ height: 48, marginBottom: '1.25rem' }}
+          />
+          <h1>Create Account</h1>
+          <p>Join the New Dawn Foundation community</p>
         </div>
-        <div className="mb-3">
-          <label className="form-label">Password</label>
-          <input type="password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} required minLength={14} />
-          <div className="form-text">Minimum 14 characters.</div>
+      </div>
+
+      <div style={{ background: 'var(--brand-light)', minHeight: '60vh', padding: '2.5rem 0' }}>
+        <div className="container" style={{ maxWidth: 440 }}>
+          <div className="card">
+            <div className="card-body p-4">
+              {error && <div className="alert alert-danger">{error}</div>}
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Email</label>
+                  <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Password</label>
+                  <input type="password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} required minLength={14} />
+                  <div className="form-text">Minimum 14 characters.</div>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Confirm Password</label>
+                  <input type="password" className="form-control" value={confirm} onChange={e => setConfirm(e.target.value)} required />
+                </div>
+                <button type="submit" className="btn btn-primary w-100 fw-semibold" disabled={loading}>
+                  {loading ? 'Creating account…' : 'Create Account'}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <p className="text-center mt-3 small text-muted">
+            Already have an account? <Link to="/login">Sign in</Link>
+          </p>
         </div>
-        <div className="mb-3">
-          <label className="form-label">Confirm Password</label>
-          <input type="password" className="form-control" value={confirm} onChange={e => setConfirm(e.target.value)} required />
-        </div>
-        <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-          {loading ? 'Creating account…' : 'Create Account'}
-        </button>
-      </form>
-      <p className="text-center mt-3 small">Already have an account? <Link to="/login">Sign in</Link></p>
+      </div>
     </div>
   );
 }
