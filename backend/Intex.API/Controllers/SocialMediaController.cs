@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Intex.API.Data;
 using Intex.API.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -17,8 +18,8 @@ public class SocialMediaController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery][Range(1, int.MaxValue)] int page = 1,
+        [FromQuery][Range(1, 100)] int pageSize = 20,
         [FromQuery] string? platform = null,
         [FromQuery] string? postType = null)
     {
