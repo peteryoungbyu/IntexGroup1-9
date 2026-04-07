@@ -46,63 +46,81 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container py-5" style={{ maxWidth: 440 }}>
-      <h1 className="mb-4 text-center">Sign In</h1>
-
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label">Email</label>
-          <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+    <div>
+      <div className="page-header">
+        <div className="container text-center">
+          <img
+            src="/src/assets/horizontal_light.png"
+            alt="New Dawn Foundation"
+            style={{ height: 48, marginBottom: '1.25rem' }}
+          />
+          <h1>Sign In</h1>
+          <p>Welcome back to New Dawn Foundation</p>
         </div>
-        <div className="mb-3">
-          <label className="form-label">Password</label>
-          <input type="password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" />
-        </div>
+      </div>
 
-        {showMfa && (
-          <>
-            <div className="mb-3">
-              <label className="form-label">Authenticator Code</label>
-              <input type="text" className="form-control" value={twoFactorCode} onChange={e => setTwoFactorCode(e.target.value)} placeholder="6-digit code" inputMode="numeric" />
+      <div style={{ background: 'var(--brand-light)', minHeight: '60vh', padding: '2.5rem 0' }}>
+        <div className="container" style={{ maxWidth: 440 }}>
+          <div className="card">
+            <div className="card-body p-4">
+              {error && <div className="alert alert-danger">{error}</div>}
+
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Email</label>
+                  <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Password</label>
+                  <input type="password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" />
+                </div>
+
+                {showMfa && (
+                  <>
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">Authenticator Code</label>
+                      <input type="text" className="form-control" value={twoFactorCode} onChange={e => setTwoFactorCode(e.target.value)} placeholder="6-digit code" inputMode="numeric" />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">Recovery Code (if no authenticator)</label>
+                      <input type="text" className="form-control" value={recoveryCode} onChange={e => setRecoveryCode(e.target.value)} placeholder="recovery-code" />
+                    </div>
+                  </>
+                )}
+
+                <div className="mb-3 form-check">
+                  <input type="checkbox" className="form-check-input" id="rememberMe" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+                  <label className="form-check-label" htmlFor="rememberMe">Remember me</label>
+                </div>
+
+                <button type="submit" className="btn btn-primary w-100 fw-semibold" disabled={loading}>
+                  {loading ? 'Signing in…' : 'Sign In'}
+                </button>
+              </form>
+
+              {providers.length > 0 && (
+                <div className="mt-3">
+                  <hr />
+                  <p className="text-center text-muted small">Or sign in with</p>
+                  {providers.map(p => (
+                    <a
+                      key={p.name}
+                      href={buildExternalLoginUrl(p.name, returnPath)}
+                      className="btn btn-outline-secondary w-100 mb-2"
+                    >
+                      {p.displayName}
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="mb-3">
-              <label className="form-label">Recovery Code (if no authenticator)</label>
-              <input type="text" className="form-control" value={recoveryCode} onChange={e => setRecoveryCode(e.target.value)} placeholder="recovery-code" />
-            </div>
-          </>
-        )}
+          </div>
 
-        <div className="mb-3 form-check">
-          <input type="checkbox" className="form-check-input" id="rememberMe" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
-          <label className="form-check-label" htmlFor="rememberMe">Remember me</label>
+          <p className="text-center mt-3 small text-muted">
+            <Link to="/privacy">Privacy Policy</Link> · <Link to="/cookie-policy">Cookie Policy</Link>
+          </p>
         </div>
-
-        <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-          {loading ? 'Signing in…' : 'Sign In'}
-        </button>
-      </form>
-
-      {providers.length > 0 && (
-        <div className="mt-3">
-          <hr />
-          <p className="text-center text-muted small">Or sign in with</p>
-          {providers.map(p => (
-            <a
-              key={p.name}
-              href={buildExternalLoginUrl(p.name, returnPath)}
-              className="btn btn-outline-secondary w-100 mb-2"
-            >
-              {p.displayName}
-            </a>
-          ))}
-        </div>
-      )}
-
-      <p className="text-center mt-3 small">
-        <Link to="/privacy">Privacy Policy</Link> · <Link to="/cookie-policy">Cookie Policy</Link>
-      </p>
+      </div>
     </div>
   );
 }

@@ -36,61 +36,69 @@ export default function PartnersPage() {
   };
 
   return (
-    <div className="container-fluid py-4">
-      <h1 className="mb-3">Partners Management</h1>
+    <div>
+      <div className="page-header">
+        <div className="container-fluid px-4">
+          <p className="section-label">Admin</p>
+          <h1>Partners Management</h1>
+          <p>View and manage partner organizations and their assignments</p>
+        </div>
+      </div>
 
-      <form className="row g-2 mb-3" onSubmit={handleSearch}>
-        <div className="col-sm-4">
-          <input className="form-control" placeholder="Search partner name…" value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-        <div className="col-sm-3">
-          <select className="form-select" value={status} onChange={e => setStatus(e.target.value)}>
-            <option value="">All Statuses</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-        </div>
-        <div className="col-auto">
-          <button type="submit" className="btn btn-primary">Search</button>
-        </div>
-      </form>
+      <div className="container-fluid py-4">
+        <form className="row g-2 mb-4" onSubmit={handleSearch}>
+          <div className="col-sm-4">
+            <input className="form-control" placeholder="Search partner name…" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <div className="col-sm-3">
+            <select className="form-select" value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          <div className="col-auto">
+            <button type="submit" className="btn btn-primary">Search</button>
+          </div>
+        </form>
 
-      {loading ? (
-        <div className="text-center py-5"><div className="spinner-border" /></div>
-      ) : (
-        <>
-          <div className="card shadow-sm">
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr><th>Name</th><th>Type</th><th>Role</th><th>Region</th><th>Status</th><th>Contact</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {result?.items.map((p: any) => (
-                    <tr key={p.partnerId}>
-                      <td>{p.partnerName}</td>
-                      <td>{p.partnerType}</td>
-                      <td>{p.roleType}</td>
-                      <td>{p.region ?? '—'}</td>
-                      <td><span className={`badge bg-${p.status === 'Active' ? 'success' : 'secondary'}`}>{p.status}</span></td>
-                      <td>{p.email ?? p.contactName ?? '—'}</td>
-                      <td>
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(p.partnerId, p.partnerName)}>Delete</button>
-                      </td>
-                    </tr>
-                  ))}
-                  {result?.items.length === 0 && (
-                    <tr><td colSpan={7} className="text-center text-muted py-4">No partners found.</td></tr>
-                  )}
-                </tbody>
-              </table>
+        {loading ? (
+          <div className="text-center py-5"><div className="spinner-border" style={{ color: 'var(--brand-primary)' }} /></div>
+        ) : (
+          <>
+            <div className="card">
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="table-light">
+                    <tr><th>Name</th><th>Type</th><th>Role</th><th>Region</th><th>Status</th><th>Contact</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    {result?.items.map((p: any) => (
+                      <tr key={p.partnerId}>
+                        <td style={{ fontWeight: 500, color: 'var(--brand-dark)' }}>{p.partnerName}</td>
+                        <td>{p.partnerType}</td>
+                        <td>{p.roleType}</td>
+                        <td>{p.region ?? '—'}</td>
+                        <td><span className={`badge bg-${p.status === 'Active' ? 'success' : 'secondary'}`}>{p.status}</span></td>
+                        <td>{p.email ?? p.contactName ?? '—'}</td>
+                        <td>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(p.partnerId, p.partnerName)}>Delete</button>
+                        </td>
+                      </tr>
+                    ))}
+                    {result?.items.length === 0 && (
+                      <tr><td colSpan={7} className="text-center text-muted py-4">No partners found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-          <div className="mt-3">
-            <Pagination page={page} totalCount={result?.total ?? 0} pageSize={20} onPageChange={setPage} />
-          </div>
-        </>
-      )}
+            <div className="mt-3">
+              <Pagination page={page} totalCount={result?.total ?? 0} pageSize={20} onPageChange={setPage} />
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
