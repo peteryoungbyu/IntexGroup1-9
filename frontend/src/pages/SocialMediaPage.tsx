@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Pagination from '../components/Pagination';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -7,11 +8,17 @@ async function apiFetch(path: string, init?: RequestInit) {
   return fetch(`${BASE}${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) }, ...init });
 }
 
+interface PendingDelete { id: number; caption: string; }
+
 export default function SocialMediaPage() {
   const [result, setResult] = useState<{ items: any[]; total: number } | null>(null);
   const [page, setPage] = useState(1);
   const [platform, setPlatform] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const [pending, setPending] = useState<PendingDelete | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | undefined>();
 
   const load = () => {
     setLoading(true);
@@ -25,14 +32,50 @@ export default function SocialMediaPage() {
 
   useEffect(() => { load(); }, [page, platform]);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Delete this social media post? This cannot be undone.')) return;
-    await apiFetch(`/api/social-media/${id}`, { method: 'DELETE' });
-    load();
+  const handleDeleteClick = (id: number, caption: string) => {
+    setDeleteError(undefined);
+    setPending({ id, caption });
+  };
+
+  const handleConfirm = async () => {
+    if (!pending) return;
+    setBusy(true);
+    setDeleteError(undefined);
+    try {
+      await apiFetch(`/api/social-media/${pending.id}`, { method: 'DELETE' });
+      setPending(null);
+      load();
+    } catch {
+      setDeleteError('Failed to delete post. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (busy) return;
+    setPending(null);
+    setDeleteError(undefined);
   };
 
   return (
     <div>
+      <DeleteConfirmModal
+        open={pending !== null}
+        title="Delete Post"
+        message={
+          <>
+            Are you sure you want to delete the post{' '}
+            <strong>"{pending?.caption}"</strong>? This action cannot be undone.
+          </>
+        }
+        confirmLabel="Delete Post"
+        busy={busy}
+        error={deleteError}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+
       <div className="page-header">
         <div className="container-fluid px-4">
           <p className="section-label">Admin</p>
@@ -74,7 +117,7 @@ export default function SocialMediaPage() {
                         <td>{(p.engagementRate * 100).toFixed(1)}%</td>
                         <td>{p.donationReferrals}</td>
                         <td>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(p.postId)}>Delete</button>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteClick(p.postId, p.caption)}>Delete</button>
                         </td>
                       </tr>
                     ))}

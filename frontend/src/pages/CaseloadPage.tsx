@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import type { ResidentListItem, PagedResult } from '../types/ResidentDetail';
 import { getResidents, deleteResident } from '../lib/residentAPI';
 import Pagination from '../components/Pagination';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const RISK_COLORS: Record<string, string> = { Low: 'success', Medium: 'warning', High: 'danger', Critical: 'dark' };
+
+interface PendingDelete { id: number; label: string; }
 
 export default function CaseloadPage() {
   const [result, setResult] = useState<PagedResult<ResidentListItem> | null>(null);
@@ -12,6 +15,10 @@ export default function CaseloadPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const [pending, setPending] = useState<PendingDelete | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | undefined>();
 
   const load = () => {
     setLoading(true);
@@ -22,16 +29,47 @@ export default function CaseloadPage() {
 
   useEffect(() => { load(); }, [page, status]);
 
-  const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1); load(); };
+  const handleSearch = (e: { preventDefault(): void }) => { e.preventDefault(); setPage(1); load(); };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Delete this resident record? This cannot be undone.')) return;
-    await deleteResident(id);
-    load();
+  const handleDeleteClick = (id: number, label: string) => {
+    setDeleteError(undefined);
+    setPending({ id, label });
+  };
+
+  const handleConfirm = async () => {
+    if (!pending) return;
+    setBusy(true);
+    setDeleteError(undefined);
+    try {
+      await deleteResident(pending.id);
+      setPending(null);
+      load();
+    } catch {
+      setDeleteError('Failed to delete resident record. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (busy) return;
+    setPending(null);
+    setDeleteError(undefined);
   };
 
   return (
     <div>
+      <DeleteConfirmModal
+        open={pending !== null}
+        title="Delete Resident Record"
+        message={<>Are you sure you want to delete case <strong>{pending?.label}</strong>? This action cannot be undone.</>}
+        confirmLabel="Delete Record"
+        busy={busy}
+        error={deleteError}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+
       <div className="page-header">
         <div className="container-fluid px-4">
           <p className="section-label">Admin</p>
@@ -91,7 +129,7 @@ export default function CaseloadPage() {
                         <td>{r.safehouseId}</td>
                         <td>
                           <Link to={`/admin/residents/${r.residentId}`} className="btn btn-sm btn-primary me-1">View</Link>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(r.residentId)}>Delete</button>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteClick(r.residentId, r.caseControlNo)}>Delete</button>
                         </td>
                       </tr>
                     ))}

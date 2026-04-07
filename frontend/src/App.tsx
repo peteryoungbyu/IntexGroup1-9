@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
 import LandingPage from './pages/LandingPage';
@@ -31,8 +32,9 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <Router>
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <Header />
-            <main>
+            <main style={{ flex: 1 }}>
               <Routes>
                 {/* Public */}
                 <Route path="/" element={<LandingPage />} />
@@ -77,7 +79,9 @@ export default function App() {
                 } />
               </Routes>
             </main>
+            <Footer />
             <CookieConsentBanner />
+            </div>
           </Router>
         </AuthProvider>
       </ThemeProvider>

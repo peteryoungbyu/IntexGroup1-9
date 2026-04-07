@@ -1,0 +1,863 @@
+dbug: Microsoft.EntityFrameworkCore.Infrastructure[10401]
+      An 'IServiceProvider' was created for internal use by Entity Framework.
+info: Startup[0]
+      Applying application database migrations
+dbug: Microsoft.EntityFrameworkCore.Model[10601]
+      The index {'SupporterId'} was not created on entity type 'SupporterUserLink' as the properties are already covered by the index {'SupporterId', 'UserId'}.
+dbug: Microsoft.EntityFrameworkCore.Infrastructure[10403]
+      Entity Framework Core 10.0.5 initialized 'AppDbContext' using provider 'Microsoft.EntityFrameworkCore.SqlServer:10.0.5' with options: EngineType=SqlServer 
+dbug: Microsoft.EntityFrameworkCore.Model[10601]
+      The index {'SupporterId'} was not created on entity type 'SupporterUserLink' as the properties are already covered by the index {'SupporterId', 'UserId'}.
+warn: Startup[0]
+      Skipping automatic application database migrations because the EF migration snapshot is out of sync with the mapped model. Verifying connectivity only.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20005]
+      Creating DbConnection.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20006]
+      Created DbConnection. (11ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (3ms).
+info: Startup[0]
+      application database connection verified
+info: Startup[0]
+      Applying identity database migrations
+dbug: Microsoft.EntityFrameworkCore.Model[10601]
+      The index {'UserId'} was not created on entity type 'IdentityUserRole<string>' as the properties are already covered by the index {'UserId', 'RoleId'}.
+dbug: Microsoft.EntityFrameworkCore.Model[10601]
+      The index {'UserId'} was not created on entity type 'IdentityUserToken<string>' as the properties are already covered by the index {'UserId', 'LoginProvider', 'Name'}.
+dbug: Microsoft.EntityFrameworkCore.Infrastructure[10403]
+      Entity Framework Core 10.0.5 initialized 'AuthIdentityDbContext' using provider 'Microsoft.EntityFrameworkCore.SqlServer:10.0.5' with options: EngineType=SqlServer 
+dbug: Microsoft.EntityFrameworkCore.Model[10601]
+      The index {'UserId'} was not created on entity type 'IdentityUserRole<string>' as the properties are already covered by the index {'UserId', 'RoleId'}.
+dbug: Microsoft.EntityFrameworkCore.Model[10601]
+      The index {'UserId'} was not created on entity type 'IdentityUserToken<string>' as the properties are already covered by the index {'UserId', 'LoginProvider', 'Name'}.
+warn: Startup[0]
+      Skipping automatic identity database migrations because the EF migration snapshot is out of sync with the mapped model. Verifying connectivity only.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20005]
+      Creating DbConnection.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20006]
+      Created DbConnection. (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+info: Startup[0]
+      identity database connection verified
+info: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[63]
+      User profile is available. Using 'C:\Users\merri\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+dbug: Microsoft.EntityFrameworkCore.Query[10111]
+      Compiling query expression: 
+      'DbSet<IdentityRole>()
+          .FirstOrDefault(r => r.NormalizedName == @normalizedName)'
+dbug: Microsoft.EntityFrameworkCore.Query[10107]
+      Generated query execution expression: 
+      'queryContext => ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync<IdentityRole>(
+          asyncEnumerable: SingleQueryingEnumerable.Create<IdentityRole>(
+              relationalQueryContext: (RelationalQueryContext)queryContext, 
+              relationalCommandResolver: parameters => [LIFTABLE Constant: RelationalCommandCache.QueryExpression(
+                  Projection Mapping:
+                      EmptyProjectionMember -> Dictionary<IPropertyBase, int> { [Property: IdentityRole.Id (string) Required PK AfterSave:Throw, 0], [Property: IdentityRole.ConcurrencyStamp (string) Concurrency, 1], [Property: IdentityRole.Name (string) MaxLength(256), 2], [Property: IdentityRole.NormalizedName (string) Index MaxLength(256), 3] }
+                  SELECT TOP(1) a.Id, a.ConcurrencyStamp, a.Name, a.NormalizedName
+                  FROM AspNetRoles AS a
+                  WHERE a.NormalizedName == @normalizedName) | Resolver: c => new RelationalCommandCache(
+                  c.Dependencies.MemoryCache, 
+                  c.RelationalDependencies.QuerySqlGeneratorFactory, 
+                  c.RelationalDependencies.RelationalParameterBasedSqlProcessorFactory, 
+                  Projection Mapping:
+                      EmptyProjectionMember -> Dictionary<IPropertyBase, int> { [Property: IdentityRole.Id (string) Required PK AfterSave:Throw, 0], [Property: IdentityRole.ConcurrencyStamp (string) Concurrency, 1], [Property: IdentityRole.Name (string) MaxLength(256), 2], [Property: IdentityRole.NormalizedName (string) Index MaxLength(256), 3] }
+                  SELECT TOP(1) a.Id, a.ConcurrencyStamp, a.Name, a.NormalizedName
+                  FROM AspNetRoles AS a
+                  WHERE a.NormalizedName == @normalizedName, 
+                  False, 
+                  MultipleParameters
+              )].GetRelationalCommandTemplate(parameters), 
+              readerColumns: null, 
+              shaper: (queryContext, dataReader, resultContext, resultCoordinator) => 
+              {
+                  IdentityRole entity;
+                  entity = 
+                  {
+                      MaterializationContext materializationContext1;
+                      IEntityType entityType1;
+                      IdentityRole instance1;
+                      InternalEntityEntry entry1;
+                      bool hasNullKey1;
+                      materializationContext1 = new MaterializationContext(
+                          [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                          queryContext.Context
+                      );
+                      instance1 = default(IdentityRole);
+                      entry1 = queryContext.TryGetEntry(
+                          key: [LIFTABLE Constant: Key: IdentityRole.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityRole").FindPrimaryKey()], 
+                          keyValues: new object[]{ (object)dataReader.GetString(0) }, 
+                          throwOnNullKey: True, 
+                          hasNullKey: hasNullKey1);
+                      !(hasNullKey1) ? entry1 != default(InternalEntityEntry) ? 
+                      {
+                          entityType1 = entry1.EntityType;
+                          return instance1 = (IdentityRole)entry1.Entity;
+                      } : 
+                      {
+                          ISnapshot shadowSnapshot1;
+                          shadowSnapshot1 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                          entityType1 = [LIFTABLE Constant: EntityType: IdentityRole | Resolver: namelessParameter{0} => namelessParameter{0}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityRole")];
+                          instance1 = switch (entityType1)
+                          {
+                              case [LIFTABLE Constant: EntityType: IdentityRole | Resolver: namelessParameter{1} => namelessParameter{1}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityRole")]: 
+                                  {
+                                      return 
+                                      {
+                                          IdentityRole instance;
+                                          instance = new IdentityRole();
+                                          instance.<Id>k__BackingField = dataReader.GetString(0);
+                                          instance.<ConcurrencyStamp>k__BackingField = dataReader.IsDBNull(1) ? default(string) : dataReader.GetString(1);
+                                          instance.<Name>k__BackingField = dataReader.IsDBNull(2) ? default(string) : dataReader.GetString(2);
+                                          instance.<NormalizedName>k__BackingField = dataReader.IsDBNull(3) ? default(string) : dataReader.GetString(3);
+                                          (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                              context: materializationContext1.Context, 
+                                              entity: instance, 
+                                              queryTrackingBehavior: TrackAll, 
+                                              structuralType: [LIFTABLE Constant: EntityType: IdentityRole | Resolver: namelessParameter{2} => namelessParameter{2}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityRole")]) : default(void);
+                                          return instance;
+                                      }}
+                              default: 
+                                  default(IdentityRole)
+                          }
+                          ;
+                          entry1 = entityType1 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                              entityType: entityType1, 
+                              entity: instance1, 
+                              snapshot: shadowSnapshot1);
+                          return instance1;
+                      } : default(void);
+                      return instance1;
+                  };
+                  return entity;
+              }, 
+              contextType: Intex.API.Data.AuthIdentityDbContext, 
+              standAloneStateManager: False, 
+              detailedErrorsEnabled: False, 
+              threadSafetyChecksEnabled: True), 
+          cancellationToken: queryContext.CancellationToken)'
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (1ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (8ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (81ms) [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedName
+dbug: Microsoft.EntityFrameworkCore.ChangeTracking[10806]
+      Context 'AuthIdentityDbContext' started tracking 'IdentityRole' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 43ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (53ms) [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedName
+dbug: Microsoft.EntityFrameworkCore.ChangeTracking[10806]
+      Context 'AuthIdentityDbContext' started tracking 'IdentityRole' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 0ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Query[10111]
+      Compiling query expression: 
+      'DbSet<ApplicationUser>()
+          .SingleOrDefault(u => u.NormalizedEmail == @normalizedEmail)'
+dbug: Microsoft.EntityFrameworkCore.Query[10107]
+      Generated query execution expression: 
+      'queryContext => ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync<ApplicationUser>(
+          asyncEnumerable: SingleQueryingEnumerable.Create<ApplicationUser>(
+              relationalQueryContext: (RelationalQueryContext)queryContext, 
+              relationalCommandResolver: parameters => [LIFTABLE Constant: RelationalCommandCache.QueryExpression(
+                  Projection Mapping:
+                      EmptyProjectionMember -> Dictionary<IPropertyBase, int> { [Property: ApplicationUser.Id (string) Required PK AfterSave:Throw, 0], [Property: ApplicationUser.AccessFailedCount (int) Required, 1], [Property: ApplicationUser.ConcurrencyStamp (string) Concurrency, 2], [Property: ApplicationUser.Email (string) MaxLength(256), 3], [Property: ApplicationUser.EmailConfirmed (bool) Required, 4], [Property: ApplicationUser.LockoutEnabled (bool) Required, 5], [Property: ApplicationUser.LockoutEnd (DateTimeOffset?), 6], [Property: ApplicationUser.NormalizedEmail (string) Index MaxLength(256), 7], [Property: ApplicationUser.NormalizedUserName (string) Index MaxLength(256), 8], [Property: ApplicationUser.PasswordHash (string), 9], [Property: ApplicationUser.PhoneNumber (string), 10], [Property: ApplicationUser.PhoneNumberConfirmed (bool) Required, 11], [Property: ApplicationUser.SecurityStamp (string), 12], [Property: ApplicationUser.TwoFactorEnabled (bool) Required, 13], [Property: ApplicationUser.UserName (string) MaxLength(256), 14] }
+                  SELECT TOP(2) a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName
+                  FROM AspNetUsers AS a
+                  WHERE a.NormalizedEmail == @normalizedEmail) | Resolver: c => new RelationalCommandCache(
+                  c.Dependencies.MemoryCache, 
+                  c.RelationalDependencies.QuerySqlGeneratorFactory, 
+                  c.RelationalDependencies.RelationalParameterBasedSqlProcessorFactory, 
+                  Projection Mapping:
+                      EmptyProjectionMember -> Dictionary<IPropertyBase, int> { [Property: ApplicationUser.Id (string) Required PK AfterSave:Throw, 0], [Property: ApplicationUser.AccessFailedCount (int) Required, 1], [Property: ApplicationUser.ConcurrencyStamp (string) Concurrency, 2], [Property: ApplicationUser.Email (string) MaxLength(256), 3], [Property: ApplicationUser.EmailConfirmed (bool) Required, 4], [Property: ApplicationUser.LockoutEnabled (bool) Required, 5], [Property: ApplicationUser.LockoutEnd (DateTimeOffset?), 6], [Property: ApplicationUser.NormalizedEmail (string) Index MaxLength(256), 7], [Property: ApplicationUser.NormalizedUserName (string) Index MaxLength(256), 8], [Property: ApplicationUser.PasswordHash (string), 9], [Property: ApplicationUser.PhoneNumber (string), 10], [Property: ApplicationUser.PhoneNumberConfirmed (bool) Required, 11], [Property: ApplicationUser.SecurityStamp (string), 12], [Property: ApplicationUser.TwoFactorEnabled (bool) Required, 13], [Property: ApplicationUser.UserName (string) MaxLength(256), 14] }
+                  SELECT TOP(2) a.Id, a.AccessFailedCount, a.ConcurrencyStamp, a.Email, a.EmailConfirmed, a.LockoutEnabled, a.LockoutEnd, a.NormalizedEmail, a.NormalizedUserName, a.PasswordHash, a.PhoneNumber, a.PhoneNumberConfirmed, a.SecurityStamp, a.TwoFactorEnabled, a.UserName
+                  FROM AspNetUsers AS a
+                  WHERE a.NormalizedEmail == @normalizedEmail, 
+                  False, 
+                  MultipleParameters
+              )].GetRelationalCommandTemplate(parameters), 
+              readerColumns: null, 
+              shaper: (queryContext, dataReader, resultContext, resultCoordinator) => 
+              {
+                  ApplicationUser entity;
+                  entity = 
+                  {
+                      MaterializationContext materializationContext1;
+                      IEntityType entityType1;
+                      ApplicationUser instance1;
+                      InternalEntityEntry entry1;
+                      bool hasNullKey1;
+                      materializationContext1 = new MaterializationContext(
+                          [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                          queryContext.Context
+                      );
+                      instance1 = default(ApplicationUser);
+                      entry1 = queryContext.TryGetEntry(
+                          key: [LIFTABLE Constant: Key: ApplicationUser.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("Intex.API.Data.ApplicationUser").FindPrimaryKey()], 
+                          keyValues: new object[]{ (object)dataReader.GetString(0) }, 
+                          throwOnNullKey: True, 
+                          hasNullKey: hasNullKey1);
+                      !(hasNullKey1) ? entry1 != default(InternalEntityEntry) ? 
+                      {
+                          entityType1 = entry1.EntityType;
+                          return instance1 = (ApplicationUser)entry1.Entity;
+                      } : 
+                      {
+                          ISnapshot shadowSnapshot1;
+                          shadowSnapshot1 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                          entityType1 = [LIFTABLE Constant: EntityType: ApplicationUser | Resolver: namelessParameter{0} => namelessParameter{0}.Dependencies.Model.FindEntityType("Intex.API.Data.ApplicationUser")];
+                          instance1 = switch (entityType1)
+                          {
+                              case [LIFTABLE Constant: EntityType: ApplicationUser | Resolver: namelessParameter{1} => namelessParameter{1}.Dependencies.Model.FindEntityType("Intex.API.Data.ApplicationUser")]: 
+                                  {
+                                      return 
+                                      {
+                                          ApplicationUser instance;
+                                          instance = new ApplicationUser();
+                                          instance.<Id>k__BackingField = dataReader.GetString(0);
+                                          instance.<AccessFailedCount>k__BackingField = dataReader.GetInt32(1);
+                                          instance.<ConcurrencyStamp>k__BackingField = dataReader.IsDBNull(2) ? default(string) : dataReader.GetString(2);
+                                          instance.<Email>k__BackingField = dataReader.IsDBNull(3) ? default(string) : dataReader.GetString(3);
+                                          instance.<EmailConfirmed>k__BackingField = dataReader.GetBoolean(4);
+                                          instance.<LockoutEnabled>k__BackingField = dataReader.GetBoolean(5);
+                                          instance.<LockoutEnd>k__BackingField = dataReader.IsDBNull(6) ? default(DateTimeOffset?) : (DateTimeOffset?)dataReader.GetFieldValue<DateTimeOffset>(6);
+                                          instance.<NormalizedEmail>k__BackingField = dataReader.IsDBNull(7) ? default(string) : dataReader.GetString(7);
+                                          instance.<NormalizedUserName>k__BackingField = dataReader.IsDBNull(8) ? default(string) : dataReader.GetString(8);
+                                          instance.<PasswordHash>k__BackingField = dataReader.IsDBNull(9) ? default(string) : dataReader.GetString(9);
+                                          instance.<PhoneNumber>k__BackingField = dataReader.IsDBNull(10) ? default(string) : dataReader.GetString(10);
+                                          instance.<PhoneNumberConfirmed>k__BackingField = dataReader.GetBoolean(11);
+                                          instance.<SecurityStamp>k__BackingField = dataReader.IsDBNull(12) ? default(string) : dataReader.GetString(12);
+                                          instance.<TwoFactorEnabled>k__BackingField = dataReader.GetBoolean(13);
+                                          instance.<UserName>k__BackingField = dataReader.IsDBNull(14) ? default(string) : dataReader.GetString(14);
+                                          (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                              context: materializationContext1.Context, 
+                                              entity: instance, 
+                                              queryTrackingBehavior: TrackAll, 
+                                              structuralType: [LIFTABLE Constant: EntityType: ApplicationUser | Resolver: namelessParameter{2} => namelessParameter{2}.Dependencies.Model.FindEntityType("Intex.API.Data.ApplicationUser")]) : default(void);
+                                          return instance;
+                                      }}
+                              default: 
+                                  default(ApplicationUser)
+                          }
+                          ;
+                          entry1 = entityType1 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                              entityType: entityType1, 
+                              entity: instance1, 
+                              snapshot: shadowSnapshot1);
+                          return instance1;
+                      } : default(void);
+                      return instance1;
+                  };
+                  return entity;
+              }, 
+              contextType: Intex.API.Data.AuthIdentityDbContext, 
+              standAloneStateManager: False, 
+              detailedErrorsEnabled: False, 
+              threadSafetyChecksEnabled: True), 
+          cancellationToken: queryContext.CancellationToken)'
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedEmail] = @normalizedEmail
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (52ms) [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedEmail] = @normalizedEmail
+dbug: Microsoft.EntityFrameworkCore.ChangeTracking[10806]
+      Context 'AuthIdentityDbContext' started tracking 'ApplicationUser' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 21ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Query[10111]
+      Compiling query expression: 
+      'DbSet<IdentityRole>()
+          .SingleOrDefault(r => r.NormalizedName == @normalizedRoleName)'
+dbug: Microsoft.EntityFrameworkCore.Query[10107]
+      Generated query execution expression: 
+      'queryContext => ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync<IdentityRole>(
+          asyncEnumerable: SingleQueryingEnumerable.Create<IdentityRole>(
+              relationalQueryContext: (RelationalQueryContext)queryContext, 
+              relationalCommandResolver: parameters => [LIFTABLE Constant: RelationalCommandCache.QueryExpression(
+                  Projection Mapping:
+                      EmptyProjectionMember -> Dictionary<IPropertyBase, int> { [Property: IdentityRole.Id (string) Required PK AfterSave:Throw, 0], [Property: IdentityRole.ConcurrencyStamp (string) Concurrency, 1], [Property: IdentityRole.Name (string) MaxLength(256), 2], [Property: IdentityRole.NormalizedName (string) Index MaxLength(256), 3] }
+                  SELECT TOP(2) a.Id, a.ConcurrencyStamp, a.Name, a.NormalizedName
+                  FROM AspNetRoles AS a
+                  WHERE a.NormalizedName == @normalizedRoleName) | Resolver: c => new RelationalCommandCache(
+                  c.Dependencies.MemoryCache, 
+                  c.RelationalDependencies.QuerySqlGeneratorFactory, 
+                  c.RelationalDependencies.RelationalParameterBasedSqlProcessorFactory, 
+                  Projection Mapping:
+                      EmptyProjectionMember -> Dictionary<IPropertyBase, int> { [Property: IdentityRole.Id (string) Required PK AfterSave:Throw, 0], [Property: IdentityRole.ConcurrencyStamp (string) Concurrency, 1], [Property: IdentityRole.Name (string) MaxLength(256), 2], [Property: IdentityRole.NormalizedName (string) Index MaxLength(256), 3] }
+                  SELECT TOP(2) a.Id, a.ConcurrencyStamp, a.Name, a.NormalizedName
+                  FROM AspNetRoles AS a
+                  WHERE a.NormalizedName == @normalizedRoleName, 
+                  False, 
+                  MultipleParameters
+              )].GetRelationalCommandTemplate(parameters), 
+              readerColumns: null, 
+              shaper: (queryContext, dataReader, resultContext, resultCoordinator) => 
+              {
+                  IdentityRole entity;
+                  entity = 
+                  {
+                      MaterializationContext materializationContext1;
+                      IEntityType entityType1;
+                      IdentityRole instance1;
+                      InternalEntityEntry entry1;
+                      bool hasNullKey1;
+                      materializationContext1 = new MaterializationContext(
+                          [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                          queryContext.Context
+                      );
+                      instance1 = default(IdentityRole);
+                      entry1 = queryContext.TryGetEntry(
+                          key: [LIFTABLE Constant: Key: IdentityRole.Id PK | Resolver: c => c.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityRole").FindPrimaryKey()], 
+                          keyValues: new object[]{ (object)dataReader.GetString(0) }, 
+                          throwOnNullKey: True, 
+                          hasNullKey: hasNullKey1);
+                      !(hasNullKey1) ? entry1 != default(InternalEntityEntry) ? 
+                      {
+                          entityType1 = entry1.EntityType;
+                          return instance1 = (IdentityRole)entry1.Entity;
+                      } : 
+                      {
+                          ISnapshot shadowSnapshot1;
+                          shadowSnapshot1 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                          entityType1 = [LIFTABLE Constant: EntityType: IdentityRole | Resolver: namelessParameter{0} => namelessParameter{0}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityRole")];
+                          instance1 = switch (entityType1)
+                          {
+                              case [LIFTABLE Constant: EntityType: IdentityRole | Resolver: namelessParameter{1} => namelessParameter{1}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityRole")]: 
+                                  {
+                                      return 
+                                      {
+                                          IdentityRole instance;
+                                          instance = new IdentityRole();
+                                          instance.<Id>k__BackingField = dataReader.GetString(0);
+                                          instance.<ConcurrencyStamp>k__BackingField = dataReader.IsDBNull(1) ? default(string) : dataReader.GetString(1);
+                                          instance.<Name>k__BackingField = dataReader.IsDBNull(2) ? default(string) : dataReader.GetString(2);
+                                          instance.<NormalizedName>k__BackingField = dataReader.IsDBNull(3) ? default(string) : dataReader.GetString(3);
+                                          (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                              context: materializationContext1.Context, 
+                                              entity: instance, 
+                                              queryTrackingBehavior: TrackAll, 
+                                              structuralType: [LIFTABLE Constant: EntityType: IdentityRole | Resolver: namelessParameter{2} => namelessParameter{2}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityRole")]) : default(void);
+                                          return instance;
+                                      }}
+                              default: 
+                                  default(IdentityRole)
+                          }
+                          ;
+                          entry1 = entityType1 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                              entityType: entityType1, 
+                              entity: instance1, 
+                              snapshot: shadowSnapshot1);
+                          return instance1;
+                      } : default(void);
+                      return instance1;
+                  };
+                  return entity;
+              }, 
+              contextType: Intex.API.Data.AuthIdentityDbContext, 
+              standAloneStateManager: False, 
+              detailedErrorsEnabled: False, 
+              threadSafetyChecksEnabled: True), 
+          cancellationToken: queryContext.CancellationToken)'
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@normalizedRoleName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedRoleName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (53ms) [Parameters=[@normalizedRoleName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedRoleName
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 1ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Query[10111]
+      Compiling query expression: 
+      'DbSet<IdentityUserRole<string>>()
+          .FirstOrDefault(e => EF.Property<string>(e, "UserId") == @p && EF.Property<string>(e, "RoleId") == @p1)'
+dbug: Microsoft.EntityFrameworkCore.Query[10107]
+      Generated query execution expression: 
+      'queryContext => ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync<IdentityUserRole<string>>(
+          asyncEnumerable: SingleQueryingEnumerable.Create<IdentityUserRole<string>>(
+              relationalQueryContext: (RelationalQueryContext)queryContext, 
+              relationalCommandResolver: parameters => [LIFTABLE Constant: RelationalCommandCache.QueryExpression(
+                  Projection Mapping:
+                      EmptyProjectionMember -> Dictionary<IPropertyBase, int> { [Property: IdentityUserRole<string>.UserId (string) Required PK FK AfterSave:Throw, 0], [Property: IdentityUserRole<string>.RoleId (string) Required PK FK Index AfterSave:Throw, 1] }
+                  SELECT TOP(1) a.UserId, a.RoleId
+                  FROM AspNetUserRoles AS a
+                  WHERE (a.UserId == @p) && (a.RoleId == @p1)) | Resolver: c => new RelationalCommandCache(
+                  c.Dependencies.MemoryCache, 
+                  c.RelationalDependencies.QuerySqlGeneratorFactory, 
+                  c.RelationalDependencies.RelationalParameterBasedSqlProcessorFactory, 
+                  Projection Mapping:
+                      EmptyProjectionMember -> Dictionary<IPropertyBase, int> { [Property: IdentityUserRole<string>.UserId (string) Required PK FK AfterSave:Throw, 0], [Property: IdentityUserRole<string>.RoleId (string) Required PK FK Index AfterSave:Throw, 1] }
+                  SELECT TOP(1) a.UserId, a.RoleId
+                  FROM AspNetUserRoles AS a
+                  WHERE (a.UserId == @p) && (a.RoleId == @p1), 
+                  False, 
+                  MultipleParameters
+              )].GetRelationalCommandTemplate(parameters), 
+              readerColumns: null, 
+              shaper: (queryContext, dataReader, resultContext, resultCoordinator) => 
+              {
+                  IdentityUserRole<string> entity;
+                  entity = 
+                  {
+                      MaterializationContext materializationContext1;
+                      IEntityType entityType1;
+                      IdentityUserRole<string> instance1;
+                      InternalEntityEntry entry1;
+                      bool hasNullKey1;
+                      materializationContext1 = new MaterializationContext(
+                          [LIFTABLE Constant: ValueBuffer | Resolver: _ => (object)ValueBuffer.Empty], 
+                          queryContext.Context
+                      );
+                      instance1 = default(IdentityUserRole<string>);
+                      entry1 = queryContext.TryGetEntry(
+                          key: [LIFTABLE Constant: Key: IdentityUserRole<string>.UserId, IdentityUserRole<string>.RoleId PK | Resolver: c => c.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityUserRole<string>").FindPrimaryKey()], 
+                          keyValues: new object[]
+                          { 
+                              (object)dataReader.GetString(0), 
+                              (object)dataReader.GetString(1) 
+                          }, 
+                          throwOnNullKey: True, 
+                          hasNullKey: hasNullKey1);
+                      !(hasNullKey1) ? entry1 != default(InternalEntityEntry) ? 
+                      {
+                          entityType1 = entry1.EntityType;
+                          return instance1 = (IdentityUserRole<string>)entry1.Entity;
+                      } : 
+                      {
+                          ISnapshot shadowSnapshot1;
+                          shadowSnapshot1 = [LIFTABLE Constant: Snapshot | Resolver: _ => Snapshot.Empty];
+                          entityType1 = [LIFTABLE Constant: EntityType: IdentityUserRole<string> | Resolver: namelessParameter{0} => namelessParameter{0}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityUserRole<string>")];
+                          instance1 = switch (entityType1)
+                          {
+                              case [LIFTABLE Constant: EntityType: IdentityUserRole<string> | Resolver: namelessParameter{1} => namelessParameter{1}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityUserRole<string>")]: 
+                                  {
+                                      return 
+                                      {
+                                          IdentityUserRole<string> instance;
+                                          instance = new IdentityUserRole<string>();
+                                          instance.<UserId>k__BackingField = dataReader.GetString(0);
+                                          instance.<RoleId>k__BackingField = dataReader.GetString(1);
+                                          (instance is IInjectableService) ? ((IInjectableService)instance).Injected(
+                                              context: materializationContext1.Context, 
+                                              entity: instance, 
+                                              queryTrackingBehavior: TrackAll, 
+                                              structuralType: [LIFTABLE Constant: EntityType: IdentityUserRole<string> | Resolver: namelessParameter{2} => namelessParameter{2}.Dependencies.Model.FindEntityType("Microsoft.AspNetCore.Identity.IdentityUserRole<string>")]) : default(void);
+                                          return instance;
+                                      }}
+                              default: 
+                                  default(IdentityUserRole<string>)
+                          }
+                          ;
+                          entry1 = entityType1 == default(IEntityType) ? default(InternalEntityEntry) : queryContext.StartTracking(
+                              entityType: entityType1, 
+                              entity: instance1, 
+                              snapshot: shadowSnapshot1);
+                          return instance1;
+                      } : default(void);
+                      return instance1;
+                  };
+                  return entity;
+              }, 
+              contextType: Intex.API.Data.AuthIdentityDbContext, 
+              standAloneStateManager: False, 
+              detailedErrorsEnabled: False, 
+              threadSafetyChecksEnabled: True), 
+          cancellationToken: queryContext.CancellationToken)'
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@p='?' (Size = 450), @p1='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[UserId], [a].[RoleId]
+      FROM [AspNetUserRoles] AS [a]
+      WHERE [a].[UserId] = @p AND [a].[RoleId] = @p1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (52ms) [Parameters=[@p='?' (Size = 450), @p1='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[UserId], [a].[RoleId]
+      FROM [AspNetUserRoles] AS [a]
+      WHERE [a].[UserId] = @p AND [a].[RoleId] = @p1
+dbug: Microsoft.EntityFrameworkCore.ChangeTracking[10806]
+      Context 'AuthIdentityDbContext' started tracking 'IdentityUserRole' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 7ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedEmail] = @normalizedEmail
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (52ms) [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedEmail] = @normalizedEmail
+dbug: Microsoft.EntityFrameworkCore.ChangeTracking[10806]
+      Context 'AuthIdentityDbContext' started tracking 'ApplicationUser' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 2ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@normalizedRoleName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedRoleName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (52ms) [Parameters=[@normalizedRoleName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedRoleName
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 0ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@p='?' (Size = 450), @p1='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[UserId], [a].[RoleId]
+      FROM [AspNetUserRoles] AS [a]
+      WHERE [a].[UserId] = @p AND [a].[RoleId] = @p1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (52ms) [Parameters=[@p='?' (Size = 450), @p1='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[UserId], [a].[RoleId]
+      FROM [AspNetUserRoles] AS [a]
+      WHERE [a].[UserId] = @p AND [a].[RoleId] = @p1
+dbug: Microsoft.EntityFrameworkCore.ChangeTracking[10806]
+      Context 'AuthIdentityDbContext' started tracking 'IdentityUserRole' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 0ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedEmail] = @normalizedEmail
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (54ms) [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[AccessFailedCount], [a].[ConcurrencyStamp], [a].[Email], [a].[EmailConfirmed], [a].[LockoutEnabled], [a].[LockoutEnd], [a].[NormalizedEmail], [a].[NormalizedUserName], [a].[PasswordHash], [a].[PhoneNumber], [a].[PhoneNumberConfirmed], [a].[SecurityStamp], [a].[TwoFactorEnabled], [a].[UserName]
+      FROM [AspNetUsers] AS [a]
+      WHERE [a].[NormalizedEmail] = @normalizedEmail
+dbug: Microsoft.EntityFrameworkCore.ChangeTracking[10806]
+      Context 'AuthIdentityDbContext' started tracking 'ApplicationUser' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 0ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@normalizedRoleName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedRoleName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (60ms) [Parameters=[@normalizedRoleName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @normalizedRoleName
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 0ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20001]
+      Opened connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20103]
+      Creating DbCommand for 'ExecuteReader'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20104]
+      Created DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20106]
+      Initialized DbCommand for 'ExecuteReader' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20100]
+      Executing DbCommand [Parameters=[@p='?' (Size = 450), @p1='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[UserId], [a].[RoleId]
+      FROM [AspNetUserRoles] AS [a]
+      WHERE [a].[UserId] = @p AND [a].[RoleId] = @p1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (52ms) [Parameters=[@p='?' (Size = 450), @p1='?' (Size = 450)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[UserId], [a].[RoleId]
+      FROM [AspNetUserRoles] AS [a]
+      WHERE [a].[UserId] = @p AND [a].[RoleId] = @p1
+dbug: Microsoft.EntityFrameworkCore.ChangeTracking[10806]
+      Context 'AuthIdentityDbContext' started tracking 'IdentityUserRole' entity. Consider using 'DbContextOptionsBuilder.EnableSensitiveDataLogging' to see key values.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20301]
+      Closing data reader to 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Command[20300]
+      A data reader for 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' is being disposed after spending 0ms reading results.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20002]
+      Closing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20003]
+      Closed connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Infrastructure[10407]
+      'AuthIdentityDbContext' disposed.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20007]
+      Disposing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20008]
+      Disposed connection to database '' on server '' (0ms).
+dbug: Microsoft.EntityFrameworkCore.Infrastructure[10407]
+      'AppDbContext' disposed.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20007]
+      Disposing connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20008]
+      Disposed connection to database '' on server '' (0ms).
+dbug: Microsoft.Extensions.Hosting.Internal.Host[1]
+      Hosting starting
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: https://127.0.0.1:5100
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\merri\OneDrive\INTEXW2026\IntexGroup1-9\backend\Intex.API
+dbug: Microsoft.Extensions.Hosting.Internal.Host[2]
+      Hosting started
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST https://127.0.0.1:5100/api/auth/login?useCookies=true - application/json 52
+dbug: Microsoft.Extensions.DependencyInjection.IdentityServiceCollectionExtensions+CompositeIdentityHandler[9]
+      AuthenticationScheme: Identity.BearerAndApplication was not authenticated.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/auth/login'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/auth/login'
+fail: Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware[1]
+      An unhandled exception has occurred while executing the request.
+      Microsoft.AspNetCore.Http.BadHttpRequestException: Failed to read parameter "LoginRequest login" from the request body as JSON.
+       ---> System.Text.Json.JsonException: 'e' is an invalid start of a property name. Expected a '"'. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+       ---> System.Text.Json.JsonReaderException: 'e' is an invalid start of a property name. Expected a '"'. LineNumber: 0 | BytePositionInLine: 1.
+         at System.Text.Json.ThrowHelper.ThrowJsonReaderException(Utf8JsonReader& json, ExceptionResource resource, Byte nextByte, ReadOnlySpan`1 bytes)
+         at System.Text.Json.Utf8JsonReader.ReadSingleSegment()
+         at System.Text.Json.Utf8JsonReader.Read()
+         at System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1.ReadConstructorArgumentsWithContinuation(ReadStack& state, Utf8JsonReader& reader, JsonSerializerOptions options)
+         at System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+         at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+         at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
+         --- End of inner exception stack trace ---
+         at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, JsonReaderException ex)
+         at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions options, ReadStack& state)
+         at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.ContinueDeserialize[TReadBufferState,TStream](TReadBufferState& bufferState, JsonReaderState& jsonReaderState, ReadStack& readStack, T& value)
+         at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.DeserializeAsync[TReadBufferState,TStream](TStream utf8Json, TReadBufferState bufferState, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Http.HttpRequestJsonExtensions.ReadFromJsonAsync[TValue](HttpRequest request, JsonTypeInfo`1 jsonTypeInfo, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Http.HttpRequestJsonExtensions.ReadFromJsonAsync[TValue](HttpRequest request, JsonTypeInfo`1 jsonTypeInfo, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Http.Generated.<GeneratedRouteBuilderExtensions_g>F1484D19FB5B146500BBB0E84A4082F5C1ADB7AF712D4AC4853F17C3B06B73B4F__GeneratedRouteBuilderExtensionsCore.TryResolveBodyAsync[T](HttpContext httpContext, <GeneratedRouteBuilderExtensions_g>F1484D19FB5B146500BBB0E84A4082F5C1ADB7AF712D4AC4853F17C3B06B73B4F__LogOrThrowExceptionHelper logOrThrowExceptionHelper, Boolean allowEmpty, String parameterTypeName, String parameterName, JsonTypeInfo`1 jsonTypeInfo, Boolean isInferred)
+         --- End of inner exception stack trace ---
+         at Microsoft.AspNetCore.Http.Generated.<GeneratedRouteBuilderExtensions_g>F1484D19FB5B146500BBB0E84A4082F5C1ADB7AF712D4AC4853F17C3B06B73B4F__LogOrThrowExceptionHelper.InvalidJsonRequestBody(String parameterTypeName, String parameterName, Exception exception)
+         at Microsoft.AspNetCore.Http.Generated.<GeneratedRouteBuilderExtensions_g>F1484D19FB5B146500BBB0E84A4082F5C1ADB7AF712D4AC4853F17C3B06B73B4F__GeneratedRouteBuilderExtensionsCore.TryResolveBodyAsync[T](HttpContext httpContext, <GeneratedRouteBuilderExtensions_g>F1484D19FB5B146500BBB0E84A4082F5C1ADB7AF712D4AC4853F17C3B06B73B4F__LogOrThrowExceptionHelper logOrThrowExceptionHelper, Boolean allowEmpty, String parameterTypeName, String parameterName, JsonTypeInfo`1 jsonTypeInfo, Boolean isInferred)
+         at Microsoft.AspNetCore.Http.Generated.<GeneratedRouteBuilderExtensions_g>F1484D19FB5B146500BBB0E84A4082F5C1ADB7AF712D4AC4853F17C3B06B73B4F__GeneratedRouteBuilderExtensionsCore.<>c__DisplayClass4_0.<<MapPost1>g__RequestHandler|5>d.MoveNext()
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
+         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+         at Intex.API.Infrastructure.SecurityHeaders.<>c__DisplayClass1_0.<<UseSecurityHeaders>b__0>d.MoveNext() in C:\Users\merri\OneDrive\INTEXW2026\IntexGroup1-9\backend\Intex.API\Infrastructure\SecurityHeaders.cs:line 19
+      --- End of stack trace from previous location ---
+         at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+         at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+         at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST https://127.0.0.1:5100/api/auth/login?useCookies=true - 400 - text/plain;+charset=utf-8 103.0907ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET https://127.0.0.1:5100/api/auth/me - - -
+dbug: Microsoft.Extensions.DependencyInjection.IdentityServiceCollectionExtensions+CompositeIdentityHandler[9]
+      AuthenticationScheme: Identity.BearerAndApplication was not authenticated.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'Intex.API.Controllers.AuthController.Me (Intex.API)'
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[102]
+      Route matched with {action = "Me", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Me() on controller Intex.API.Controllers.AuthController (Intex.API).
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor[1]
+      Executing OkObjectResult, writing value of type '<>f__AnonymousType0`4[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String[], System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+info: Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker[105]
+      Executed action Intex.API.Controllers.AuthController.Me (Intex.API) in 24.8644ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'Intex.API.Controllers.AuthController.Me (Intex.API)'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET https://127.0.0.1:5100/api/auth/me - 200 - application/json;+charset=utf-8 62.6723ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST https://127.0.0.1:5100/api/auth/manage/2fa - application/json 2
+dbug: Microsoft.Extensions.DependencyInjection.IdentityServiceCollectionExtensions+CompositeIdentityHandler[9]
+      AuthenticationScheme: Identity.BearerAndApplication was not authenticated.
+info: Microsoft.AspNetCore.Authorization.DefaultAuthorizationService[2]
+      Authorization failed. These requirements were not met:
+      DenyAnonymousAuthorizationRequirement: Requires an authenticated user.
+info: Microsoft.AspNetCore.Authentication.BearerToken.BearerTokenHandler[12]
+      AuthenticationScheme: Identity.Bearer was challenged.
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST https://127.0.0.1:5100/api/auth/manage/2fa - 401 0 - 10.9791ms

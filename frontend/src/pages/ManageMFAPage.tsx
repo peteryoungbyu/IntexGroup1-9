@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import type { TwoFactorStatus } from '../types/TwoFactorStatus';
 import { getTwoFactorStatus, enableTwoFactor, disableTwoFactor, resetRecoveryCodes } from '../lib/authAPI';
+import { useAuth } from '../context/AuthContext';
 
 export default function ManageMFAPage() {
+  const { authSession } = useAuth();
   const [status, setStatus] = useState<TwoFactorStatus | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [code, setCode] = useState('');
@@ -15,8 +17,12 @@ export default function ManageMFAPage() {
     try {
       const s = await getTwoFactorStatus();
       setStatus(s);
-      if (s.authenticatorUri) {
-        const url = await QRCode.toDataURL(s.authenticatorUri);
+      if (s.sharedKey && authSession.email) {
+        const issuer = 'New Dawn Foundation';
+        const account = encodeURIComponent(authSession.email);
+        const key = s.sharedKey.replace(/\s/g, '');
+        const otpauthUri = `otpauth://totp/${encodeURIComponent(issuer)}:${account}?secret=${key}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
+        const url = await QRCode.toDataURL(otpauthUri);
         setQrDataUrl(url);
       }
     } catch {

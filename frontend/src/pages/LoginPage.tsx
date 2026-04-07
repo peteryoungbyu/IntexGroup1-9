@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import {
-  loginUser,
-  getExternalProviders,
-  buildExternalLoginUrl,
-} from '../lib/authAPI';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useEffect } from 'react';
 import horizontalLightLogo from '../assets/horizontal_light.png';
+import {
+  buildExternalLoginUrl,
+  getExternalProviders,
+  loginUser,
+  REQUIRES_TWO_FACTOR_ERROR,
+} from '../lib/authAPI';
+
+const MFA_PROMPT =
+  'Enter your authenticator code or a recovery code to continue.';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -38,6 +41,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
       await loginUser(
         email,
@@ -46,16 +50,20 @@ export default function LoginPage() {
         twoFactorCode || undefined,
         recoveryCode || undefined
       );
-      await refreshAuthSession();
+
+      const session = await refreshAuthSession();
+      if (!session.isAuthenticated) {
+        setError('Sign-in did not complete. Please try again.');
+        return;
+      }
+
       navigate(returnPath);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Login failed';
-      if (
-        msg.toLowerCase().includes('two') ||
-        msg.toLowerCase().includes('authenticator')
-      ) {
+
+      if (msg === REQUIRES_TWO_FACTOR_ERROR) {
         setShowMfa(true);
-        setError('Please enter your two-factor authentication code.');
+        setError(MFA_PROMPT);
       } else {
         setError(msg);
       }
@@ -88,7 +96,15 @@ export default function LoginPage() {
         <div className="container" style={{ maxWidth: 440 }}>
           <div className="card">
             <div className="card-body p-4">
-              {error && <div className="alert alert-danger">{error}</div>}
+              {error && (
+                <div
+                  className={`alert ${
+                    error === MFA_PROMPT ? 'alert-info' : 'alert-danger'
+                  }`}
+                >
+                  {error}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
@@ -102,6 +118,7 @@ export default function LoginPage() {
                     autoComplete="email"
                   />
                 </div>
+
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Password</label>
                   <input
@@ -127,8 +144,10 @@ export default function LoginPage() {
                         onChange={(e) => setTwoFactorCode(e.target.value)}
                         placeholder="6-digit code"
                         inputMode="numeric"
+                        autoComplete="one-time-code"
                       />
                     </div>
+
                     <div className="mb-3">
                       <label className="form-label fw-semibold">
                         Recovery Code (if no authenticator)
@@ -162,7 +181,7 @@ export default function LoginPage() {
                   className="btn btn-primary w-100 fw-semibold"
                   disabled={loading}
                 >
-                  {loading ? 'Signing in…' : 'Sign In'}
+                  {loading ? 'Signing in...' : showMfa ? 'Verify Code' : 'Sign In'}
                 </button>
               </form>
 
@@ -187,7 +206,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center mt-3 small text-muted">
-            <Link to="/privacy">Privacy Policy</Link> ·{' '}
+            <Link to="/privacy">Privacy Policy</Link> |{' '}
             <Link to="/cookie-policy">Cookie Policy</Link>
           </p>
         </div>
