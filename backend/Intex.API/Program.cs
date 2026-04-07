@@ -10,7 +10,26 @@ Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Read config
-var frontendUrl = builder.Configuration["FrontendUrl"] ?? "https://red-bush-08c20d303.4.azurestaticapps.net";
+var configuredFrontendUrls = builder.Configuration
+    .GetSection("FrontendUrls")
+    .Get<string[]>() ?? Array.Empty<string>();
+var configuredSingleFrontendUrl = builder.Configuration["FrontendUrl"];
+var frontendUrls = configuredFrontendUrls
+    .Concat(string.IsNullOrWhiteSpace(configuredSingleFrontendUrl)
+        ? Array.Empty<string>()
+        : new[] { configuredSingleFrontendUrl })
+    .Select(url => url.Trim().TrimEnd('/'))
+    .Where(url => !string.IsNullOrWhiteSpace(url))
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
+if (frontendUrls.Length == 0)
+{
+    frontendUrls = builder.Environment.IsDevelopment()
+        ? new[] { "http://localhost:3000", "https://localhost:3000" }
+        : throw new InvalidOperationException("Set FrontendUrl or FrontendUrls in configuration for production.");
+}
+
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 
@@ -78,7 +97,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendClient", policy =>
-        policy.WithOrigins(frontendUrl)
+        policy.WithOrigins(frontendUrls)
               .AllowCredentials()
               .AllowAnyMethod()
               .AllowAnyHeader());

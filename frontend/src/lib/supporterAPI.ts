@@ -3,10 +3,9 @@ import type {
   SupporterListItem,
   PagedResult,
 } from '../types/SupporterDetail';
+import { API_BASE_URL } from './apiBase';
 
-const BASE =
-  import.meta.env.VITE_API_BASE_URL ??
-  'https://newdawnapp-bsb6bbg4akbjhgg2.francecentral-01.azurewebsites.net';
+const BASE = API_BASE_URL;
 
 function extractErrorMessage(status: number): string {
   switch (status) {
