@@ -123,6 +123,9 @@ builder.Services.AddScoped<IResidentService, ResidentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
+builder.Services.Configure<DonorChurnInferenceOptions>(
+    builder.Configuration.GetSection("DonorChurnInference"));
+builder.Services.AddScoped<IDonorChurnInferenceService, DonorChurnInferenceService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

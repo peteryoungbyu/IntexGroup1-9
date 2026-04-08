@@ -9,6 +9,19 @@ import sklearn
 from pythondbconnection import importTableFromDb, update_supporter_likely_churn
 
 
+EXPECTED_SKLEARN_VERSION = "1.6.1"
+
+
+def validate_sklearn_version(expected_version: str = EXPECTED_SKLEARN_VERSION) -> None:
+    """Fail fast when runtime sklearn does not match the model's training version."""
+    if sklearn.__version__ != expected_version:
+        raise RuntimeError(
+            "Model bundle requires a compatible scikit-learn runtime. "
+            f"Expected {expected_version}, but found {sklearn.__version__}. "
+            "Run: python -m pip install \"scikit-learn==1.6.1\""
+        )
+
+
 def load_model_bundle(model_path: Path) -> dict:
     """Load model payload and raise a clear error when sklearn versions are incompatible."""
     try:
@@ -171,6 +184,7 @@ def build_latest_snapshot_dataset(
 
 
 def run_inference_and_write(model_path: Path, as_of_date: pd.Timestamp) -> int:
+    validate_sklearn_version()
     payload = load_model_bundle(model_path)
 
     model = payload["model"]
@@ -233,6 +247,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     model_path = Path(args.model_path)
+
+    # Allow running from either repo root or ml-pipelines by resolving relative
+    # model paths against this script's directory when needed.
+    if not model_path.is_absolute() and not model_path.exists():
+        model_path = Path(__file__).resolve().parent / model_path
 
     if not model_path.exists():
         raise FileNotFoundError(f"Model file not found: {model_path}")

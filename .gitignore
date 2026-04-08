@@ -40,6 +40,15 @@ frontend/.env
 backend/Intex.API/.env
 backend/Intex.API/appsettings.Development.json
 
+# Python virtual environments and cache artifacts
+.venv/
+.venv-ml312/
+**/.venv/
+**/.venv-ml312/
+__pycache__/
+**/__pycache__/
+*.pyc
+
 
 AssignmentInstructions.md
 Claude.md

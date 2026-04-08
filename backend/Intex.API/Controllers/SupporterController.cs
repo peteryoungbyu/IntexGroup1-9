@@ -14,8 +14,15 @@ namespace Intex.API.Controllers;
 public class SupporterController : ControllerBase
 {
     private readonly ISupporterService _service;
+    private readonly IDonorChurnInferenceService _donorChurnInferenceService;
 
-    public SupporterController(ISupporterService service) => _service = service;
+    public SupporterController(
+        ISupporterService service,
+        IDonorChurnInferenceService donorChurnInferenceService)
+    {
+        _service = service;
+        _donorChurnInferenceService = donorChurnInferenceService;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -24,6 +31,10 @@ public class SupporterController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] string? status = null)
         => Ok(await _service.GetAllAsync(page, pageSize, search, status));
+
+    [HttpGet("churn")]
+    public async Task<IActionResult> GetChurnPredictions()
+        => Ok(await _service.GetChurnPredictionsAsync());
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
@@ -70,6 +81,46 @@ public class SupporterController : ControllerBase
     {
         var deleted = await _service.DeleteDonationAsync(id, donationId);
         return deleted ? NoContent() : NotFound();
+    }
+
+    [HttpPost("churn/run")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> RunDonorChurnInference(
+        [FromBody] DonorChurnRunRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _donorChurnInferenceService.RunAsync(request, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Invalid request",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest,
+            });
+        }
+        catch (TimeoutException ex)
+        {
+            return StatusCode(StatusCodes.Status504GatewayTimeout, new ProblemDetails
+            {
+                Title = "Inference timed out",
+                Detail = ex.Message,
+                Status = StatusCodes.Status504GatewayTimeout,
+            });
+        }
+        catch (FileNotFoundException ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+            {
+                Title = "Inference configuration error",
+                Detail = ex.Message,
+                Status = StatusCodes.Status500InternalServerError,
+            });
+        }
     }
 }
 

@@ -57,3 +57,104 @@ flowchart LR
 - In production, the frontend is deployed separately to Azure Static Web Apps and calls the ASP.NET Core API over HTTPS using the origin configured in [`frontend/.env.production`](./frontend/.env.production).
 - The live public frontend and API are expected to terminate TLS with Microsoft-managed certificates on their Azure hostnames.
 - Both application data and Identity currently connect through the same SQL Server connection string.
+
+## Container Deployment (Azure)
+
+This project is set up to deploy as a single Docker container. The image build:
+
+- compiles the backend API,
+- builds the frontend and copies it into `wwwroot`,
+- installs Python + ODBC runtime dependencies,
+- installs ML dependencies from `backend/Intex.API/ml-runtime/requirements.txt`.
+
+### 1. Prerequisites
+
+- Azure subscription
+- Azure CLI installed and logged in (`az login`)
+- Docker installed and running
+
+### 2. Build and Push the Image
+
+Use Azure Container Registry (ACR):
+
+```bash
+# Variables
+RG=<resource-group>
+LOCATION=<location>
+ACR_NAME=<unique-acr-name>
+IMAGE_NAME=intex-api
+IMAGE_TAG=latest
+
+# Create resource group and ACR (if needed)
+az group create --name $RG --location $LOCATION
+az acr create --resource-group $RG --name $ACR_NAME --sku Basic
+
+# Build and push via ACR Tasks
+az acr build --registry $ACR_NAME --image $IMAGE_NAME:$IMAGE_TAG .
+```
+
+### 3. Deploy to Azure App Service (Container)
+
+```bash
+APP_NAME=<unique-app-name>
+PLAN_NAME=<app-service-plan-name>
+
+# Create Linux App Service plan
+az appservice plan create --resource-group $RG --name $PLAN_NAME --is-linux --sku B1
+
+# Create web app configured for your container image
+az webapp create \
+    --resource-group $RG \
+    --plan $PLAN_NAME \
+    --name $APP_NAME \
+    --deployment-container-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG
+
+# Allow App Service to pull from ACR
+az webapp config container set \
+    --resource-group $RG \
+    --name $APP_NAME \
+    --container-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG \
+    --container-registry-url https://$ACR_NAME.azurecr.io
+```
+
+### 4. Required App Settings
+
+Set these in App Service Configuration:
+
+```bash
+az webapp config appsettings set \
+    --resource-group $RG \
+    --name $APP_NAME \
+    --settings \
+        ConnectionStrings__AppConnection="<your-sql-connection-string>" \
+        ASPNETCORE_ENVIRONMENT="Production" \
+        FrontendUrl="https://$APP_NAME.azurewebsites.net"
+```
+
+If needed, override inference settings explicitly:
+
+```bash
+az webapp config appsettings set \
+    --resource-group $RG \
+    --name $APP_NAME \
+    --settings \
+        DonorChurnInference__PythonExecutablePath="/usr/bin/python3" \
+        DonorChurnInference__ScriptPath="ml-runtime/run_donor_churn_inference.py" \
+        DonorChurnInference__WorkingDirectory="." \
+        DonorChurnInference__TimeoutSeconds="300"
+```
+
+### 5. Verify
+
+After deployment:
+
+1. Sign in as an admin user.
+2. Open the donors admin page.
+3. Click **Run Churn Inference**.
+4. Confirm success message and updated donor churn data.
+
+You can also inspect container logs:
+
+```bash
+az webapp log tail --resource-group $RG --name $APP_NAME
+```

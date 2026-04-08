@@ -9,6 +9,22 @@ import { API_BASE_URL } from './apiBase';
 
 const BASE = API_BASE_URL;
 
+export interface DonorChurnRunResult {
+  success: boolean;
+  exitCode: number;
+  startedAtUtc: string;
+  finishedAtUtc: string;
+  standardOutput: string;
+  standardError: string;
+}
+
+export interface SupporterChurnItem {
+  supporterId: number;
+  displayName: string;
+  churnProbability: number | null;
+  likelyChurn: boolean | null;
+}
+
 function extractErrorMessage(status: number): string {
   switch (status) {
     case 401:
@@ -65,7 +81,9 @@ export async function deleteSupporter(id: number): Promise<void> {
   await apiFetch(`/api/supporters/${id}`, { method: 'DELETE' });
 }
 
-export async function createSupporter(data: Omit<Supporter, 'supporterId' | 'createdAt'>): Promise<Supporter> {
+export async function createSupporter(
+  data: Omit<Supporter, 'supporterId' | 'createdAt'>
+): Promise<Supporter> {
   const res = await apiFetch('/api/supporters', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -73,7 +91,10 @@ export async function createSupporter(data: Omit<Supporter, 'supporterId' | 'cre
   return res.json();
 }
 
-export async function updateSupporter(id: number, data: Omit<Supporter, 'supporterId' | 'createdAt'>): Promise<Supporter> {
+export async function updateSupporter(
+  id: number,
+  data: Omit<Supporter, 'supporterId' | 'createdAt'>
+): Promise<Supporter> {
   const res = await apiFetch(`/api/supporters/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -81,7 +102,10 @@ export async function updateSupporter(id: number, data: Omit<Supporter, 'support
   return res.json();
 }
 
-export async function addDonation(supporterId: number, data: Omit<Donation, 'donationId'>): Promise<Donation> {
+export async function addDonation(
+  supporterId: number,
+  data: Omit<Donation, 'donationId'>
+): Promise<Donation> {
   const res = await apiFetch(`/api/supporters/${supporterId}/donations`, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -89,6 +113,28 @@ export async function addDonation(supporterId: number, data: Omit<Donation, 'don
   return res.json();
 }
 
-export async function deleteDonation(supporterId: number, donationId: number): Promise<void> {
-  await apiFetch(`/api/supporters/${supporterId}/donations/${donationId}`, { method: 'DELETE' });
+export async function deleteDonation(
+  supporterId: number,
+  donationId: number
+): Promise<void> {
+  await apiFetch(`/api/supporters/${supporterId}/donations/${donationId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function runDonorChurnInference(
+  asOfDate?: string
+): Promise<DonorChurnRunResult> {
+  const res = await apiFetch('/api/supporters/churn/run', {
+    method: 'POST',
+    body: JSON.stringify({ asOfDate: asOfDate || null }),
+  });
+  return res.json();
+}
+
+export async function getSupporterChurnPredictions(): Promise<
+  SupporterChurnItem[]
+> {
+  const res = await apiFetch('/api/supporters/churn');
+  return res.json();
 }
