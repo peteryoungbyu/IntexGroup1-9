@@ -249,7 +249,6 @@ export default function LandingPage() {
 
           </div>
         </section>
-      )}
 
       {/* CTA strip */}
       <section className="cta-strip">
