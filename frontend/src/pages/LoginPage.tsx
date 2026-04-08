@@ -117,51 +117,55 @@ export default function LoginPage() {
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Email</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                  />
+                <label htmlFor="email" className="form-label fw-semibold">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  className="form-control"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold">Password</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                  />
+                <label htmlFor="password" className="form-label fw-semibold">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  className="form-control"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
                 </div>
 
                 {showMfa && (
                   <>
                     <div className="mb-3">
-                      <label className="form-label fw-semibold">
-                        Authenticator Code
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={twoFactorCode}
-                        onChange={(e) => setTwoFactorCode(e.target.value)}
-                        placeholder="6-digit code"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                      />
+                    <label htmlFor="twoFactorCode" className="form-label fw-semibold">
+                      Authenticator Code
+                    </label>
+                    <input
+                      id="twoFactorCode"
+                      type="text"
+                      className="form-control"
+                      value={twoFactorCode}
+                      onChange={(e) => setTwoFactorCode(e.target.value)}
+                      placeholder="6-digit code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                    />
                     </div>
 
                     <div className="mb-3">
-                      <label className="form-label fw-semibold">
+                      <label htmlFor="recoveryCode" className="form-label fw-semibold">
                         Recovery Code (if no authenticator)
                       </label>
                       <input
+                        id="recoveryCode"
                         type="text"
                         className="form-control"
                         value={recoveryCode}
