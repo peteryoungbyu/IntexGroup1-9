@@ -33,6 +33,14 @@ export async function getPublicImpact(count = 6): Promise<ImpactSnapshot[]> {
   return res.json();
 }
 
+export async function getPublicImpactByDate(
+  snapshotDate: string
+): Promise<ImpactSnapshot[]> {
+  const encodedDate = encodeURIComponent(snapshotDate);
+  const res = await apiFetch(`/api/public/impact?snapshotDate=${encodedDate}`);
+  return res.json();
+}
+
 export interface PublicOrgSummary {
   totalGirlsServed: number;
   numberOfSafehouses: number;

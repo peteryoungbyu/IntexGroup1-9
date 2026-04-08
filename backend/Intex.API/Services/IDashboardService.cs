@@ -17,5 +17,6 @@ public interface IDashboardService
 {
     Task<AdminDashboardData> GetAdminDashboardAsync();
     Task<IReadOnlyList<object>> GetPublicSnapshotsAsync(int count = 6);
+    Task<object?> GetPublicSnapshotByDateAsync(DateOnly snapshotDate);
     Task<PublicOrgSummary> GetPublicOrgSummaryAsync();
 }
