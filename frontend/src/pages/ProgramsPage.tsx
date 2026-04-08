@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import healingImg from '../assets/healing.jpg';
 
 const programs = [
   {
@@ -24,7 +25,7 @@ const programs = [
       'Recreational activities, field trips, and celebrations',
       'Spiritual care and faith community connection',
     ],
-    quote: '"The first night I slept here, I wasn\'t scared for the first time in years." — A former resident',
+    quote: '"The first night I slept here, I wasn\'t scared for the first time in years."',
   },
   {
     id: 'healing',
@@ -50,7 +51,7 @@ const programs = [
       'Mental health assessments and ongoing monitoring',
       'Family reunification counseling where appropriate',
     ],
-    quote: '"I learned that what happened to me wasn\'t my fault. That changed everything." — A current resident',
+    quote: '"I learned that what happened to me wasn\'t my fault. That changed everything."',
   },
   {
     id: 'teaching',
@@ -75,7 +76,7 @@ const programs = [
       'Life skills curriculum (financial literacy, health, communication)',
       'Reintegration planning and post-placement monitoring',
     ],
-    quote: '"I passed my board exam last year. New Dawn believed I could before I did." — A graduate',
+    quote: '"I passed my board exam last year. New Dawn believed I could before I did."',
   },
 ];
 
@@ -90,7 +91,7 @@ const stories = [
     name: 'R.',
     age: '14',
     story:
-      'R. had never learned to read when she came to us at age 13. Our literacy program gave her one-on-one tutoring five days a week. Within eight months she was reading chapter books. She told her social worker: "Now nobody can trick me with papers."',
+      'When R. came to us at 13, she had never learned to read. With one-on-one tutoring five days a week, she slowly built confidence. Within eight months, she was reading chapter books on her own. For the first time, she felt confident navigating everyday life.',
   },
   {
     name: 'M.',
@@ -186,7 +187,7 @@ export default function ProgramsPage() {
                         prog.id === 'caring'
                           ? 'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=800&q=80'
                           : prog.id === 'healing'
-                          ? 'https://images.unsplash.com/photo-1573497491765-dccce02b29df?w=800&q=80'
+                          ? healingImg
                           : 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=80'
                       }
                       alt={prog.title}
