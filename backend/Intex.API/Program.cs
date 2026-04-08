@@ -2,6 +2,7 @@ using Intex.API.Data;
 using Intex.API.Infrastructure;
 using Intex.API.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using DotNetEnv;
@@ -105,6 +106,16 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    // Azure-managed ingress terminates TLS before requests reach Kestrel.
+    // Clear local trust lists so forwarded scheme/address headers are honored in production.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // 9. Register app services
 builder.Services.AddScoped<ISupporterService, SupporterService>();
 builder.Services.AddScoped<IResidentService, ResidentService>();
@@ -134,6 +145,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // 11. Middleware pipeline — order matters
+app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
