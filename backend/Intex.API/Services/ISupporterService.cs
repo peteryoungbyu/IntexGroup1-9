@@ -14,4 +14,6 @@ public interface ISupporterService
     Task<Supporter> CreateAsync(Supporter supporter);
     Task<Supporter?> UpdateAsync(int id, Supporter supporter);
     Task<bool> DeleteAsync(int id);
+    Task<Donation> AddDonationAsync(int supporterId, Donation donation);
+    Task<bool> DeleteDonationAsync(int supporterId, int donationId);
 }

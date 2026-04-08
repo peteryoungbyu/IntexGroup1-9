@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Intex.API.Data;
 using Intex.API.Models;
 using Intex.API.Services;
@@ -18,8 +19,8 @@ public class SupporterController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery][Range(1, int.MaxValue)] int page = 1,
+        [FromQuery][Range(1, 100)] int pageSize = 20,
         [FromQuery] string? search = null,
         [FromQuery] string? status = null)
         => Ok(await _service.GetAllAsync(page, pageSize, search, status));
@@ -52,6 +53,22 @@ public class SupporterController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _service.DeleteAsync(id);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    [HttpPost("{id:int}/donations")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> AddDonation(int id, [FromBody] Donation donation)
+    {
+        var created = await _service.AddDonationAsync(id, donation);
+        return Ok(created);
+    }
+
+    [HttpDelete("{id:int}/donations/{donationId:int}")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> DeleteDonation(int id, int donationId)
+    {
+        var deleted = await _service.DeleteDonationAsync(id, donationId);
         return deleted ? NoContent() : NotFound();
     }
 }

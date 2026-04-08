@@ -43,7 +43,24 @@ public class DashboardService : IDashboardService
             .Select(s => (object)new { s.SafehouseId, s.Name, s.Region, s.CurrentOccupancy, s.CapacityGirls, s.Status })
             .ToListAsync();
 
-        return new AdminDashboardData(summary, monthlyMetrics, safehouseBreakdown);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var upcomingConferences = await _db.CaseConferences
+            .Where(c => c.ConferenceDate >= today)
+            .OrderBy(c => c.ConferenceDate)
+            .Take(10)
+            .Select(c => (object)new
+            {
+                c.ConferenceId,
+                c.ResidentId,
+                c.ConferenceDate,
+                c.FacilitatedBy,
+                c.Attendees,
+                c.Agenda,
+                c.NextReviewDate
+            })
+            .ToListAsync();
+
+        return new AdminDashboardData(summary, monthlyMetrics, safehouseBreakdown, upcomingConferences);
     }
 
     public async Task<IReadOnlyList<object>> GetPublicSnapshotsAsync(int count = 6)

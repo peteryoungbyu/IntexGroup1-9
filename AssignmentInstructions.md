@@ -34,6 +34,7 @@ OKR metric: Track and display one meaningful metric in your app and explain why 
 Accessibility: Achieve a Lighthouse accessibility score of at least 90% on every page.  
 Responsiveness: Ensure every page resizes appropriately for desktop and mobile views. 
 Retrospective: Conduct a retrospective. Each person should write at least 2 things that are going well, 2 things that could have been better, and their personal greatest contribution to their team this week. Then reflect as a team on how well your solution solves the customer problem you set out to improve. 
+
 IS 413 – Enterprise Application Development 
  
 The time has come to apply all the skills that we have learned in class.  While you have not done everything that is required in this project, you have the foundation to be able to dig in and figure it out using .NET and React.  The web app you build will be the face of this project, so use it to impress the judges.  Here are the requirements: 

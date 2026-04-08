@@ -10,9 +10,11 @@ public class ResidentService : IResidentService
 
     public ResidentService(AppDbContext db) => _db = db;
 
-    public async Task<PagedResult<ResidentListItem>> GetAllAsync(int page, int pageSize, string? search, string? status, int? safehouseId)
+    public async Task<PagedResult<ResidentListItem>> GetAllAsync(int page, int pageSize, string? search, string? status, int? safehouseId, string? caseCategory)
     {
-        var query = _db.Residents.AsQueryable();
+        var query = _db.Residents
+            .AsNoTracking()
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(r => r.CaseControlNo.Contains(search) || r.InternalCode.Contains(search));
@@ -23,13 +25,24 @@ public class ResidentService : IResidentService
         if (safehouseId.HasValue)
             query = query.Where(r => r.SafehouseId == safehouseId.Value);
 
+        if (!string.IsNullOrWhiteSpace(caseCategory))
+            query = query.Where(r => r.CaseCategory == caseCategory);
+
         var total = await query.CountAsync();
 
         var items = await query
             .OrderByDescending(r => r.DateOfAdmission)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(r => new ResidentListItem(r.ResidentId, r.CaseControlNo, r.InternalCode, r.CaseStatus, r.CaseCategory, r.CurrentRiskLevel, r.SafehouseId))
+            .Select(r => new ResidentListItem(
+                r.ResidentId,
+                r.CaseControlNo,
+                r.InternalCode,
+                r.CaseStatus,
+                r.CaseCategory,
+                r.CurrentRiskLevel,
+                r.SafehouseId,
+                r.Safehouse.Name))
             .ToListAsync();
 
         return new PagedResult<ResidentListItem>(items, total, page, pageSize);

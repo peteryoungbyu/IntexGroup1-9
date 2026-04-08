@@ -181,7 +181,11 @@ export default function LoginPage() {
                   className="btn btn-primary w-100 fw-semibold"
                   disabled={loading}
                 >
-                  {loading ? 'Signing in...' : showMfa ? 'Verify Code' : 'Sign In'}
+                  {loading
+                    ? 'Signing in...'
+                    : showMfa
+                      ? 'Verify Code'
+                      : 'Sign In'}
                 </button>
               </form>
 
@@ -207,7 +211,9 @@ export default function LoginPage() {
 
           <p className="text-center mt-3 small text-muted">
             Don't have an account?{' '}
-            <Link to="/register" className="fw-semibold">Create one</Link>
+            <Link to="/register" className="fw-semibold">
+              Create one
+            </Link>
           </p>
 
           <p className="text-center mt-1 small text-muted">
