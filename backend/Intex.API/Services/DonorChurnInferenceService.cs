@@ -9,6 +9,7 @@ public class DonorChurnInferenceOptions
 {
     public string PythonExecutablePath { get; set; } = "/usr/bin/python3";
     public string ScriptPath { get; set; } = "ml-runtime/run_donor_churn_inference.py";
+    public string PythonPackagesPath { get; set; } = "ml-runtime/python-packages";
     public string WorkingDirectory { get; set; } = ".";
     public int TimeoutSeconds { get; set; } = 300;
 }
@@ -37,6 +38,7 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
         var workingDirectory = ResolvePath(_options.WorkingDirectory, contentRoot);
         var pythonPath = ResolveExecutablePath(_options.PythonExecutablePath, contentRoot);
         var scriptPath = ResolvePath(_options.ScriptPath, workingDirectory);
+        var pythonPackagesPath = ResolvePath(_options.PythonPackagesPath, workingDirectory);
 
         if (IsPathLike(pythonPath) && !File.Exists(pythonPath))
             throw new FileNotFoundException($"Configured Python executable was not found: {pythonPath}");
@@ -66,6 +68,25 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
 
         foreach (var arg in args)
             startInfo.ArgumentList.Add(arg);
+
+        if (Directory.Exists(pythonPackagesPath))
+        {
+            var existingPythonPath = startInfo.Environment.TryGetValue("PYTHONPATH", out var currentPythonPath)
+                ? currentPythonPath
+                : null;
+
+            startInfo.Environment["PYTHONPATH"] = string.IsNullOrWhiteSpace(existingPythonPath)
+                ? pythonPackagesPath
+                : $"{pythonPackagesPath}{Path.PathSeparator}{existingPythonPath}";
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Configured Python packages path does not exist; continuing without PYTHONPATH override: {PythonPackagesPath}",
+                pythonPackagesPath);
+        }
+
+        startInfo.Environment["PYTHONUNBUFFERED"] = "1";
 
         using var process = new Process { StartInfo = startInfo };
         var stdout = new StringBuilder();
