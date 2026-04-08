@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const programs = [
   {
@@ -100,6 +101,8 @@ const stories = [
 ];
 
 export default function ProgramsPage() {
+  const { isAuthenticated } = useAuth();
+  const donateLink = isAuthenticated ? '/donate' : '/login';
   return (
     <div>
       {/* Hero */}
@@ -260,7 +263,7 @@ export default function ProgramsPage() {
             Every program depends on the generosity of supporters like you.
           </p>
           <div className="d-flex gap-3 justify-content-center flex-wrap">
-            <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-5">
+            <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-5">
               Donate Now
             </Link>
             <Link to="/get-involved" className="btn btn-outline-light btn-lg px-5">

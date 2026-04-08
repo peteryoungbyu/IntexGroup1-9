@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const ways = [
   {
@@ -114,6 +115,8 @@ const faqs = [
 ];
 
 export default function GetInvolvedPage() {
+  const { isAuthenticated } = useAuth();
+  const donateLink = isAuthenticated ? '/donate' : '/login';
   const [formData, setFormData] = useState({ name: '', email: '', interest: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -161,7 +164,7 @@ export default function GetInvolvedPage() {
                   Financial gifts of any size directly fund shelter, therapy, and education for girls in our care.
                   ₱500 feeds a resident for a week. ₱2,500 covers a month of counseling. Every peso restores hope.
                 </p>
-                <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-5" style={{ fontSize: '1.05rem' }}>
+                <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-5" style={{ fontSize: '1.05rem' }}>
                   Donate Now
                 </Link>
               </div>
@@ -413,7 +416,7 @@ export default function GetInvolvedPage() {
           <p className="mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>
             Whether you give ₱500 or 500 hours — you are part of the story.
           </p>
-          <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-5">
+          <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-5">
             Donate Now
           </Link>
         </div>
