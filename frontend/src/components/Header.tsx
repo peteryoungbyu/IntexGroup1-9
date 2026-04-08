@@ -90,36 +90,6 @@ export default function Header() {
               </li>
             ))}
 
-            {isAdmin && (
-              <>
-                {[
-                  { to: '/admin', label: 'Dashboard', end: true },
-                  { to: '/admin/donors', label: 'Donors' },
-                  { to: '/admin/residents', label: 'Residents' },
-                  { to: '/admin/reports', label: 'Reports' },
-                  { to: '/admin/social-media', label: 'Social Media' },
-                  { to: '/admin/partners', label: 'Partners' },
-                ].map((link) => (
-                  <li key={link.to} className="nav-item">
-                    <NavLink
-                      className="nav-link px-2 py-2 rounded-2"
-                      to={link.to}
-                      end={link.end}
-                      style={({ isActive }) => ({
-                        color: isActive
-                          ? 'var(--brand-accent)'
-                          : 'rgba(255,255,255,0.8)',
-                        fontWeight: isActive ? '600' : '400',
-                        fontSize: '0.92rem',
-                      })}
-                    >
-                      {link.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </>
-            )}
-
             {isDonor && !isAdmin && (
               <li className="nav-item">
                 <NavLink
@@ -188,21 +158,42 @@ export default function Header() {
                     </li>
                   </ul>
                 </li>
-                <li className="nav-item">
-                  <Link
-                    className="btn btn-sm px-4"
-                    to="/donate"
-                    style={{
-                      background: 'var(--brand-accent)',
-                      color: 'var(--brand-dark)',
-                      borderRadius: '8px',
-                      fontWeight: 700,
-                      border: 'none',
-                    }}
-                  >
-                    Donate Now
-                  </Link>
-                </li>
+                {isAdmin ? (
+                  <li className="nav-item">
+                    <Link
+                      to="/admin"
+                      style={{
+                        display: 'inline-block',
+                        background: '#e8a838',
+                        color: '#0d2d44',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        padding: '6px 16px',
+                        border: 'none',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      Admin Portal
+                    </Link>
+                  </li>
+                ) : (
+                  <li className="nav-item">
+                    <Link
+                      className="btn btn-sm px-4"
+                      to="/donate"
+                      style={{
+                        background: 'var(--brand-accent)',
+                        color: 'var(--brand-dark)',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        border: 'none',
+                      }}
+                    >
+                      Donate Now
+                    </Link>
+                  </li>
+                )}
               </>
             ) : (
               <>

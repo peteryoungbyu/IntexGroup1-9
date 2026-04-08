@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const tiers = [
   {
@@ -35,6 +36,7 @@ const allocation = [
 ];
 
 export default function DonatePage() {
+  const { isAuthenticated } = useAuth();
   const [selected, setSelected] = useState<number | null>(1000);
   const [custom, setCustom] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -205,11 +207,13 @@ export default function DonatePage() {
                   <span className="text-muted small">Secure donation — your information is protected</span>
                 </div>
 
-                <p className="text-muted small text-center mt-2 mb-0">
-                  This is a demonstration platform. Pledges are recorded for tracking purposes.
-                  <br />
-                  <Link to="/register">Create an account</Link> to track your donations and see your impact.
-                </p>
+                {!isAuthenticated && (
+                  <p className="text-muted small text-center mt-2 mb-0">
+                    This is a demonstration platform. Pledges are recorded for tracking purposes.
+                    <br />
+                    <Link to="/register">Create an account</Link> to track your donations and see your impact.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -256,18 +260,27 @@ export default function DonatePage() {
               </div>
 
               {/* Account prompt */}
-              <div
-                className="card p-4"
-                style={{ background: 'var(--brand-dark)', border: 'none' }}
-              >
-                <h6 className="fw-bold text-white mb-2">Track Your Impact</h6>
-                <p className="mb-3" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.88rem', lineHeight: 1.6 }}>
-                  Create a free donor account to see how your gifts are making a difference — monthly updates included.
-                </p>
-                <Link to="/register" className="btn btn-warning btn-sm fw-bold w-100">
-                  Create Free Account
-                </Link>
-              </div>
+              {isAuthenticated ? (
+                <div className="card p-4" style={{ background: 'var(--brand-dark)', border: 'none' }}>
+                  <h6 className="fw-bold text-white mb-2">Thank you for your support</h6>
+                  <p className="mb-3" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                    View your donation history and impact in your account.
+                  </p>
+                  <Link to="/donor/history" className="btn btn-warning btn-sm fw-bold w-100">
+                    View My Donations
+                  </Link>
+                </div>
+              ) : (
+                <div className="card p-4" style={{ background: 'var(--brand-dark)', border: 'none' }}>
+                  <h6 className="fw-bold text-white mb-2">Track Your Impact</h6>
+                  <p className="mb-3" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.88rem', lineHeight: 1.6 }}>
+                    Create a free donor account to see how your gifts are making a difference — monthly updates included.
+                  </p>
+                  <Link to="/register" className="btn btn-warning btn-sm fw-bold w-100">
+                    Create Free Account
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>
