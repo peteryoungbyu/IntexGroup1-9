@@ -99,6 +99,10 @@ public class SocialMediaDonationsService : ISocialMediaDonationsService
                     ModelName = "social_media_classification",
                     Score = (decimal)Math.Round(classProb, 3),
                     Label = classProb >= _options.ClassificationThreshold ? "WillGenerateDonation" : "WillNotGenerateDonation",
+                    FeatureImportanceJson = JsonSerializer.Serialize(new
+                    {
+                        postId = rows[i].PostId
+                    }),
                     GeneratedAt = DateTime.UtcNow,
                 });
                 newResults.Add(new PredictionResult

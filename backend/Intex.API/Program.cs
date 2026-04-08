@@ -126,6 +126,7 @@ builder.Services.AddScoped<ISupporterService, SupporterService>();
 builder.Services.AddScoped<IResidentService, ResidentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IReportInferenceTableService, ReportInferenceTableService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
 builder.Services.Configure<DonorChurnInferenceOptions>(
     builder.Configuration.GetSection("DonorChurnInference"));
