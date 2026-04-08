@@ -5,6 +5,11 @@ import { getPublicImpact } from '../lib/reportAPI';
 
 export default function LandingPage() {
   const [snapshots, setSnapshots] = useState<ImpactSnapshot[]>([]);
+  // TODO backend: add GET /api/public/stats returning { totalOccupancy, sessionCount, avgAttendanceRate } without auth
+  // All three stats are currently behind AdminRead auth (DashboardController, ResidentController).
+  const [girlsSheltered] = useState('60+');
+  const [sessionsLogged] = useState('1,200+');
+  const [avgAttendance] = useState('87%');
 
   useEffect(() => {
     getPublicImpact(3)
@@ -113,89 +118,135 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pillars */}
-      <section className="py-5 bg-white">
-        <div className="container">
-          <div className="text-center mb-5">
-            <p className="section-label">What We Do</p>
-            <h2
-              className="fw-bold"
-              style={{ fontSize: '2rem', color: 'var(--brand-dark)' }}
-            >
-              Our Approach
-            </h2>
-          </div>
-          <div className="row g-4">
-            {pillars.map((p) => (
-              <div key={p.title} className="col-md-4">
-                <div className="pillar-card h-100">
-                  <div className="pillar-icon" style={{ background: p.bg }}>
-                    {p.icon}
-                  </div>
-                  <h4
-                    className="fw-bold mb-2"
-                    style={{ color: 'var(--brand-dark)' }}
-                  >
-                    {p.title}
-                  </h4>
-                  <p className="text-muted mb-0">{p.text}</p>
+        {/* Pillars — bento grid */}
+        <section style={{ background: '#f8f7f4', padding: '72px 40px' }}>
+          {/* Headline */}
+          <h2 style={{ fontSize: '2.6rem', fontWeight: 800, color: '#0d2d44', marginBottom: 32, lineHeight: 1.15 }}>
+            Three ways we change<br />
+            <em style={{ fontWeight: 300, color: '#6b7280', fontStyle: 'italic' }}>every life</em>
+          </h2>
+
+          {/* Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1.6fr 1fr 1fr',
+            gridTemplateRows: '1fr auto',
+            gap: 16,
+            minHeight: 460,
+          }}>
+
+            {/* Card 1 — Caring (spans both rows) */}
+            <div style={{
+              gridRow: 'span 2',
+              background: '#0d2d44',
+              borderRadius: 20,
+              padding: '40px 36px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>
+                  CARING
+                </div>
+                <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: 16 }}>
+                  A safe place to call home
+                </h3>
+                <p style={{ color: 'rgba(255,255,255,0.55)', lineHeight: 1.65, fontSize: '0.95rem', margin: 0 }}>
+                  Ten safehouses across Luzon, Visayas, and Mindanao provide around-the-clock care for girls removed from harm.
+                </p>
+              </div>
+              <div>
+                <hr style={{ borderColor: 'rgba(255,255,255,0.1)', marginBottom: 16 }} />
+                <div style={{ fontSize: '3.2rem', fontWeight: 800, color: '#e8a838', lineHeight: 1 }}>{girlsSheltered}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>
+                  Girls sheltered right now
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* Impact highlights */}
-      {snapshots.length > 0 && (
-        <section className="py-5" style={{ background: 'var(--brand-light)' }}>
-          <div className="container">
-            <div className="text-center mb-5">
-              <p className="section-label">By the Numbers</p>
-              <h2
-                className="fw-bold"
-                style={{ fontSize: '2rem', color: 'var(--brand-dark)' }}
-              >
-                Recent Impact
-              </h2>
-            </div>
-            <div className="row g-4">
-              {snapshots.map((s) => (
-                <div key={s.snapshotId} className="col-md-4">
-                  <div className="card impact-card h-100">
-                    <div className="card-body p-4">
-                      <span
-                        className="badge mb-3 px-3 py-2"
-                        style={{
-                          background: 'var(--brand-primary)',
-                          fontSize: '0.75rem',
-                        }}
-                      >
-                        {new Date(s.snapshotDate).toLocaleDateString('en-US', {
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </span>
-                      <h5
-                        className="fw-bold"
-                        style={{ color: 'var(--brand-dark)' }}
-                      >
-                        {s.headline}
-                      </h5>
-                      <p className="text-muted small mb-0">{s.summaryText}</p>
-                    </div>
-                  </div>
+            {/* Card 2 — Healing (top middle) */}
+            <div style={{
+              background: '#e8f4f0',
+              borderRadius: 20,
+              padding: '28px 26px',
+              border: '1px solid rgba(15,110,86,0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#0f6e56', marginBottom: 12 }}>
+                  HEALING
                 </div>
-              ))}
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0f6e56" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}>
+                  <path d="M12 22V12" />
+                  <path d="M12 12C12 7 8 4 3 5c0 5 3 9 9 7" />
+                  <path d="M12 12c0-5 4-8 9-7 0 5-3 9-9 7" />
+                </svg>
+                <h4 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f6e56', marginBottom: 8 }}>Counseling & recovery</h4>
+                <p style={{ color: '#4b7c6f', fontSize: '0.83rem', lineHeight: 1.6, margin: 0 }}>
+                  Trained counselors run individual and group sessions every week.
+                </p>
+              </div>
+              <div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f6e56', lineHeight: 1 }}>{sessionsLogged}</div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#4b7c6f', marginTop: 4 }}>
+                  Sessions logged
+                </div>
+              </div>
             </div>
-            <div className="text-center mt-5">
-              <Link
-                to="/impact"
-                className="btn btn-primary btn-lg px-5 fw-bold"
-              >
-                View Full Impact Dashboard
-              </Link>
+
+            {/* Card 3 — Teaching (top right) */}
+            <div style={{
+              background: '#fff8ec',
+              borderRadius: 20,
+              padding: '28px 26px',
+              border: '1px solid rgba(180,83,9,0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#b45309', marginBottom: 12 }}>
+                  TEACHING
+                </div>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}>
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                <h4 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#b45309', marginBottom: 8 }}>Education & skills</h4>
+                <p style={{ color: '#92400e', fontSize: '0.83rem', lineHeight: 1.6, margin: 0 }}>
+                  Bridge schooling, vocational training, and literacy programs run year-round.
+                </p>
+              </div>
+              <div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#b45309', lineHeight: 1 }}>{avgAttendance}</div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#92400e', marginTop: 4 }}>
+                  Avg attendance
+                </div>
+              </div>
             </div>
+
+            {/* Mission box — bottom, spans 2 cols */}
+            <div style={{
+              gridColumn: 'span 2',
+              background: 'transparent',
+              padding: '28px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: '#e8a838', marginBottom: 12 }}>
+                OUR MISSION
+              </div>
+              <p style={{ color: '#6b7280', fontSize: '1rem', lineHeight: 1.75, margin: 0, maxWidth: 480 }}>
+                Every girl who walks through our doors receives the same promise — safety, healing, and a future worth fighting for. Three pillars. One mission. Every single day.
+              </p>
+            </div>
+
           </div>
         </section>
       )}
