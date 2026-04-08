@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using DotNetEnv;
+using System.Net;
 
 Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -110,10 +111,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 
-    // Azure-managed ingress terminates TLS before requests reach Kestrel.
-    // Clear local trust lists so forwarded scheme/address headers are honored in production.
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    // Trust Azure private proxy ranges instead of accepting forwarded headers from any source.
+    options.KnownIPNetworks.Add(new(IPAddress.Parse("10.0.0.0"), 8));
+    options.KnownIPNetworks.Add(new(IPAddress.Parse("172.16.0.0"), 12));
+    options.KnownIPNetworks.Add(new(IPAddress.Parse("192.168.0.0"), 16));
 });
 
 // 9. Register app services

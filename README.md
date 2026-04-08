@@ -42,7 +42,7 @@ flowchart LR
 - API Docs: Swagger / Swashbuckle
 - Config: `DotNetEnv` for local environment variables
 - ML: notebook-based pipelines in [`ml-pipelines`](./ml-pipelines)
-- Deployment: Docker multi-stage build with frontend bundled into backend `wwwroot`
+- Deployment: Azure Static Web Apps for the frontend and Azure App Service for the API in production; Docker remains available for the combined app build
 
 ## Project Structure
 
@@ -54,5 +54,6 @@ flowchart LR
 ## Runtime Architecture
 
 - In development, Vite runs on `http://localhost:3000` and proxies `/api` requests to `https://localhost:5000`.
-- In production, the React app is built and served by the ASP.NET Core app from `wwwroot`.
+- In production, the frontend is deployed separately to Azure Static Web Apps and calls the ASP.NET Core API over HTTPS using the origin configured in [`frontend/.env.production`](./frontend/.env.production).
+- The live public frontend and API are expected to terminate TLS with Microsoft-managed certificates on their Azure hostnames.
 - Both application data and Identity currently connect through the same SQL Server connection string.
