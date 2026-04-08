@@ -131,6 +131,26 @@ builder.Services.Configure<DonorChurnInferenceOptions>(
     builder.Configuration.GetSection("DonorChurnInference"));
 builder.Services.AddScoped<IDonorChurnInferenceService, DonorChurnInferenceService>();
 
+builder.Services.Configure<ReintegrationReadinessOptions>(
+    builder.Configuration.GetSection("ReintegrationReadiness"));
+builder.Services.AddScoped<IReintegrationReadinessService, ReintegrationReadinessService>();
+
+builder.Services.Configure<DonorUpsellOptions>(
+    builder.Configuration.GetSection("DonorUpsell"));
+builder.Services.AddScoped<IDonorUpsellService, DonorUpsellService>();
+
+builder.Services.Configure<InterventionEffectivenessOptions>(
+    builder.Configuration.GetSection("InterventionEffectiveness"));
+builder.Services.AddScoped<IInterventionEffectivenessService, InterventionEffectivenessService>();
+
+builder.Services.Configure<SocialMediaDonationsOptions>(
+    builder.Configuration.GetSection("SocialMediaDonations"));
+builder.Services.AddScoped<ISocialMediaDonationsService, SocialMediaDonationsService>();
+
+builder.Services.Configure<ResidentRiskOptions>(
+    builder.Configuration.GetSection("ResidentRisk"));
+builder.Services.AddScoped<IResidentRiskService, ResidentRiskService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.ReferenceHandler =
