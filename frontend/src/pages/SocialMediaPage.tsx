@@ -131,7 +131,7 @@ export default function SocialMediaPage() {
         ) : (
           <>
             <div className="card">
-              <div className="table-responsive">
+              <div className="table-responsive social-table-wrap">
                 <table className="table table-hover mb-0">
                   <thead className="table-light">
                     <tr>
