@@ -20,6 +20,14 @@ import {
   getDonationTrends,
   getReintegrationOutcomes,
   getSafehouseComparison,
+  runReintegrationReadiness,
+  runDonorUpsell,
+  runInterventionEffectiveness,
+  runSocialMediaDonations,
+  runResidentRisk,
+  getPredictionsByModel,
+  type InferenceResult,
+  type PredictionRow,
 } from '../lib/reportAPI';
 
 const BRAND_COLORS = [
@@ -57,6 +65,56 @@ export default function ReportsPage() {
   );
   const [comparison, setComparison] = useState<ReportSection | null>(null);
   const [loading, setLoading] = useState(true);
+
+  type InferenceJob = {
+    label: string;
+    modelNames: string[];
+    run: () => Promise<InferenceResult>;
+  };
+
+  const inferenceJobs: InferenceJob[] = [
+    { label: 'Reintegration Readiness', modelNames: ['reintegration_readiness'], run: runReintegrationReadiness },
+    { label: 'Donor Upsell', modelNames: ['donor_upsell'], run: runDonorUpsell },
+    { label: 'Intervention Effectiveness', modelNames: ['intervention_effectiveness'], run: runInterventionEffectiveness },
+    { label: 'Social Media Donations', modelNames: ['social_media_classification', 'social_media_regression'], run: runSocialMediaDonations },
+    { label: 'Resident Risk', modelNames: ['resident_risk_classification', 'resident_risk_regression'], run: runResidentRisk },
+  ];
+
+  const [inferenceStatus, setInferenceStatus] = useState<
+    Record<string, { running: boolean; result: InferenceResult | null; error: string | null }>
+  >({});
+
+  const [predictionRows, setPredictionRows] = useState<Record<string, PredictionRow[]>>({});
+  const [loadingResults, setLoadingResults] = useState<Record<string, boolean>>({});
+
+  async function fetchResults(job: InferenceJob) {
+    setLoadingResults((prev) => ({ ...prev, [job.label]: true }));
+    const allRows = (
+      await Promise.all(job.modelNames.map((m) => getPredictionsByModel(m, 100)))
+    ).flat().sort((a, b) => b.score - a.score);
+    setPredictionRows((prev) => ({ ...prev, [job.label]: allRows }));
+    setLoadingResults((prev) => ({ ...prev, [job.label]: false }));
+  }
+
+  async function runInference(job: InferenceJob) {
+    setInferenceStatus((prev) => ({
+      ...prev,
+      [job.label]: { running: true, result: null, error: null },
+    }));
+    try {
+      const result = await job.run();
+      setInferenceStatus((prev) => ({
+        ...prev,
+        [job.label]: { running: false, result, error: result.success ? null : result.error },
+      }));
+      if (result.success) await fetchResults(job);
+    } catch (e: any) {
+      setInferenceStatus((prev) => ({
+        ...prev,
+        [job.label]: { running: false, result: null, error: e?.message ?? 'Unknown error' },
+      }));
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -124,6 +182,44 @@ export default function ReportsPage() {
     s.title.toLowerCase().includes('service')
   );
   const servicesRows: any[] = (servicesSection?.data as any[]) ?? [];
+
+  function getScoreDisplay(row: PredictionRow): {
+    text: string;
+    className: string;
+  } {
+    if (
+      row.modelName === 'social_media_regression' &&
+      row.featureImportanceJson
+    ) {
+      try {
+        const details = JSON.parse(row.featureImportanceJson) as {
+          predictedAmountPhp?: number;
+        };
+
+        if (typeof details.predictedAmountPhp === 'number') {
+          return {
+            text: `PHP ${details.predictedAmountPhp.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`,
+            className: 'badge text-bg-info',
+          };
+        }
+      } catch {
+        // Fall through to default score rendering.
+      }
+    }
+
+    return {
+      text: row.score.toFixed(3),
+      className:
+        row.score >= 0.6
+          ? 'badge bg-danger'
+          : row.score >= 0.3
+          ? 'badge bg-warning text-dark'
+          : 'badge bg-success',
+    };
+  }
 
   return (
     <div>
@@ -291,6 +387,102 @@ export default function ReportsPage() {
                   </p>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ML Inference Panel */}
+        <div className="card mb-4">
+          <div className="card-header fw-semibold">ML Inference — Run Predictions</div>
+          <div className="card-body">
+            <p className="text-muted small mb-3">
+              Trigger each model to score all records and write results to the database.
+              Each job may take several seconds.
+            </p>
+            <div className="d-flex flex-column gap-4">
+              {inferenceJobs.map((job) => {
+                const status = inferenceStatus[job.label];
+                const rows = predictionRows[job.label] ?? [];
+                const loadingRes = loadingResults[job.label];
+                return (
+                  <div key={job.label} className="border rounded p-3">
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <span className="fw-semibold">{job.label}</span>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        disabled={status?.running}
+                        onClick={() => runInference(job)}
+                      >
+                        {status?.running ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-1" />
+                            Running…
+                          </>
+                        ) : (
+                          'Run'
+                        )}
+                      </button>
+                      {rows.length === 0 && !status?.running && (
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          disabled={loadingRes}
+                          onClick={() => fetchResults(job)}
+                        >
+                          {loadingRes ? (
+                            <span className="spinner-border spinner-border-sm" />
+                          ) : (
+                            'View Last Results'
+                          )}
+                        </button>
+                      )}
+                      {status?.result?.success && (
+                        <span className="text-success small">✓ {status.result.updatedCount} records updated</span>
+                      )}
+                      {status?.error && (
+                        <span className="text-danger small">✗ {status.error}</span>
+                      )}
+                    </div>
+
+                    {rows.length > 0 && (
+                      <div className="table-responsive" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                        <table className="table table-sm table-bordered table-hover mb-0">
+                          <thead className="table-light sticky-top">
+                            <tr>
+                              <th>Model</th>
+                              {rows[0].residentId != null && <th>Resident ID</th>}
+                              {rows[0].supporterId != null && <th>Supporter ID</th>}
+                              <th>Score</th>
+                              <th>Label</th>
+                              <th>Generated</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.map((r) => {
+                              const scoreDisplay = getScoreDisplay(r);
+                              return (
+                              <tr key={r.predictionId}>
+                                <td className="text-muted small">{r.modelName}</td>
+                                {r.residentId != null && <td>{r.residentId}</td>}
+                                {r.supporterId != null && <td>{r.supporterId}</td>}
+                                <td>
+                                  <span className={scoreDisplay.className}>
+                                    {scoreDisplay.text}
+                                  </span>
+                                </td>
+                                <td className="small">{r.label ?? '—'}</td>
+                                <td className="text-muted small">
+                                  {new Date(r.generatedAt).toLocaleString()}
+                                </td>
+                              </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

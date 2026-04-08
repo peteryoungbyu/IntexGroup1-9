@@ -11,8 +11,27 @@ namespace Intex.API.Controllers;
 public class ReportController : ControllerBase
 {
     private readonly IReportService _reports;
+    private readonly IReintegrationReadinessService _reintegration;
+    private readonly IDonorUpsellService _donorUpsell;
+    private readonly IInterventionEffectivenessService _interventionEffectiveness;
+    private readonly ISocialMediaDonationsService _socialMediaDonations;
+    private readonly IResidentRiskService _residentRisk;
 
-    public ReportController(IReportService reports) => _reports = reports;
+    public ReportController(
+        IReportService reports,
+        IReintegrationReadinessService reintegration,
+        IDonorUpsellService donorUpsell,
+        IInterventionEffectivenessService interventionEffectiveness,
+        ISocialMediaDonationsService socialMediaDonations,
+        IResidentRiskService residentRisk)
+    {
+        _reports = reports;
+        _reintegration = reintegration;
+        _donorUpsell = donorUpsell;
+        _interventionEffectiveness = interventionEffectiveness;
+        _socialMediaDonations = socialMediaDonations;
+        _residentRisk = residentRisk;
+    }
 
     [HttpGet("annual/{year:int}")]
     public async Task<IActionResult> GetAnnual(int year) =>
@@ -29,4 +48,46 @@ public class ReportController : ControllerBase
     [HttpGet("safehouse-comparison")]
     public async Task<IActionResult> GetSafehouseComparison() =>
         Ok(await _reports.GetSafehouseComparisonAsync());
+
+    // ── ML Inference Trigger Endpoints ──────────────────────────────────────
+
+    [HttpPost("inference/reintegration-readiness")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> RunReintegrationReadiness(CancellationToken ct)
+    {
+        var result = await _reintegration.RunAsync(ct);
+        return result.Success ? Ok(result) : StatusCode(500, result);
+    }
+
+    [HttpPost("inference/donor-upsell")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> RunDonorUpsell(CancellationToken ct)
+    {
+        var result = await _donorUpsell.RunAsync(ct);
+        return result.Success ? Ok(result) : StatusCode(500, result);
+    }
+
+    [HttpPost("inference/intervention-effectiveness")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> RunInterventionEffectiveness(CancellationToken ct)
+    {
+        var result = await _interventionEffectiveness.RunAsync(ct);
+        return result.Success ? Ok(result) : StatusCode(500, result);
+    }
+
+    [HttpPost("inference/social-media-donations")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> RunSocialMediaDonations(CancellationToken ct)
+    {
+        var result = await _socialMediaDonations.RunAsync(ct);
+        return result.Success ? Ok(result) : StatusCode(500, result);
+    }
+
+    [HttpPost("inference/resident-risk")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> RunResidentRisk(CancellationToken ct)
+    {
+        var result = await _residentRisk.RunAsync(ct);
+        return result.Success ? Ok(result) : StatusCode(500, result);
+    }
 }

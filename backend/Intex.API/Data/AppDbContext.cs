@@ -80,7 +80,6 @@ public class AppDbContext : DbContext
         {
             e.Property(r => r.AttendanceRate).HasPrecision(4, 2);
             e.Property(r => r.ProgressPercent).HasPrecision(5, 2);
-            e.Property(r => r.GpaLikeScore).HasPrecision(3, 1);
         });
 
         modelBuilder.Entity<HealthWellbeingRecord>(e =>
@@ -117,10 +116,21 @@ public class AppDbContext : DbContext
 
         ApplySnakeCaseColumnConvention(modelBuilder);
 
-        // Override columns where the auto snake_case doesn't match the actual DB column name
-        modelBuilder.Entity<Resident>()
-            .Property(r => r.FamilyIs4Ps)
-            .HasColumnName("family_is_4ps");
+        // Override columns where the auto snake_case doesn't match the actual DB column name.
+        // family_is_4ps converts to family_is4_ps via snake_case, and the health table uses
+        // legacy names that differ from the property names used by the app/services.
+        modelBuilder.Model.FindEntityType(typeof(Resident))
+            ?.FindProperty(nameof(Resident.FamilyIs4Ps))
+            ?.SetColumnName("family_is_4ps");
+
+        var healthEntity = modelBuilder.Model.FindEntityType(typeof(HealthWellbeingRecord));
+        healthEntity?.FindProperty(nameof(HealthWellbeingRecord.SleepScore))
+            ?.SetColumnName("sleep_quality_score");
+        healthEntity?.FindProperty(nameof(HealthWellbeingRecord.EnergyScore))
+            ?.SetColumnName("energy_level_score");
+        healthEntity?.FindProperty(nameof(HealthWellbeingRecord.MedicalNotesRestricted))
+            ?.SetColumnName("notes");
+
     }
 
     private static void ApplySnakeCaseColumnConvention(ModelBuilder modelBuilder)
