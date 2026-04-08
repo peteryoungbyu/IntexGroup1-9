@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
+using System.Runtime.InteropServices;
 
 namespace Intex.API.Services;
 
@@ -157,6 +158,57 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
                 FinishedAtUtc: DateTimeOffset.UtcNow,
                 StandardOutput: $"Updated {toUpdate.Count} supporters. As-of: {asOfDate}",
                 StandardError: string.Empty);
+        }
+        catch (TypeInitializationException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime type initialization failed during donor churn inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+
+            return new DonorChurnRunResult(
+                Success: false,
+                ExitCode: 1,
+                StartedAtUtc: startedAt,
+                FinishedAtUtc: DateTimeOffset.UtcNow,
+                StandardOutput: string.Empty,
+                StandardError: details);
+        }
+        catch (DllNotFoundException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime native dependency load failed during donor churn inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+
+            return new DonorChurnRunResult(
+                Success: false,
+                ExitCode: 1,
+                StartedAtUtc: startedAt,
+                FinishedAtUtc: DateTimeOffset.UtcNow,
+                StandardOutput: string.Empty,
+                StandardError: details);
+        }
+        catch (BadImageFormatException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime architecture mismatch or invalid native image during donor churn inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+
+            return new DonorChurnRunResult(
+                Success: false,
+                ExitCode: 1,
+                StartedAtUtc: startedAt,
+                FinishedAtUtc: DateTimeOffset.UtcNow,
+                StandardOutput: string.Empty,
+                StandardError: details);
         }
         catch (Exception ex)
         {
@@ -319,39 +371,87 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
         string modelPath,
         List<FeatureRow> rows)
     {
-        using var session = new InferenceSession(modelPath);
-
-        var inputs = new List<NamedOnnxValue>();
-
-        // Add numeric inputs — each is a column tensor of shape [n, 1]
-        foreach (var feat in NumericFeatures)
+        try
         {
-            var data = rows.Select(r => r.Numeric.TryGetValue(feat, out var v) ? v : float.NaN).ToArray();
-            var tensor = new DenseTensor<float>(data, [rows.Count, 1]);
-            inputs.Add(NamedOnnxValue.CreateFromTensor(feat, tensor));
-        }
+            using var session = CreateCpuOnlySession(modelPath);
 
-        // Add categorical inputs — each is a column tensor of shape [n, 1]
-        foreach (var feat in CategoricalFeatures)
+            var inputs = new List<NamedOnnxValue>();
+
+            // Add numeric inputs — each is a column tensor of shape [n, 1]
+            foreach (var feat in NumericFeatures)
+            {
+                var data = rows.Select(r => r.Numeric.TryGetValue(feat, out var v) ? v : float.NaN).ToArray();
+                var tensor = new DenseTensor<float>(data, [rows.Count, 1]);
+                inputs.Add(NamedOnnxValue.CreateFromTensor(feat, tensor));
+            }
+
+            // Add categorical inputs — each is a column tensor of shape [n, 1]
+            foreach (var feat in CategoricalFeatures)
+            {
+                var data = rows.Select(r => r.Categorical.TryGetValue(feat, out var v) ? v : "missing").ToArray();
+                var tensor = new DenseTensor<string>(data, [rows.Count, 1]);
+                inputs.Add(NamedOnnxValue.CreateFromTensor(feat, tensor));
+            }
+
+            using var results = session.Run(inputs);
+
+            // "probabilities" output: shape [n, 2] — column 1 is churn probability
+            var probOutput = results.First(r => r.Name == "probabilities").AsTensor<float>();
+
+            var predictions = new List<(int, float, bool)>();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                float prob = probOutput[i, 1];
+                predictions.Add((rows[i].SupporterId, prob, prob >= _options.Threshold));
+            }
+
+            return predictions;
+        }
+        catch (TypeInitializationException ex)
         {
-            var data = rows.Select(r => r.Categorical.TryGetValue(feat, out var v) ? v : "missing").ToArray();
-            var tensor = new DenseTensor<string>(data, [rows.Count, 1]);
-            inputs.Add(NamedOnnxValue.CreateFromTensor(feat, tensor));
+            _logger.LogError(
+                ex,
+                "Type initialization failed while executing ONNX inference. Rows={Rows}, ModelPath={ModelPath}, Details={Details}",
+                rows.Count,
+                modelPath,
+                OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex));
+            throw;
         }
-
-        using var results = session.Run(inputs);
-
-        // "probabilities" output: shape [n, 2] — column 1 is churn probability
-        var probOutput = results.First(r => r.Name == "probabilities").AsTensor<float>();
-
-        var predictions = new List<(int, float, bool)>();
-        for (int i = 0; i < rows.Count; i++)
+        catch (Exception ex)
         {
-            float prob = probOutput[i, 1];
-            predictions.Add((rows[i].SupporterId, prob, prob >= _options.Threshold));
+            _logger.LogError(
+                ex,
+                "ONNX inference execution failed. Rows={Rows}, ModelPath={ModelPath}",
+                rows.Count,
+                modelPath);
+            throw;
         }
+    }
 
-        return predictions;
+    private InferenceSession CreateCpuOnlySession(string modelPath)
+    {
+        // Keep runtime settings conservative to avoid native provider init crashes.
+        var options = new Microsoft.ML.OnnxRuntime.SessionOptions
+        {
+            GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_BASIC,
+            ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
+            InterOpNumThreads = 1,
+            IntraOpNumThreads = 1,
+            EnableCpuMemArena = false,
+            EnableMemoryPattern = false,
+            LogSeverityLevel = OrtLoggingLevel.ORT_LOGGING_LEVEL_WARNING,
+            LogVerbosityLevel = 0,
+        };
+
+        options.AppendExecutionProvider_CPU(0);
+
+        _logger.LogInformation(
+            "Initializing ONNX Runtime with CPU provider. ProcessArch={ProcessArch}, OSArch={OsArch}, ModelPath={ModelPath}",
+            RuntimeInformation.ProcessArchitecture,
+            RuntimeInformation.OSArchitecture,
+            modelPath);
+
+        return new InferenceSession(modelPath, options);
     }
 
     private static double Median(List<double> values)

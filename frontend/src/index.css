@@ -601,3 +601,96 @@ body {
     z-index: 20;
   }
 }
+
+
+/* Responsive table adjustments for Case Management*/
+@media (max-width: 767.98px) {
+  .table {
+    font-size: 0.85rem;
+  }
+
+  .table td,
+  .table th {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .table td {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .container-fluid .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(3),
+  .table td:nth-child(3) {
+    display: none;
+  }
+}
+
+/* Tables for Partners Page on Mobile */
+@media (max-width: 767.98px) {
+  .partners-table-wrap .table {
+    font-size: 0.85rem;
+  }
+
+  .partners-table-wrap .table td,
+  .partners-table-wrap .table th {
+    padding: 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Hide Type, Role, Region */
+  .partners-table-wrap .table th:nth-child(2),
+  .partners-table-wrap .table td:nth-child(2),
+  .partners-table-wrap .table th:nth-child(3),
+  .partners-table-wrap .table td:nth-child(3),
+  .partners-table-wrap .table th:nth-child(4),
+  .partners-table-wrap .table td:nth-child(4) {
+    display: none;
+  }
+
+  .partners-table-wrap .table .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.45rem;
+  }
+}
+
+/* Table adjustments for Social Media Page */
+@media (max-width: 767.98px) {
+  .social-table-wrap .table {
+    font-size: 0.85rem;
+  }
+
+  .social-table-wrap .table td,
+  .social-table-wrap .table th {
+    padding: 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Hide Reach (5), Donations (7) */
+  .social-table-wrap .table th:nth-child(5),
+  .social-table-wrap .table td:nth-child(5),
+  .social-table-wrap .table th:nth-child(7),
+  .social-table-wrap .table td:nth-child(7) {
+    display: none;
+  }
+
+  .social-table-wrap .table .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.45rem;
+  }
+
+  .social-table-wrap .badge {
+    font-size: 0.7rem;
+    padding: 0.3em 0.5em;
+  }
+}

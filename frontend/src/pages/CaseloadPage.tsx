@@ -664,20 +664,22 @@ export default function CaseloadPage() {
                         </td>
                         <td>{r.safehouseName ?? `Safehouse ${r.safehouseId}`}</td>
                         <td>
-                          <Link
-                            to={`/admin/residents/${r.residentId}`}
-                            className="btn btn-sm btn-primary me-1"
-                          >
-                            View
-                          </Link>
-                          <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() =>
-                              handleDeleteClick(r.residentId, r.caseControlNo)
-                            }
-                          >
-                            Delete
-                          </button>
+                          <div className="d-flex flex-column flex-md-row gap-1">
+                            <Link
+                              to={`/admin/residents/${r.residentId}`}
+                              className="btn btn-sm btn-primary"
+                            >
+                              View
+                            </Link>
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() =>
+                                handleDeleteClick(r.residentId, r.caseControlNo)
+                              }
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

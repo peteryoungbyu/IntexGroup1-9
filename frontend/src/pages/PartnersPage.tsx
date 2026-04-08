@@ -105,7 +105,7 @@ export default function PartnersPage() {
 
       <div className="container-fluid py-4">
         <form className="row g-2 mb-4" onSubmit={handleSearch}>
-          <div className="col-sm-4">
+          <div className="col-lg-4 col-md-6 col-12">
             <input
               className="form-control"
               placeholder="Search partner name…"
@@ -113,7 +113,7 @@ export default function PartnersPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="col-sm-3">
+          <div className="col-lg-3 col-md-6 col-12">
             <select
               className="form-select"
               value={status}
@@ -124,7 +124,7 @@ export default function PartnersPage() {
               <option value="Inactive">Inactive</option>
             </select>
           </div>
-          <div className="col-auto">
+          <div className="col-lg-auto col-12">
             <button type="submit" className="btn btn-primary">
               Search
             </button>
