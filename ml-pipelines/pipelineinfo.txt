@@ -1,0 +1,55 @@
+Overall DB impact: these notebooks appear read-only against SQL Server.
+Data access is centralized in pythondbconnection.py:122, which uses pd.read_sql_query with a pythondbconnection.py:124 pattern.
+I found no write calls in notebook code for to_sql, cursor.execute, executemany, or commit across ml-pipelines.
+So running these pipelines trains models and writes local artifact files in models, but does not add/update/delete SQL rows.
+Pipelines and models
+Donor churn
+Notebook: 01_donor_churn_real.ipynb
+Reads: supporters + donations from 01_donor_churn_real.ipynb:138, 01_donor_churn_real.ipynb:139
+Predicts: churned_next_180d from 01_donor_churn_real.ipynb:606, defined as no future donation in 180 days from 01_donor_churn_real.ipynb:480
+Saved model: donor_churn_model.pkl, saved in notebook at 01_donor_churn_real.ipynb:1278 with fields model/features/threshold/target_name/horizon_days from 01_donor_churn_real.ipynb:1279
+
+
+Reintegration readiness
+Notebook: 02_reintegration_readiness_real.ipynb
+Reads: residents, education_records, health_wellbeing_records, incident_reports, intervention_plans, home_visitations, process_recordings from 02_reintegration_readiness_real.ipynb:90-02_reintegration_readiness_real.ipynb:96
+Predicts: ready_for_reintegration from 02_reintegration_readiness_real.ipynb:226, used as y at 02_reintegration_readiness_real.ipynb:2734
+Saved model: reintegration_model.pkl, saved at 02_reintegration_readiness_real.ipynb:3286, target_name ready_for_reintegration at 02_reintegration_readiness_real.ipynb:3291
+
+
+Donor upsell
+Notebook: 03_donor_upsell_real.ipynb
+Reads: supporters, donations, social_media_posts from 03_donor_upsell_real.ipynb:254-03_donor_upsell_real.ipynb:256
+Predicts: upgraded from 03_donor_upsell_real.ipynb:1011, based on next gift vs threshold logic shown at 03_donor_upsell_real.ipynb:836
+Saved model: donor_upsell_model.pkl, saved at 03_donor_upsell_real.ipynb:1547, target_name via TARGET at 03_donor_upsell_real.ipynb:1552
+
+
+Intervention effectiveness
+Notebook: 04_intervention_effectiveness_real.ipynb
+Reads: intervention_plans, residents, process_recordings, incident_reports, health_wellbeing_records, education_records, home_visitations from 04_intervention_effectiveness_real.ipynb:100-04_intervention_effectiveness_real.ipynb:106
+Predicts: effective_intervention from 04_intervention_effectiveness_real.ipynb:715, label engineered at 04_intervention_effectiveness_real.ipynb:212
+Saved model: intervention_effectiveness_model.pkl, saved at 04_intervention_effectiveness_real.ipynb:1254, target_name effective_intervention at 04_intervention_effectiveness_real.ipynb:1259
+
+
+Social media donations
+Notebook: 05_social_media_donations_real.ipynb
+Reads: social_media_posts, donations, supporters from 05_social_media_donations_real.ipynb:343-05_social_media_donations_real.ipynb:345
+Predicts:
+Classification target post_generated_donation from 05_social_media_donations_real.ipynb:592
+Secondary regression target donations_amount_php from 05_social_media_donations_real.ipynb:593
+Saved models:
+- social_media_donations_classification_model.pkl (target_name=post_generated_donation, task=classification, includes threshold)
+- social_media_donations_regression_model.pkl (target_name=donations_amount_php, task=regression, target_transform=log1p)
+Both artifacts are saved in the updated save cell in 05_social_media_donations_real.ipynb.
+
+
+Resident risk regression
+Notebook: 06_resident_risk_regression_real.ipynb
+Reads: residents, health_wellbeing_records, education_records, incident_reports, process_recordings, home_visitations, intervention_plans from 06_resident_risk_regression_real.ipynb:69-06_resident_risk_regression_real.ipynb:75
+Predicts:
+Regression score regression_score from 06_resident_risk_regression_real.ipynb:1045, engineered at 06_resident_risk_regression_real.ipynb:782
+Binary high_risk from 06_resident_risk_regression_real.ipynb:1046, derived at 06_resident_risk_regression_real.ipynb:783
+Saved models:
+- resident_risk_classification_model.pkl (target_name=high_risk, task=classification, includes threshold)
+- resident_risk_regression_model.pkl (target_name=regression_score, task=regression)
+Both artifacts are saved in the updated save cell in 06_resident_risk_regression_real.ipynb.
