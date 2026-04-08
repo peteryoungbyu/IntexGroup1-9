@@ -396,9 +396,9 @@ export default function DonorsPage() {
       </div>
 
       <div className="container-fluid py-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <form className="row g-2 mb-0" onSubmit={handleSearch}>
-            <div className="col-sm-4">
+        <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+          <form className="row g-2 mb-0 flex-grow-1" onSubmit={handleSearch}>
+            <div className="col-lg-4 col-md-6 col-12">
               <input
                 className="form-control"
                 placeholder="Search name or email…"
@@ -406,7 +406,7 @@ export default function DonorsPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="col-sm-3">
+            <div className="col-lg-3 col-md-6 col-12">
               <select
                 className="form-select"
                 value={status}
@@ -417,13 +417,13 @@ export default function DonorsPage() {
                 <option value="Inactive">Inactive</option>
               </select>
             </div>
-            <div className="col-auto">
+            <div className="col-lg-auto col-12">
               <button type="submit" className="btn btn-primary">
                 Search
               </button>
             </div>
           </form>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
             <button
               className="btn btn-outline-primary"
               onClick={handleRunInference}
@@ -585,20 +585,22 @@ export default function DonorsPage() {
                         <td>{s.totalDonated.toLocaleString()}</td>
                         <td>{s.firstDonationDate ?? '—'}</td>
                         <td>
-                          <Link
-                            to={`/admin/donors/${s.supporterId}`}
-                            className="btn btn-sm btn-primary me-1"
-                          >
-                            View
-                          </Link>
-                          <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() =>
-                              handleDeleteClick(s.supporterId, s.displayName)
-                            }
-                          >
-                            Delete
-                          </button>
+                          <div className="d-flex flex-column flex-md-row gap-1">
+                            <Link
+                              to={`/admin/donors/${s.supporterId}`}
+                              className="btn btn-sm btn-primary"
+                            >
+                              View
+                            </Link>
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() =>
+                                handleDeleteClick(s.supporterId, s.displayName)
+                              }
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
