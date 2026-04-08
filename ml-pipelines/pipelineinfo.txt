@@ -53,3 +53,89 @@ Saved models:
 - resident_risk_classification_model.pkl (target_name=high_risk, task=classification, includes threshold)
 - resident_risk_regression_model.pkl (target_name=regression_score, task=regression)
 Both artifacts are saved in the updated save cell in 06_resident_risk_regression_real.ipynb.
+
+
+
+
+Using what you know about these pipelines from ml-pipelines/pipelineinfo.txt, look through each page in the frontend and what each page is displaying. Then decide where there are pages that are displaying data that relate to or are from the same tables that these pipelines are making predictions on. Report back on which pages I might be able to implement these pipelines on, meaning where would be good to display the results of the pipeline run on the data displayed on that page, and how might be a good way to implement them. 
+
+I’m going to map your ML pipelines to actual UI surfaces by reading pipelineinfo.txt, then auditing frontend pages and their data sources to find where each prediction can be shown naturally. After that I’ll give you a page-by-page implementation plan tied to the existing tables and views.I’m collecting the pipeline definitions and route/page inventory first so the recommendations are based on your real UI structure rather than assumptions.
+
+
+
+I’ve identified all routable pages and now I’m inspecting each page’s displayed data plus the API calls behind it so we can map them directly to the pipeline source tables. Next I’ll produce a concrete “pipeline → page” placement matrix with UI implementation ideas.
+
+
+
+I pulled a full cross-file analysis from the codebase and now I’m extracting the exact page-to-table and pipeline-to-page matches from that report. Then I’ll give you an actionable implementation recommendation by page.
+
+
+
+
+I reviewed all routed pages in App.tsx, the pipeline definitions in pipelineinfo.txt, and the backend/frontend data wiring.
+
+Big picture: you already have a prediction storage and API layer, but it is currently resident/supporter-centric, not post/plan-centric. That makes some pipelines plug in immediately, and others need a small schema/API extension first.
+
+**What each page is displaying (and ML relevance)**
+- ResidentDetailPage.tsx: Resident case tabs (overview, recordings, visitations, plans, conferences, predictions), includes an ML Predictions card/table already at ResidentDetailPage.tsx and a full predictions tab at ResidentDetailPage.tsx. Strong fit.
+- CaseloadPage.tsx: Resident list with filters (status, safehouse, case category, search). Strong fit for list-level risk/readiness chips.
+- DonorsPage.tsx: Supporter list with status and total donated. Strong fit for churn/upsell columns.
+- DonorDetailPage.tsx: Supporter profile + contribution history. Strong fit for churn/upsell detail cards.
+- DonorSelfPage.tsx: Donor-facing history summary. Possible fit, but product/policy decision needed.
+- SocialMediaPage.tsx: Social post table with reach/engagement/donationReferrals at SocialMediaPage.tsx. Very strong fit for social donation model if you can link predictions to post rows.
+- AdminDashboardPage.tsx: Admin summary cards and operational tables. Good fit for aggregate “at-risk” counters.
+- ReportsPage.tsx: Trends/charts (donation trends, reintegration outcomes, safehouse comparison). Good fit for model trend monitoring.
+- PublicDashboardPage.tsx and LandingPage.tsx: Public impact snapshots. Usually not a good fit for raw prediction outputs.
+- PartnersPage.tsx: Partner management only, no pipeline overlap.
+- LoginPage.tsx, RegisterPage.tsx, ManageMFAPage.tsx, LogoutPage.tsx, PrivacyPolicyPage.tsx, CookiePolicyPage.tsx: Auth/policy pages, not ML-target pages.
+
+**Best pages to implement each pipeline**
+1. Donor churn pipeline  
+Primary pages: DonorsPage.tsx, DonorDetailPage.tsx  
+Why: Uses supporters + donations; these pages are exactly supporter/donation views.  
+UI pattern: Add “Churn Risk %” column on donor list, and a “Likely to lapse in 180 days” badge/card on donor detail.
+
+2. Donor upsell pipeline  
+Primary pages: DonorsPage.tsx, DonorDetailPage.tsx  
+Why: Uses supporters + donations (+ social features), and these are your donor workflow pages.  
+UI pattern: “Upsell Probability %” column + “Next best ask tier” hint on detail page.
+
+3. Reintegration readiness pipeline  
+Primary page: ResidentDetailPage.tsx  
+Secondary: CaseloadPage.tsx, ReportsPage.tsx  
+Why: Uses resident lifecycle tables and detail page already has prediction UI.  
+UI pattern: In overview card, show readiness score + confidence + generated date; on caseload, add sortable readiness chip.
+
+4. Resident risk regression pipeline  
+Primary pages: ResidentDetailPage.tsx, CaseloadPage.tsx  
+Why: Resident-centric risk decisioning belongs in case management views.  
+UI pattern: Show numeric risk score beside current risk badge; add list filters “High ML risk only”.
+
+5. Intervention effectiveness pipeline  
+Primary page: ResidentDetailPage.tsx  
+Why: Intervention plans are displayed there.  
+Important gap: your prediction entity currently only links to resident/supporter, not plan. See PredictionResult.cs.  
+UI pattern: either resident-level “intervention effectiveness trend” now, or add plan-level key in prediction storage for per-plan badges.
+
+6. Social media donations pipeline  
+Primary page: SocialMediaPage.tsx  
+Why: Post-level table already shows engagement and donation referrals.  
+Important gap: no post link in prediction rows (resident/supporter only), so you cannot reliably render per-post predictions yet. See PredictionResult.cs.  
+UI pattern after gap fix: add columns “Predicted donation probability” and “Predicted donation amount”.
+
+**What already exists that helps**
+- Prediction endpoints are already available at PredictionController.cs, PredictionController.cs, PredictionController.cs, PredictionController.cs.
+- Frontend prediction client already exists in predictionAPI.ts.
+- Resident detail already includes predictions in payload shape at ResidentDetail.ts and server side include at ResidentService.cs.
+
+**Implementation approach I recommend**
+1. Start with no-schema-change wins:
+- Resident risk + reintegration on resident detail/caseload.
+- Donor churn + donor upsell on donors list/detail.
+2. Add aggregated prediction cards to admin and reports:
+- At-risk donors count, high-risk residents count, readiness trend.
+3. Then do schema extension for post/plan granularity:
+- Add optional foreign keys for social post and intervention plan prediction targets (or create separate prediction tables per target type).
+4. Add a batch job endpoint/process to write fresh prediction rows after pipeline runs (your current pipeline notes indicate model artifacts are produced; UI value comes when scores are persisted per entity/date).
+
+If you want, I can next draft a concrete endpoint and UI change plan for only the first two fast wins (resident + donor pages) so you can ship visible ML features quickly.
