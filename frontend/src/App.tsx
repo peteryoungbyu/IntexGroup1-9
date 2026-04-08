@@ -11,6 +11,10 @@ import Footer from './components/Footer';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
 import LandingPage from './pages/LandingPage';
+import AboutPage from './pages/AboutPage';
+import ProgramsPage from './pages/ProgramsPage';
+import DonatePage from './pages/DonatePage';
+import GetInvolvedPage from './pages/GetInvolvedPage';
 import LoginPage from './pages/LoginPage';
 import LogoutPage from './pages/LogoutPage';
 import RegisterPage from './pages/RegisterPage';
@@ -46,6 +50,10 @@ export default function App() {
                 <Routes>
                   {/* Public */}
                   <Route path="/" element={<LandingPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/programs" element={<ProgramsPage />} />
+                  <Route path="/donate" element={<DonatePage />} />
+                  <Route path="/get-involved" element={<GetInvolvedPage />} />
                   <Route path="/impact" element={<PublicDashboardPage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/logout" element={<LogoutPage />} />

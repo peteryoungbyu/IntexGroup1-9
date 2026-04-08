@@ -67,22 +67,28 @@ export default function Header() {
                 Home
               </NavLink>
             </li>
-            <li className="nav-item">
-              <NavLink
-                className="nav-link px-2 py-2 rounded-2"
-                to="/impact"
-                end
-                style={({ isActive }) => ({
-                  color: isActive
-                    ? 'var(--brand-accent)'
-                    : 'rgba(255,255,255,0.8)',
-                  fontWeight: isActive ? '600' : '400',
-                  fontSize: '0.92rem',
-                })}
-              >
-                Impact
-              </NavLink>
-            </li>
+            {[
+              { to: '/about', label: 'About' },
+              { to: '/programs', label: 'Programs' },
+              { to: '/impact', label: 'Impact' },
+              { to: '/get-involved', label: 'Get Involved' },
+            ].map((link) => (
+              <li key={link.to} className="nav-item">
+                <NavLink
+                  className="nav-link px-2 py-2 rounded-2"
+                  to={link.to}
+                  style={({ isActive }) => ({
+                    color: isActive
+                      ? 'var(--brand-accent)'
+                      : 'rgba(255,255,255,0.8)',
+                    fontWeight: isActive ? '600' : '400',
+                    fontSize: '0.92rem',
+                  })}
+                >
+                  {link.label}
+                </NavLink>
+              </li>
+            ))}
 
             {isAdmin && (
               <>
@@ -199,20 +205,37 @@ export default function Header() {
                 </li>
               </>
             ) : (
-              <li className="nav-item">
-                <NavLink
-                  className="btn btn-sm fw-semibold px-4"
-                  to="/login"
-                  style={{
-                    background: 'var(--brand-accent)',
-                    border: 'none',
-                    color: 'var(--brand-dark)',
-                    borderRadius: '8px',
-                  }}
-                >
-                  Login
-                </NavLink>
-              </li>
+              <>
+                <li className="nav-item">
+                  <Link
+                    className="btn btn-sm px-4"
+                    to="/donate"
+                    style={{
+                      background: 'var(--brand-accent)',
+                      color: 'var(--brand-dark)',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      border: 'none',
+                    }}
+                  >
+                    Donate Now
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <NavLink
+                    className="btn btn-sm fw-semibold px-4"
+                    to="/login"
+                    style={{
+                      background: 'transparent',
+                      border: '1.5px solid rgba(255,255,255,0.4)',
+                      color: 'rgba(255,255,255,0.85)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    Login
+                  </NavLink>
+                </li>
+              </>
             )}
           </ul>
         </div>

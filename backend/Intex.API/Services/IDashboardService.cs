@@ -7,8 +7,15 @@ public record AdminDashboardData(
     IReadOnlyList<object> SafehouseBreakdown,
     IReadOnlyList<object> UpcomingConferences);
 
+public record PublicOrgSummary(
+    int TotalGirlsServed,
+    int NumberOfSafehouses,
+    int YearsOperating,
+    int StaffAndVolunteers);
+
 public interface IDashboardService
 {
     Task<AdminDashboardData> GetAdminDashboardAsync();
     Task<IReadOnlyList<object>> GetPublicSnapshotsAsync(int count = 6);
+    Task<PublicOrgSummary> GetPublicOrgSummaryAsync();
 }

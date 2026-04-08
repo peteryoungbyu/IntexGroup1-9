@@ -40,7 +40,15 @@ public class DashboardService : IDashboardService
             .ToListAsync();
 
         var safehouseBreakdown = await _db.Safehouses
-            .Select(s => (object)new { s.SafehouseId, s.Name, s.Region, s.CurrentOccupancy, s.CapacityGirls, s.Status })
+            .Select(s => (object)new
+            {
+                s.SafehouseId,
+                s.Name,
+                s.Region,
+                CurrentOccupancy = s.Residents.Count(r => r.CaseStatus == "Active"),
+                s.CapacityGirls,
+                s.Status
+            })
             .ToListAsync();
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -71,5 +79,20 @@ public class DashboardService : IDashboardService
             .Take(count)
             .Select(s => (object)new { s.SnapshotId, s.SnapshotDate, s.Headline, s.SummaryText, s.MetricPayloadJson })
             .ToListAsync();
+    }
+
+    public async Task<PublicOrgSummary> GetPublicOrgSummaryAsync()
+    {
+        var totalGirls = await _db.Residents.CountAsync();
+        var safehouses = await _db.Safehouses.CountAsync();
+        var staffAndVolunteers = await _db.Partners.CountAsync(p => p.Status == "Active");
+
+        var earliestOpen = await _db.Safehouses
+            .MinAsync(s => (DateOnly?)s.OpenDate);
+        var yearsOperating = earliestOpen.HasValue
+            ? DateTime.UtcNow.Year - earliestOpen.Value.Year
+            : 0;
+
+        return new PublicOrgSummary(totalGirls, safehouses, yearsOperating, staffAndVolunteers);
     }
 }
