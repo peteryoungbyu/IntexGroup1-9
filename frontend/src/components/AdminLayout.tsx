@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { logoutUser } from '../lib/authAPI';
+import { useState } from 'react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,8 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { authSession, refreshAuthSession } = useAuth();
   const navigate = useNavigate();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     await logoutUser();
@@ -42,17 +45,32 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div style={{ display: 'flex' }}>
       {/* Sidebar */}
+            {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 999,
+          }}
+        />
+      )}
       <div
+      className="admin-sidebar"
         style={{
           width: 220,
           minWidth: 220,
           height: '100vh',
-          position: 'sticky',
+          position: 'fixed',
           top: 0,
+          left: sidebarOpen ? 0 : -220,
           background: '#0d2d44',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          zIndex: 1000,
+          transition: 'left 0.3s ease',
         }}
       >
         {/* Brand */}
@@ -108,7 +126,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <nav style={{ flex: 1, overflowY: 'auto' }}>
           {/* Overview */}
           <div style={sectionLabel}>Overview</div>
-          <NavLink to="/admin" end style={navLink}>
+         <NavLink to="/admin" end style={navLink} onClick={() => setSidebarOpen(false)}> 
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7" />
               <rect x="14" y="3" width="7" height="7" />
@@ -120,7 +138,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* Case Management */}
           <div style={sectionLabel}>Case Management</div>
-          <NavLink to="/admin/residents" style={navLink}>
+          <NavLink to="/admin/residents" style={navLink} onClick={() => setSidebarOpen(false)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
@@ -129,7 +147,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </svg>
             Residents
           </NavLink>
-          <NavLink to="/admin/process-recording" style={navLink}>
+          <NavLink to="/admin/process-recording" style={navLink} onClick={() => setSidebarOpen(false)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -139,7 +157,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             Process Recording
             <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginLeft: 'auto' }}>Soon</span>
           </NavLink>
-          <NavLink to="/admin/home-visitation" style={navLink}>
+          <NavLink to="/admin/home-visitation" style={navLink} onClick={() => setSidebarOpen(false)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
@@ -150,13 +168,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* Fundraising */}
           <div style={sectionLabel}>Fundraising</div>
-          <NavLink to="/admin/donors" style={navLink}>
+          <NavLink to="/admin/donors" style={navLink} onClick={() => setSidebarOpen(false)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             Donors
           </NavLink>
-          <NavLink to="/admin/partners" style={navLink}>
+          <NavLink to="/admin/partners" style={navLink} onClick={() => setSidebarOpen(false)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
@@ -166,7 +184,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* Analytics */}
           <div style={sectionLabel}>Analytics</div>
-          <NavLink to="/admin/reports" style={navLink}>
+          <NavLink to="/admin/reports" style={navLink} onClick={() => setSidebarOpen(false)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10" />
               <line x1="12" y1="20" x2="12" y2="4" />
@@ -174,7 +192,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </svg>
             Reports
           </NavLink>
-          <NavLink to="/admin/social-media" style={navLink}>
+          <NavLink to="/admin/social-media" style={navLink} onClick={() => setSidebarOpen(false)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="18" cy="5" r="3" />
               <circle cx="6" cy="12" r="3" />
@@ -220,9 +238,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, background: '#f4f7fb', minHeight: '100vh', overflowY: 'auto' }}>
-        {children}
-      </div>
+    <div
+      style={{
+        flex: 1,
+        background: '#f4f7fb',
+        minHeight: '100vh',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        position: 'relative',
+      }}
+    >
+    <div className="admin-mobile-menu-wrap">
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="admin-menu-btn"
+        aria-label="Open admin menu"
+      >
+        ☰
+      </button>
+    </div>
+
+      {children}
+    </div>
     </div>
   );
 }

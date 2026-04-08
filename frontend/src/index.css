@@ -564,3 +564,40 @@ body {
     grid-column: 1 / -1;
   }
 }
+
+.admin-mobile-menu-wrap {
+  display: none;
+}
+
+.admin-menu-btn {
+  background: #0d2d44;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  font-size: 18px;
+  border-radius: 6px;
+}
+
+/* Desktop */
+@media (min-width: 992px) {
+  .admin-sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+  }
+
+  .admin-mobile-menu-wrap {
+    display: none;
+  }
+}
+
+/* Mobile */
+@media (max-width: 991.98px) {
+  .admin-mobile-menu-wrap {
+    display: block;
+    position: absolute;
+    top: 20px;
+    right: 16px;
+    z-index: 20;
+  }
+}
