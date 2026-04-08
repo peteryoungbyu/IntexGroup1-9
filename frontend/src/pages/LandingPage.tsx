@@ -283,296 +283,125 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
+
       </section>
 
-      <section style={{ background: '#f8f7f4', padding: '72px 40px' }}>
-        <h2
-          style={{
-            fontSize: '2.6rem',
-            fontWeight: 800,
-            color: '#0d2d44',
-            marginBottom: 32,
-            lineHeight: 1.15,
-          }}
-        >
-          Three ways we change
-          <br />
-          <em
-            style={{
-              fontWeight: 300,
-              color: '#6b7280',
-              fontStyle: 'italic',
-            }}
-          >
-            every life
-          </em>
-        </h2>
+<section className="landing-pillars">
+  <h2 className="landing-pillars-title">
+    Three ways we change
+    <br />
+    <em>every life</em>
+  </h2>
 
+  <div className="landing-pillars-grid">
+    {pillars.map((pillar) => {
+      const isFeatured = pillar.variant === "featured";
+
+      return (
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1.6fr 1fr 1fr',
-            gridTemplateRows: '1fr auto',
-            gap: 16,
-            minHeight: 460,
-          }}
+          key={pillar.key}
+          className={`pillar-card ${pillar.key} ${isFeatured ? "featured" : ""}`}
         >
-          {pillars.map((pillar) => {
-            const isFeatured = pillar.variant === 'featured';
-
-            return (
-              <div
-                key={pillar.key}
-                style={{
-                  gridRow: isFeatured ? 'span 2' : undefined,
-                  background: pillar.background,
-                  borderRadius: 20,
-                  padding: isFeatured ? '40px 36px' : '28px 26px',
-                  border: pillar.border,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: '2px',
-                      textTransform: 'uppercase',
-                      color: pillar.labelColor,
-                      marginBottom: isFeatured ? 20 : 12,
-                    }}
-                  >
-                    {pillar.eyebrow}
-                  </div>
-                  {pillar.icon}
-                  <h3
-                    style={{
-                      fontSize: isFeatured ? '1.8rem' : '1.3rem',
-                      fontWeight: 800,
-                      color: pillar.textColor,
-                      lineHeight: 1.2,
-                      marginBottom: isFeatured ? 16 : 8,
-                    }}
-                  >
-                    {pillar.title}
-                  </h3>
-                  <p
-                    style={{
-                      color: pillar.bodyColor,
-                      lineHeight: isFeatured ? 1.65 : 1.6,
-                      fontSize: isFeatured ? '0.95rem' : '0.83rem',
-                      margin: 0,
-                    }}
-                  >
-                    {pillar.body}
-                  </p>
-                </div>
-                <div>
-                  {isFeatured ? (
-                    <hr
-                      style={{
-                        borderColor: 'rgba(255,255,255,0.1)',
-                        marginBottom: 16,
-                      }}
-                    />
-                  ) : null}
-                  <div
-                    style={{
-                      fontSize: isFeatured ? '3.2rem' : '1.8rem',
-                      fontWeight: 800,
-                      color: pillar.accent,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {pillar.metric}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: isFeatured ? '0.75rem' : '0.72rem',
-                      fontWeight: 700,
-                      letterSpacing: '1.5px',
-                      textTransform: 'uppercase',
-                      color: isFeatured ? 'rgba(255,255,255,0.4)' : pillar.bodyColor,
-                      marginTop: isFeatured ? 6 : 4,
-                    }}
-                  >
-                    {pillar.metricLabel}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          <div
-            style={{
-              gridColumn: 'span 2',
-              background: 'transparent',
-              padding: '28px 24px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 16,
-                fontWeight: 700,
-                letterSpacing: '3px',
-                textTransform: 'uppercase',
-                color: '#e8a838',
-                marginBottom: 12,
-              }}
-            >
-              OUR MISSION
+          <div>
+            <div className={`pillar-eyebrow ${pillar.eyebrowClass}`}>
+              {pillar.eyebrow}
             </div>
-            <p
-              style={{
-                color: '#6b7280',
-                fontSize: '1rem',
-                lineHeight: 1.75,
-                margin: 0,
-                maxWidth: 480,
-              }}
-            >
-              Every girl who walks through our doors receives the same promise:
-              safety, healing, and a future worth fighting for. Three pillars.
-              One mission. Every single day.
+
+            {pillar.icon}
+
+            <h3 className="pillar-title">
+              {pillar.title}
+            </h3>
+
+            <p className="pillar-text">
+              {pillar.body}
             </p>
-            {latestSnapshot ? (
-              <div
-                style={{
-                  marginTop: 24,
-                  maxWidth: 540,
-                  background: '#ffffff',
-                  borderRadius: 18,
-                  padding: '18px 20px',
-                  boxShadow: '0 18px 38px rgba(13,45,68,0.08)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '2px',
-                    textTransform: 'uppercase',
-                    color: '#0d2d44',
-                    marginBottom: 10,
-                  }}
-                >
-                  Latest impact snapshot
-                </div>
-                <div
-                  style={{
-                    fontSize: '1.15rem',
-                    fontWeight: 800,
-                    color: '#0d2d44',
-                    marginBottom: 8,
-                  }}
-                >
-                  {latestSnapshot.headline}
-                </div>
-                <p style={{ color: '#52606d', lineHeight: 1.65, margin: 0 }}>
-                  {latestSnapshot.summaryText}
-                </p>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                    gap: 12,
-                    marginTop: 16,
-                    textAlign: 'left',
-                  }}
-                >
-                  <div
-                    style={{
-                      background: '#f8f7f4',
-                      borderRadius: 14,
-                      padding: '12px 14px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        letterSpacing: '1.2px',
-                        textTransform: 'uppercase',
-                        color: '#6b7280',
-                        marginBottom: 6,
-                      }}
-                    >
-                      Avg health score
-                    </div>
-                    <div
-                      style={{
-                        fontSize: '1.25rem',
-                        fontWeight: 800,
-                        color: '#0d2d44',
-                        lineHeight: 1,
-                      }}
-                    >
-                      {formatMetric(latestAvgHealthScore, 'score')}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      background: '#f8f7f4',
-                      borderRadius: 14,
-                      padding: '12px 14px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        letterSpacing: '1.2px',
-                        textTransform: 'uppercase',
-                        color: '#6b7280',
-                        marginBottom: 6,
-                      }}
-                    >
-                      Avg education progress
-                    </div>
-                    <div
-                      style={{
-                        fontSize: '1.25rem',
-                        fontWeight: 800,
-                        color: '#0d2d44',
-                        lineHeight: 1,
-                      }}
-                    >
-                      {formatMetric(latestAvgEducationProgress, 'percent')}
-                    </div>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    marginTop: 12,
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                    letterSpacing: '1.2px',
-                    textTransform: 'uppercase',
-                    color: '#e8a838',
-                  }}
-                >
-                  {new Date(latestSnapshot.snapshotDate).toLocaleDateString(
-                    'en-US',
-                    {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    }
-                  )}
-                </div>
-              </div>
-            ) : null}
+          </div>
+
+          <div>
+            {isFeatured && <hr className="pillar-divider" />}
+
+            <div className="pillar-stat">
+              {pillar.metric}
+            </div>
+
+            <div className="pillar-substat">
+              {pillar.metricLabel}
+            </div>
           </div>
         </div>
-      </section>
+      );
+    })}
+
+    {/* Mission + analytics */}
+    <div className="pillar-mission">
+      <div className="pillar-mission-label">
+        OUR MISSION
+      </div>
+
+      <p className="pillar-mission-text">
+        Every girl who walks through our doors receives the same promise —
+        safety, healing, and a future worth fighting for. Three pillars.
+        One mission. Every single day.
+      </p>
+
+      {latestSnapshot && (
+        <div className="impact-snapshot">
+
+          <div className="impact-snapshot-label">
+            Latest impact snapshot
+          </div>
+
+          <div className="impact-snapshot-title">
+            {latestSnapshot.headline}
+          </div>
+
+          <p className="impact-snapshot-text">
+            {latestSnapshot.summaryText}
+          </p>
+
+          <div className="impact-metrics">
+
+            <div className="impact-metric">
+              <div className="impact-metric-label">
+                Avg health score
+              </div>
+
+              <div className="impact-metric-value">
+                {formatMetric(latestAvgHealthScore,"score")}
+              </div>
+            </div>
+
+            <div className="impact-metric">
+              <div className="impact-metric-label">
+                Avg education progress
+              </div>
+
+              <div className="impact-metric-value">
+                {formatMetric(latestAvgEducationProgress,"percent")}
+              </div>
+            </div>
+
+          </div>
+
+          <div className="impact-date">
+            {new Date(latestSnapshot.snapshotDate).toLocaleDateString(
+              "en-US",
+              {
+                month:"short",
+                day:"numeric",
+                year:"numeric"
+              }
+            )}
+          </div>
+
+        </div>
+      )}
+    </div>
+
+  </div>
+</section>
+
 
       <section className="cta-strip">
         <div className="container">
