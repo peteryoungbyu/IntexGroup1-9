@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getPublicOrgSummary } from '../lib/reportAPI';
 import type { PublicOrgSummary } from '../lib/reportAPI';
+import { useAuth } from '../context/AuthContext';
 
 const values = [
   {
@@ -62,6 +63,8 @@ const team = [
 ];
 
 export default function AboutPage() {
+  const { isAuthenticated } = useAuth();
+  const donateLink = isAuthenticated ? '/donate' : '/login';
   const [summary, setSummary] = useState<PublicOrgSummary | null>(null);
 
   useEffect(() => {
@@ -102,7 +105,7 @@ export default function AboutPage() {
           <p className="text-white mb-4" style={{ opacity: 0.85, fontSize: '1.05rem', lineHeight: 1.6 }}>
             New Dawn Foundation was born from a simple conviction: every girl deserves a safe place to heal, grow, and dream.
           </p>
-          <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-4">
+          <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-4">
             Support Our Mission
           </Link>
         </div>
@@ -305,7 +308,7 @@ export default function AboutPage() {
             Your support gives girls the foundation they deserve. Every contribution makes a difference.
           </p>
           <div className="d-flex gap-3 justify-content-center flex-wrap">
-            <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-5">
+            <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-5">
               Donate Today
             </Link>
             <Link to="/get-involved" className="btn btn-outline-light btn-lg px-5">
