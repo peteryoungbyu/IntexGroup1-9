@@ -273,3 +273,294 @@ body {
 [data-bs-theme="dark"] .btn-outline-secondary:hover {
   background-color: #334155 !important;
 }
+
+/* Landing page bento grid */
+.landing-pillars {
+  background: #f8f7f4;
+  padding: 72px 40px;
+}
+
+.landing-pillars-title {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: #0d2d44;
+  margin-bottom: 32px;
+  line-height: 1.15;
+}
+
+.landing-pillars-title em {
+  font-weight: 300;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.landing-pillars-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 16px;
+  min-height: 460px;
+}
+
+.pillar-caring,
+.pillar-healing,
+.pillar-teaching,
+.pillar-mission {
+  min-width: 0;
+}
+
+.pillar-caring {
+  grid-row: span 2;
+  background: #0d2d44;
+  border-radius: 20px;
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pillar-healing {
+  background: #e8f4f0;
+  border-radius: 20px;
+  padding: 28px 26px;
+  border: 1px solid rgba(15, 110, 86, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pillar-teaching {
+  background: #fff8ec;
+  border-radius: 20px;
+  padding: 28px 26px;
+  border: 1px solid rgba(180, 83, 9, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pillar-mission {
+  grid-column: span 2;
+  background: transparent;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.pillar-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.pillar-eyebrow-light {
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 20px;
+}
+
+.pillar-eyebrow-healing {
+  color: #0f6e56;
+}
+
+.pillar-eyebrow-teaching {
+  color: #b45309;
+}
+
+.pillar-caring-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.pillar-caring-text {
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.65;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.pillar-divider {
+  border-color: rgba(255, 255, 255, 0.1);
+  margin-bottom: 16px;
+}
+
+.pillar-caring-stat {
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: #e8a838;
+  line-height: 1;
+}
+
+.pillar-caring-substat {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 6px;
+}
+
+.pillar-healing-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0f6e56;
+  margin-bottom: 8px;
+}
+
+.pillar-healing-text {
+  color: #4b7c6f;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.pillar-healing-stat {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #0f6e56;
+  line-height: 1;
+}
+
+.pillar-healing-substat {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #4b7c6f;
+  margin-top: 4px;
+}
+
+.pillar-teaching-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #b45309;
+  margin-bottom: 8px;
+}
+
+.pillar-teaching-text {
+  color: #92400e;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.pillar-teaching-stat {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #b45309;
+  line-height: 1;
+}
+
+.pillar-teaching-substat {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #92400e;
+  margin-top: 4px;
+}
+
+.pillar-mission-label {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #e8a838;
+  margin-bottom: 12px;
+}
+
+.pillar-mission-text {
+  color: #6b7280;
+  font-size: 1rem;
+  line-height: 1.75;
+  margin: 0;
+  max-width: 480px;
+}
+
+@media (max-width: 767.98px) {
+  .hero-section {
+    min-height: 560px;
+  }
+
+  .hero-overlay {
+    background: linear-gradient(
+      180deg,
+      rgba(13, 45, 68, 0.9) 0%,
+      rgba(13, 45, 68, 0.72) 100%
+    );
+  }
+
+  .hero-content {
+    padding: 48px 20px;
+    max-width: 100%;
+  }
+
+  .hero-content h1 {
+    font-size: 2.1rem !important;
+    line-height: 1.15;
+  }
+
+  .landing-pillars {
+    padding: 48px 20px;
+  }
+
+  .landing-pillars-title {
+    font-size: 2.1rem;
+    margin-bottom: 24px;
+  }
+
+  .landing-pillars-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    min-height: unset;
+  }
+
+  .pillar-caring,
+  .pillar-healing,
+  .pillar-teaching,
+  .pillar-mission {
+    grid-column: auto;
+    grid-row: auto;
+    padding: 24px 20px;
+  }
+
+  .pillar-caring-title {
+    font-size: 1.5rem;
+  }
+
+  .pillar-caring-stat {
+    font-size: 2.5rem;
+  }
+
+  .cta-strip {
+    padding: 48px 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .landing-pillars {
+    padding: 56px 28px;
+  }
+
+  .landing-pillars-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    min-height: unset;
+  }
+
+  .pillar-caring {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .pillar-mission {
+    grid-column: 1 / -1;
+  }
+}
