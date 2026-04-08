@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
+using System.Runtime.InteropServices;
 
 namespace Intex.API.Services;
 
@@ -319,7 +320,7 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
         string modelPath,
         List<FeatureRow> rows)
     {
-        using var session = new InferenceSession(modelPath);
+        using var session = CreateCpuOnlySession(modelPath);
 
         var inputs = new List<NamedOnnxValue>();
 
@@ -352,6 +353,32 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
         }
 
         return predictions;
+    }
+
+    private InferenceSession CreateCpuOnlySession(string modelPath)
+    {
+        // Keep runtime settings conservative to avoid native provider init crashes.
+        var options = new Microsoft.ML.OnnxRuntime.SessionOptions
+        {
+            GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_BASIC,
+            ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
+            InterOpNumThreads = 1,
+            IntraOpNumThreads = 1,
+            EnableCpuMemArena = false,
+            EnableMemoryPattern = false,
+            LogSeverityLevel = OrtLoggingLevel.ORT_LOGGING_LEVEL_WARNING,
+            LogVerbosityLevel = 0,
+        };
+
+        options.AppendExecutionProvider_CPU(0);
+
+        _logger.LogInformation(
+            "Initializing ONNX Runtime with CPU provider. ProcessArch={ProcessArch}, OSArch={OsArch}, ModelPath={ModelPath}",
+            RuntimeInformation.ProcessArchitecture,
+            RuntimeInformation.OSArchitecture,
+            modelPath);
+
+        return new InferenceSession(modelPath, options);
     }
 
     private static double Median(List<double> values)
