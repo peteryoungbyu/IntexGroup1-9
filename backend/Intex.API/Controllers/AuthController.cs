@@ -22,6 +22,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("me")]
+    [AllowAnonymous]
     public async Task<IActionResult> Me()
     {
         if (!User.Identity?.IsAuthenticated ?? true)
@@ -51,6 +52,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("providers")]
+    [AllowAnonymous]
     public async Task<IActionResult> Providers()
     {
         var schemes = await _signInManager.GetExternalAuthenticationSchemesAsync();
@@ -58,6 +60,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("external-login")]
+    [AllowAnonymous]
     public IActionResult ExternalLogin([FromQuery] string provider, [FromQuery] string? returnPath)
     {
         var redirectUrl = Url.Action(nameof(ExternalCallback), "Auth", new { returnPath }, Request.Scheme);
@@ -66,6 +69,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("external-callback")]
+    [AllowAnonymous]
     public async Task<IActionResult> ExternalCallback([FromQuery] string? returnPath)
     {
         var info = await _signInManager.GetExternalLoginInfoAsync();

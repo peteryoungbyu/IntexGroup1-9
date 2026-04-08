@@ -68,6 +68,10 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
 // 5. Register policies
 builder.Services.AddAuthorization(options =>
 {
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+
     options.AddPolicy(AuthPolicies.AdminManage, policy => policy.RequireRole(AuthRoles.Admin));
     options.AddPolicy(AuthPolicies.AdminRead, policy => policy.RequireRole(AuthRoles.Admin));
     options.AddPolicy(AuthPolicies.DonorSelf, policy => policy.RequireRole(AuthRoles.Donor, AuthRoles.Admin));
@@ -163,7 +167,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapGroup("/api/auth").MapIdentityApi<ApplicationUser>();
+app.MapGroup("/api/auth").MapIdentityApi<ApplicationUser>().AllowAnonymous();
 
 // Serve React build in production
 if (!app.Environment.IsDevelopment())

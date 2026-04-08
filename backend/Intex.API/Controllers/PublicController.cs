@@ -1,10 +1,12 @@
 using Intex.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Intex.API.Controllers;
 
 [ApiController]
 [Route("api/public")]
+[AllowAnonymous]
 public class PublicController : ControllerBase
 {
     private readonly IDashboardService _dashboard;
