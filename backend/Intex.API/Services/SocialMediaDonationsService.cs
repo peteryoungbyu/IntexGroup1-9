@@ -128,6 +128,36 @@ public class SocialMediaDonationsService : ISocialMediaDonationsService
             return new SocialMediaDonationsResult(true, newResults.Count, startedAt, DateTimeOffset.UtcNow,
                 $"Wrote {newResults.Count} predictions ({rows.Count} posts × 2 models).", string.Empty);
         }
+        catch (TypeInitializationException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime type initialization failed during social media donations inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new SocialMediaDonationsResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
+        catch (DllNotFoundException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime native dependency load failed during social media donations inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new SocialMediaDonationsResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
+        catch (BadImageFormatException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime architecture mismatch or invalid native image during social media donations inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new SocialMediaDonationsResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Social media donations inference failed.");
@@ -197,21 +227,65 @@ public class SocialMediaDonationsService : ISocialMediaDonationsService
 
     private float[] RunClassificationInference(string modelPath, List<PostFeatureRow> rows)
     {
-        using var session = new InferenceSession(modelPath);
-        var inputs = BuildInputs(rows);
-        using var results = session.Run(inputs);
-        var probOutput = results.First(r => r.Name == "probabilities").AsTensor<float>();
-        return Enumerable.Range(0, rows.Count).Select(i => probOutput[i, 1]).ToArray();
+        try
+        {
+            using var session = OnnxRuntimeDiagnostics.CreateCpuOnlySession(modelPath, _logger, "SocialMediaDonations-Classification");
+            var inputs = BuildInputs(rows);
+            using var results = session.Run(inputs);
+            var probOutput = results.First(r => r.Name == "probabilities").AsTensor<float>();
+            return Enumerable.Range(0, rows.Count).Select(i => probOutput[i, 1]).ToArray();
+        }
+        catch (TypeInitializationException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Type initialization failed while executing ONNX classification inference. Rows={Rows}, ModelPath={ModelPath}, Details={Details}",
+                rows.Count,
+                modelPath,
+                OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex));
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "ONNX classification inference execution failed. Rows={Rows}, ModelPath={ModelPath}",
+                rows.Count,
+                modelPath);
+            throw;
+        }
     }
 
     private float[] RunRegressionInference(string modelPath, List<PostFeatureRow> rows)
     {
-        using var session = new InferenceSession(modelPath);
-        var inputs = BuildInputs(rows);
-        using var results = session.Run(inputs);
-        // Regression output is log-transformed amount — exponentiate to get PHP
-        var output = results.First(r => r.Name == "variable").AsTensor<float>();
-        return Enumerable.Range(0, rows.Count).Select(i => (float)Math.Exp(output[i])).ToArray();
+        try
+        {
+            using var session = OnnxRuntimeDiagnostics.CreateCpuOnlySession(modelPath, _logger, "SocialMediaDonations-Regression");
+            var inputs = BuildInputs(rows);
+            using var results = session.Run(inputs);
+            // Regression output is log-transformed amount — exponentiate to get PHP
+            var output = results.First(r => r.Name == "variable").AsTensor<float>();
+            return Enumerable.Range(0, rows.Count).Select(i => (float)Math.Exp(output[i])).ToArray();
+        }
+        catch (TypeInitializationException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Type initialization failed while executing ONNX regression inference. Rows={Rows}, ModelPath={ModelPath}, Details={Details}",
+                rows.Count,
+                modelPath,
+                OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex));
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "ONNX regression inference execution failed. Rows={Rows}, ModelPath={ModelPath}",
+                rows.Count,
+                modelPath);
+            throw;
+        }
     }
 
     private List<NamedOnnxValue> BuildInputs(List<PostFeatureRow> rows)

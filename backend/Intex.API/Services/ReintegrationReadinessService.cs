@@ -129,6 +129,36 @@ public class ReintegrationReadinessService : IReintegrationReadinessService
             return new ReintegrationInferenceResult(true, newResults.Count, startedAt, DateTimeOffset.UtcNow,
                 $"Wrote {newResults.Count} predictions.", string.Empty);
         }
+        catch (TypeInitializationException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime type initialization failed during reintegration readiness inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new ReintegrationInferenceResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
+        catch (DllNotFoundException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime native dependency load failed during reintegration readiness inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new ReintegrationInferenceResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
+        catch (BadImageFormatException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime architecture mismatch or invalid native image during reintegration readiness inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new ReintegrationInferenceResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Reintegration readiness inference failed.");
@@ -354,26 +384,48 @@ public class ReintegrationReadinessService : IReintegrationReadinessService
 
     private List<(int ResidentId, float Probability)> RunOnnxInference(string modelPath, List<ResidentFeatureRow> rows)
     {
-        using var session = new InferenceSession(modelPath);
-        var inputs = new List<NamedOnnxValue>();
-
-        foreach (var feat in NumericFeatures)
+        try
         {
-            var data = rows.Select(r => r.Numeric.TryGetValue(feat, out var v) ? v : float.NaN).ToArray();
-            inputs.Add(NamedOnnxValue.CreateFromTensor(feat, new DenseTensor<float>(data, [rows.Count, 1])));
+            using var session = OnnxRuntimeDiagnostics.CreateCpuOnlySession(modelPath, _logger, "ReintegrationReadiness");
+            var inputs = new List<NamedOnnxValue>();
+
+            foreach (var feat in NumericFeatures)
+            {
+                var data = rows.Select(r => r.Numeric.TryGetValue(feat, out var v) ? v : float.NaN).ToArray();
+                inputs.Add(NamedOnnxValue.CreateFromTensor(feat, new DenseTensor<float>(data, [rows.Count, 1])));
+            }
+            foreach (var feat in CategoricalFeatures)
+            {
+                var data = rows.Select(r => r.Categorical.TryGetValue(feat, out var v) ? v : "missing").ToArray();
+                inputs.Add(NamedOnnxValue.CreateFromTensor(feat, new DenseTensor<string>(data, [rows.Count, 1])));
+            }
+
+            using var results = session.Run(inputs);
+            var probOutput = results.First(r => r.Name == "probabilities").AsTensor<float>();
+
+            return Enumerable.Range(0, rows.Count)
+                .Select(i => (rows[i].ResidentId, probOutput[i, 1]))
+                .ToList();
         }
-        foreach (var feat in CategoricalFeatures)
+        catch (TypeInitializationException ex)
         {
-            var data = rows.Select(r => r.Categorical.TryGetValue(feat, out var v) ? v : "missing").ToArray();
-            inputs.Add(NamedOnnxValue.CreateFromTensor(feat, new DenseTensor<string>(data, [rows.Count, 1])));
+            _logger.LogError(
+                ex,
+                "Type initialization failed while executing ONNX inference. Rows={Rows}, ModelPath={ModelPath}, Details={Details}",
+                rows.Count,
+                modelPath,
+                OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex));
+            throw;
         }
-
-        using var results = session.Run(inputs);
-        var probOutput = results.First(r => r.Name == "probabilities").AsTensor<float>();
-
-        return Enumerable.Range(0, rows.Count)
-            .Select(i => (rows[i].ResidentId, probOutput[i, 1]))
-            .ToList();
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "ONNX inference execution failed. Rows={Rows}, ModelPath={ModelPath}",
+                rows.Count,
+                modelPath);
+            throw;
+        }
     }
 
     private static float ToF(double v) => double.IsNaN(v) ? float.NaN : (float)v;
