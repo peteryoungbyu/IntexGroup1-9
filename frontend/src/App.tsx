@@ -1,16 +1,21 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 import { CookieConsentProvider } from './context/CookieConsentContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminLayout from './components/AdminLayout';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CookieConsentBanner from './components/CookieConsentBanner';
 
 import LandingPage from './pages/LandingPage';
+import AboutPage from './pages/AboutPage';
+import ProgramsPage from './pages/ProgramsPage';
+import DonatePage from './pages/DonatePage';
+import GetInvolvedPage from './pages/GetInvolvedPage';
 import LoginPage from './pages/LoginPage';
 import LogoutPage from './pages/LogoutPage';
 import RegisterPage from './pages/RegisterPage';
@@ -28,121 +33,128 @@ import ReportsPage from './pages/ReportsPage';
 import SocialMediaPage from './pages/SocialMediaPage';
 import PartnersPage from './pages/PartnersPage';
 
+function AppShell() {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {!isAdmin && <Header />}
+      <main style={{ flex: 1 }}>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/programs" element={<ProgramsPage />} />
+          <Route path="/donate" element={<DonatePage />} />
+          <Route path="/get-involved" element={<GetInvolvedPage />} />
+          <Route path="/impact" element={<PublicDashboardPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/logout" element={<LogoutPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+
+          {/* Authenticated */}
+          <Route
+            path="/account/mfa"
+            element={
+              <ProtectedRoute>
+                <ManageMFAPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Donor */}
+          <Route
+            path="/donor/history"
+            element={
+              <ProtectedRoute roles={['Donor', 'Admin']}>
+                <DonorSelfPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><AdminDashboardPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/donors"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><DonorsPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/donors/:id"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><DonorDetailPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/residents"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><CaseloadPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/residents/:id"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><ResidentDetailPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><ReportsPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/social-media"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><SocialMediaPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/partners"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><PartnersPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </main>
+      {!isAdmin && <Footer />}
+      <CookieConsentBanner />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <CookieConsentProvider>
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                minHeight: '100vh',
-              }}
-            >
-              <Header />
-              <main style={{ flex: 1 }}>
-                <Routes>
-                  {/* Public */}
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/impact" element={<PublicDashboardPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/logout" element={<LogoutPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/privacy" element={<PrivacyPolicyPage />} />
-                  <Route path="/cookie-policy" element={<CookiePolicyPage />} />
-
-                  {/* Authenticated */}
-                  <Route
-                    path="/account/mfa"
-                    element={
-                      <ProtectedRoute>
-                        <ManageMFAPage />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* Donor */}
-                  <Route
-                    path="/donor/history"
-                    element={
-                      <ProtectedRoute roles={['Donor', 'Admin']}>
-                        <DonorSelfPage />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* Admin */}
-                  <Route
-                    path="/admin"
-                    element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <AdminDashboardPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/donors"
-                    element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <DonorsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/donors/:id"
-                    element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <DonorDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/residents"
-                    element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <CaseloadPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/residents/:id"
-                    element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <ResidentDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/reports"
-                    element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <ReportsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/social-media"
-                    element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <SocialMediaPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/partners"
-                    element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <PartnersPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Routes>
-              </main>
-              <Footer />
-              <CookieConsentBanner />
-            </div>
+            <AppShell />
           </Router>
         </AuthProvider>
       </ThemeProvider>

@@ -23,11 +23,13 @@ function extractErrorMessage(status: number): string {
 }
 
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-  return fetch(`${BASE}${path}`, {
+  const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     ...init,
   });
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res;
 }
 
 export async function getSupporters(

@@ -17,4 +17,11 @@ public class PublicController : ControllerBase
         var snapshots = await _dashboard.GetPublicSnapshotsAsync(count);
         return Ok(snapshots);
     }
+
+    [HttpGet("org-summary")]
+    public async Task<IActionResult> GetOrgSummary()
+    {
+        var summary = await _dashboard.GetPublicOrgSummaryAsync();
+        return Ok(summary);
+    }
 }

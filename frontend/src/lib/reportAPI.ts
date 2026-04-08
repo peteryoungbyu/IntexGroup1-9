@@ -33,6 +33,18 @@ export async function getPublicImpact(count = 6): Promise<ImpactSnapshot[]> {
   return res.json();
 }
 
+export interface PublicOrgSummary {
+  totalGirlsServed: number;
+  numberOfSafehouses: number;
+  yearsOperating: number;
+  staffAndVolunteers: number;
+}
+
+export async function getPublicOrgSummary(): Promise<PublicOrgSummary> {
+  const res = await apiFetch('/api/public/org-summary');
+  return res.json();
+}
+
 export async function getAdminDashboard() {
   const res = await apiFetch('/api/admin/dashboard');
   return res.json();

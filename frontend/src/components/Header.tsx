@@ -67,52 +67,28 @@ export default function Header() {
                 Home
               </NavLink>
             </li>
-            <li className="nav-item">
-              <NavLink
-                className="nav-link px-2 py-2 rounded-2"
-                to="/impact"
-                end
-                style={({ isActive }) => ({
-                  color: isActive
-                    ? 'var(--brand-accent)'
-                    : 'rgba(255,255,255,0.8)',
-                  fontWeight: isActive ? '600' : '400',
-                  fontSize: '0.92rem',
-                })}
-              >
-                Impact
-              </NavLink>
-            </li>
-
-            {isAdmin && (
-              <>
-                {[
-                  { to: '/admin', label: 'Dashboard', end: true },
-                  { to: '/admin/donors', label: 'Donors' },
-                  { to: '/admin/residents', label: 'Residents' },
-                  { to: '/admin/reports', label: 'Reports' },
-                  { to: '/admin/social-media', label: 'Social Media' },
-                  { to: '/admin/partners', label: 'Partners' },
-                ].map((link) => (
-                  <li key={link.to} className="nav-item">
-                    <NavLink
-                      className="nav-link px-2 py-2 rounded-2"
-                      to={link.to}
-                      end={link.end}
-                      style={({ isActive }) => ({
-                        color: isActive
-                          ? 'var(--brand-accent)'
-                          : 'rgba(255,255,255,0.8)',
-                        fontWeight: isActive ? '600' : '400',
-                        fontSize: '0.92rem',
-                      })}
-                    >
-                      {link.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </>
-            )}
+            {[
+              { to: '/about', label: 'About' },
+              { to: '/programs', label: 'Programs' },
+              { to: '/impact', label: 'Impact' },
+              { to: '/get-involved', label: 'Get Involved' },
+            ].map((link) => (
+              <li key={link.to} className="nav-item">
+                <NavLink
+                  className="nav-link px-2 py-2 rounded-2"
+                  to={link.to}
+                  style={({ isActive }) => ({
+                    color: isActive
+                      ? 'var(--brand-accent)'
+                      : 'rgba(255,255,255,0.8)',
+                    fontWeight: isActive ? '600' : '400',
+                    fontSize: '0.92rem',
+                  })}
+                >
+                  {link.label}
+                </NavLink>
+              </li>
+            ))}
 
             {isDonor && !isAdmin && (
               <li className="nav-item">
@@ -182,6 +158,45 @@ export default function Header() {
                     </li>
                   </ul>
                 </li>
+                {isAdmin ? (
+                  <li className="nav-item">
+                    <Link
+                      to="/admin"
+                      style={{
+                        display: 'inline-block',
+                        background: '#e8a838',
+                        color: '#0d2d44',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        padding: '6px 16px',
+                        border: 'none',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      Admin Portal
+                    </Link>
+                  </li>
+                ) : (
+                  <li className="nav-item">
+                    <Link
+                      className="btn btn-sm px-4"
+                      to="/donate"
+                      style={{
+                        background: 'var(--brand-accent)',
+                        color: 'var(--brand-dark)',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        border: 'none',
+                      }}
+                    >
+                      Donate Now
+                    </Link>
+                  </li>
+                )}
+              </>
+            ) : (
+              <>
                 <li className="nav-item">
                   <Link
                     className="btn btn-sm px-4"
@@ -197,22 +212,21 @@ export default function Header() {
                     Donate Now
                   </Link>
                 </li>
+                <li className="nav-item">
+                  <NavLink
+                    className="btn btn-sm fw-semibold px-4"
+                    to="/login"
+                    style={{
+                      background: 'transparent',
+                      border: '1.5px solid rgba(255,255,255,0.4)',
+                      color: 'rgba(255,255,255,0.85)',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    Login
+                  </NavLink>
+                </li>
               </>
-            ) : (
-              <li className="nav-item">
-                <NavLink
-                  className="btn btn-sm fw-semibold px-4"
-                  to="/login"
-                  style={{
-                    background: 'var(--brand-accent)',
-                    border: 'none',
-                    color: 'var(--brand-dark)',
-                    borderRadius: '8px',
-                  }}
-                >
-                  Login
-                </NavLink>
-              </li>
             )}
           </ul>
         </div>
