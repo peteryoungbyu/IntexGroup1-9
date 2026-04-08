@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ImpactSnapshot } from '../types/DashboardMetric';
-import { getPublicImpact } from '../lib/reportAPI';
+import { getPublicImpact, getPublicImpactByDate } from '../lib/reportAPI';
 
 function normalizeKey(value: string): string {
   return value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -102,15 +102,48 @@ export default function PublicDashboardPage() {
   const [snapshots, setSnapshots] = useState<ImpactSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [featuredSnapshot, setFeaturedSnapshot] =
+    useState<ImpactSnapshot | null>(null);
+  const [referenceDate] = useState(() => new Date());
   const pageSize = 12;
   const startYearMonth = 202301;
   const endYearMonth = 202602;
+
+  const targetSnapshotDate = new Date(referenceDate);
+  targetSnapshotDate.setMonth(targetSnapshotDate.getMonth() - 2);
+  targetSnapshotDate.setDate(1);
+  const targetSnapshotDateText = `${targetSnapshotDate.getFullYear()}-${String(
+    targetSnapshotDate.getMonth() + 1
+  ).padStart(2, '0')}-01`;
 
   useEffect(() => {
     getPublicImpact(120)
       .then(setSnapshots)
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    getPublicImpactByDate(targetSnapshotDateText)
+      .then((results) => setFeaturedSnapshot(results[0] ?? null))
+      .catch(() => setFeaturedSnapshot(null));
+  }, [targetSnapshotDateText]);
+
+  const featuredPayload = parseMetricPayload(
+    featuredSnapshot?.metricPayloadJson ?? null
+  );
+  const featuredAvgHealthScore = readNumericMetric(featuredPayload, [
+    'avgHealthScore',
+    'avg_health_score',
+    'averageHealthScore',
+    'average_health_score',
+    'healthScoreAvg',
+  ]);
+  const featuredAvgEducationProgress = readNumericMetric(featuredPayload, [
+    'avgEducationProgress',
+    'avg_education_progress',
+    'averageEducationProgress',
+    'average_education_progress',
+  ]);
 
   const filteredSnapshots = snapshots.filter((s) => {
     const payload = parseMetricPayload(s.metricPayloadJson);
@@ -164,6 +197,130 @@ export default function PublicDashboardPage() {
 
       <section className="py-5" style={{ background: 'var(--brand-light)' }}>
         <div className="container">
+          {featuredSnapshot && (
+            <div
+              style={{
+                background: '#ffffff',
+                borderRadius: 14,
+                boxShadow: '0 4px 24px rgba(13,45,68,0.08)',
+                padding: '2rem',
+                marginBottom: '2rem',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  color: '#e8a838',
+                  marginBottom: 10,
+                }}
+              >
+                Latest Impact Snapshot
+              </div>
+              <div
+                style={{
+                  fontSize: '1.4rem',
+                  fontWeight: 800,
+                  color: '#0d2d44',
+                  marginBottom: 8,
+                }}
+              >
+                {featuredSnapshot.headline ||
+                  `NewDawn Impact Report — ${new Date(featuredSnapshot.snapshotDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
+              </div>
+              <p style={{ color: '#6b7280', marginBottom: 16 }}>
+                {featuredSnapshot.summaryText}
+              </p>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: 12,
+                  marginBottom: 16,
+                }}
+              >
+                <div
+                  style={{
+                    background: '#f8f7f4',
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      letterSpacing: '1.2px',
+                      textTransform: 'uppercase',
+                      color: '#6b7280',
+                      marginBottom: 6,
+                    }}
+                  >
+                    Avg Health Score
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      color: '#0d2d44',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {formatMetric(featuredAvgHealthScore, 'score')}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    background: '#f8f7f4',
+                    borderRadius: 14,
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      letterSpacing: '1.2px',
+                      textTransform: 'uppercase',
+                      color: '#6b7280',
+                      marginBottom: 6,
+                    }}
+                  >
+                    Avg Education Progress
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      color: '#0d2d44',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {formatMetric(featuredAvgEducationProgress, 'percent')}
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  letterSpacing: '1.2px',
+                  textTransform: 'uppercase',
+                  color: '#e8a838',
+                }}
+              >
+                {new Date(featuredSnapshot.snapshotDate).toLocaleDateString(
+                  'en-US',
+                  { month: 'short', day: 'numeric', year: 'numeric' }
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="section-label mb-4">All Monthly Reports</div>
+
           {filteredSnapshots.length === 0 ? (
             <div className="alert alert-info">
               No impact reports found between January 2023 and February 2026.

@@ -20,6 +20,16 @@ import {
   getDonationTrends,
   getReintegrationOutcomes,
   getSafehouseComparison,
+  getInferenceResults,
+  runReintegrationReadiness,
+  runDonorUpsell,
+  runInterventionEffectiveness,
+  runSocialMediaDonations,
+  runResidentRisk,
+  type InferenceResult,
+  type ReportInferenceColumnFormat,
+  type ReportInferenceRow,
+  type ReportInferenceTable,
 } from '../lib/reportAPI';
 
 const BRAND_COLORS = [
@@ -57,6 +67,87 @@ export default function ReportsPage() {
   );
   const [comparison, setComparison] = useState<ReportSection | null>(null);
   const [loading, setLoading] = useState(true);
+
+  type InferenceJob = {
+    jobKey: string;
+    label: string;
+    run: () => Promise<InferenceResult>;
+  };
+
+  const inferenceJobs: InferenceJob[] = [
+    {
+      jobKey: 'reintegration-readiness',
+      label: 'Reintegration Readiness',
+      run: runReintegrationReadiness,
+    },
+    {
+      jobKey: 'donor-upsell',
+      label: 'Donor Upsell',
+      run: runDonorUpsell,
+    },
+    {
+      jobKey: 'intervention-effectiveness',
+      label: 'Intervention Effectiveness',
+      run: runInterventionEffectiveness,
+    },
+    {
+      jobKey: 'social-media-donations',
+      label: 'Social Media Donations',
+      run: runSocialMediaDonations,
+    },
+    {
+      jobKey: 'resident-risk',
+      label: 'Resident Risk',
+      run: runResidentRisk,
+    },
+  ];
+
+  const [inferenceStatus, setInferenceStatus] = useState<
+    Record<string, { running: boolean; result: InferenceResult | null; error: string | null }>
+  >({});
+
+  const [inferenceTables, setInferenceTables] = useState<
+    Record<string, ReportInferenceTable | null>
+  >({});
+  const [loadingResults, setLoadingResults] = useState<Record<string, boolean>>({});
+
+  async function fetchResults(job: InferenceJob) {
+    setLoadingResults((prev) => ({ ...prev, [job.jobKey]: true }));
+    try {
+      const table = await getInferenceResults(job.jobKey, 100);
+      setInferenceTables((prev) => ({ ...prev, [job.jobKey]: table }));
+    } finally {
+      setLoadingResults((prev) => ({ ...prev, [job.jobKey]: false }));
+    }
+  }
+
+  async function runInference(job: InferenceJob) {
+    setInferenceStatus((prev) => ({
+      ...prev,
+      [job.jobKey]: { running: true, result: null, error: null },
+    }));
+    try {
+      const result = await job.run();
+      setInferenceStatus((prev) => ({
+        ...prev,
+        [job.jobKey]: {
+          running: false,
+          result,
+          error: result.success ? null : result.error,
+        },
+      }));
+      if (result.success) await fetchResults(job);
+    } catch (e: any) {
+      setInferenceStatus((prev) => ({
+        ...prev,
+        [job.jobKey]: {
+          running: false,
+          result: null,
+          error: e?.message ?? 'Unknown error',
+        },
+      }));
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -124,6 +215,73 @@ export default function ReportsPage() {
     s.title.toLowerCase().includes('service')
   );
   const servicesRows: any[] = (servicesSection?.data as any[]) ?? [];
+
+  function formatCellValue(
+    value: string | number | null | undefined,
+    format: ReportInferenceColumnFormat
+  ): string {
+    if (value == null) return '—';
+
+    switch (format) {
+      case 'percent':
+        return typeof value === 'number'
+          ? `${(value * 100).toFixed(1)}%`
+          : String(value);
+      case 'currency':
+        return typeof value === 'number'
+          ? `PHP ${value.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          : String(value);
+      case 'datetime':
+        return new Date(String(value)).toLocaleString();
+      default:
+        return String(value);
+    }
+  }
+
+  function getBadgeClass(value: string | number | null | undefined): string {
+    const normalized = String(value ?? '').trim().toLowerCase();
+
+    if (
+      normalized === 'high' ||
+      normalized === 'highrisk' ||
+      normalized === 'notready' ||
+      normalized === 'noteffective' ||
+      normalized === 'willnotupgrade' ||
+      normalized === 'willnotgeneratedonation'
+    ) {
+      return 'badge bg-danger';
+    }
+
+    if (normalized === 'medium') {
+      return 'badge bg-warning text-dark';
+    }
+
+    if (
+      normalized === 'ready' ||
+      normalized === 'effective' ||
+      normalized === 'willupgrade' ||
+      normalized === 'willgeneratedonation' ||
+      normalized === 'low' ||
+      normalized === 'lowrisk' ||
+      normalized === 'active'
+    ) {
+      return 'badge bg-success';
+    }
+
+    return 'badge bg-secondary';
+  }
+
+  function getRowKey(
+    jobKey: string,
+    row: ReportInferenceRow,
+    index: number
+  ): string {
+    const entityId = row.postId ?? row.residentId ?? row.supporterId ?? index;
+    return `${jobKey}-${entityId}-${index}`;
+  }
 
   return (
     <div>
@@ -291,6 +449,111 @@ export default function ReportsPage() {
                   </p>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ML Inference Panel */}
+        <div className="card mb-4">
+          <div className="card-header fw-semibold">ML Inference — Run Predictions</div>
+          <div className="card-body">
+            <p className="text-muted small mb-3">
+              Trigger each model to score all records and write results to the database.
+              Each job may take several seconds.
+            </p>
+            <div className="d-flex flex-column gap-4">
+              {inferenceJobs.map((job) => {
+                const status = inferenceStatus[job.jobKey];
+                const table = inferenceTables[job.jobKey];
+                const rows = table?.rows ?? [];
+                const loadingRes = loadingResults[job.jobKey];
+                return (
+                  <div key={job.jobKey} className="border rounded p-3">
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <span className="fw-semibold">{job.label}</span>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        disabled={status?.running}
+                        onClick={() => runInference(job)}
+                      >
+                        {status?.running ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-1" />
+                            Running…
+                          </>
+                        ) : (
+                          'Run'
+                        )}
+                      </button>
+                      {rows.length === 0 && !status?.running && (
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          disabled={loadingRes}
+                          onClick={() => fetchResults(job)}
+                        >
+                          {loadingRes ? (
+                            <span className="spinner-border spinner-border-sm" />
+                          ) : (
+                            'View Last Results'
+                          )}
+                        </button>
+                      )}
+                      {status?.result?.success && (
+                        <span className="text-success small">✓ {status.result.updatedCount} records updated</span>
+                      )}
+                      {status?.error && (
+                        <span className="text-danger small">✗ {status.error}</span>
+                      )}
+                    </div>
+
+                    {table?.note && (
+                      <p className="text-muted small mb-2">{table.note}</p>
+                    )}
+
+                    {rows.length > 0 && (
+                      <div className="table-responsive" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                        <table className="table table-sm table-bordered table-hover mb-0">
+                          <thead className="table-light sticky-top">
+                            <tr>
+                              {table?.columns.map((column) => (
+                                <th key={column.key}>{column.label}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.map((row, index) => (
+                              <tr key={getRowKey(job.jobKey, row, index)}>
+                                {table?.columns.map((column) => {
+                                  const value = row[column.key];
+                                  return (
+                                    <td key={column.key}>
+                                      {column.format === 'badge' ? (
+                                        <span className={getBadgeClass(value)}>
+                                          {formatCellValue(value, column.format)}
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className={
+                                            column.format === 'datetime'
+                                              ? 'text-muted small'
+                                              : undefined
+                                          }
+                                        >
+                                          {formatCellValue(value, column.format)}
+                                        </span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

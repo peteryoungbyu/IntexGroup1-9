@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const ways = [
   {
@@ -114,6 +115,8 @@ const faqs = [
 ];
 
 export default function GetInvolvedPage() {
+  const { isAuthenticated } = useAuth();
+  const donateLink = isAuthenticated ? '/donate' : '/login';
   const [formData, setFormData] = useState({ name: '', email: '', interest: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -149,7 +152,7 @@ export default function GetInvolvedPage() {
       <section style={{ background: 'var(--brand-primary)' }}>
         <div className="container-fluid px-0">
           <div className="row g-0" style={{ minHeight: 380 }}>
-            <div className="col-lg-6 d-flex align-items-center px-5 py-5">
+            <div className="col-lg-6 d-flex align-items-center px-4 px-lg-5 py-5">
               <div style={{ maxWidth: 520 }}>
                 <p className="section-label" style={{ color: 'var(--brand-accent)', opacity: 1 }}>
                   The Most Impactful Step
@@ -161,7 +164,7 @@ export default function GetInvolvedPage() {
                   Financial gifts of any size directly fund shelter, therapy, and education for girls in our care.
                   ₱500 feeds a resident for a week. ₱2,500 covers a month of counseling. Every peso restores hope.
                 </p>
-                <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-5" style={{ fontSize: '1.05rem' }}>
+                <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-5" style={{ fontSize: '1.05rem' }}>
                   Donate Now
                 </Link>
               </div>
@@ -224,7 +227,7 @@ export default function GetInvolvedPage() {
         <div className="hero-content text-center" style={{ maxWidth: 680 }}>
           <p
             className="text-white fw-bold mb-0"
-            style={{ fontSize: '1.5rem', lineHeight: 1.6, fontStyle: 'italic' }}
+            style={{ fontSize: 'clamp(1.1rem, 4vw, 1.5rem)', lineHeight: 1.6, fontStyle: 'italic' }}
           >
             "One act of generosity can change the entire trajectory of a girl's life."
           </p>
@@ -413,7 +416,7 @@ export default function GetInvolvedPage() {
           <p className="mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>
             Whether you give ₱500 or 500 hours — you are part of the story.
           </p>
-          <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-5">
+          <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-5">
             Donate Now
           </Link>
         </div>

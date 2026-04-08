@@ -30,9 +30,33 @@ export interface Donation {
   notes: string | null;
 }
 
+// TODO backend: add these to the /api/donor/me response body so in-kind line
+// items and allocation breakdowns can be displayed on the donor history page.
+export interface InKindDonationItem {
+  itemId: number;
+  donationId: number;
+  itemName: string;
+  itemCategory: string;
+  quantity: number;
+  unitOfMeasure: string | null;
+  estimatedUnitValue: number | null;
+}
+
+export interface DonationAllocation {
+  allocationId: number;
+  donationId: number;
+  safeHouseId: number | null;
+  programArea: string;
+  amountAllocated: number;
+  allocationDate: string | null;
+}
+
 export interface SupporterDetail {
   supporter: Supporter;
   donations: Donation[];
+  // TODO backend: /api/donor/me should include these nested arrays
+  inKindItems?: InKindDonationItem[];
+  allocations?: DonationAllocation[];
 }
 
 export interface SupporterListItem {

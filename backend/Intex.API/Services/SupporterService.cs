@@ -93,20 +93,32 @@ ORDER BY
     {
         var supporter = await _db.Supporters
             .Include(s => s.Donations)
+                .ThenInclude(d => d.Items)
+            .Include(s => s.Donations)
+                .ThenInclude(d => d.Allocations)
             .FirstOrDefaultAsync(s => s.SupporterId == id);
 
-        return supporter is null ? null : new SupporterDetail(supporter, supporter.Donations.ToList());
+        if (supporter is null) return null;
+        var inKindItems = supporter.Donations.SelectMany(d => d.Items).ToList();
+        var allocations = supporter.Donations.SelectMany(d => d.Allocations).ToList();
+        return new SupporterDetail(supporter, supporter.Donations.ToList(), inKindItems, allocations);
     }
 
     public async Task<SupporterDetail?> GetByUserIdAsync(string userId)
     {
         var link = await _db.SupporterUserLinks
             .Include(l => l.Supporter)
-            .ThenInclude(s => s.Donations)
+                .ThenInclude(s => s.Donations)
+                    .ThenInclude(d => d.Items)
+            .Include(l => l.Supporter)
+                .ThenInclude(s => s.Donations)
+                    .ThenInclude(d => d.Allocations)
             .FirstOrDefaultAsync(l => l.UserId == userId);
 
         if (link is null) return null;
-        return new SupporterDetail(link.Supporter, link.Supporter.Donations.ToList());
+        var inKindItems = link.Supporter.Donations.SelectMany(d => d.Items).ToList();
+        var allocations = link.Supporter.Donations.SelectMany(d => d.Allocations).ToList();
+        return new SupporterDetail(link.Supporter, link.Supporter.Donations.ToList(), inKindItems, allocations);
     }
 
     public async Task<Supporter> CreateAsync(Supporter supporter)

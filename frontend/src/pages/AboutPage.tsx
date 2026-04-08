@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getPublicOrgSummary } from '../lib/reportAPI';
 import type { PublicOrgSummary } from '../lib/reportAPI';
+import aboutOrigin from '../assets/about-origin.jpg';
+import merrickImg from '../assets/team/merrick.jpg';
+import peterImg from '../assets/team/peter.jpg';
+import andersImg from '../assets/team/anders.jpg';
+import jakeImg from '../assets/team/jake.jpg';
+import { useAuth } from '../context/AuthContext';
 
 const values = [
   {
@@ -55,13 +61,15 @@ const values = [
 ];
 
 const team = [
-  { name: 'Maria Santos', role: 'Executive Director', initials: 'MS' },
-  { name: 'Dr. Lourdes Reyes', role: 'Clinical Director', initials: 'LR' },
-  { name: 'Jose Dela Cruz', role: 'Operations Manager', initials: 'JD' },
-  { name: 'Ana Villanueva', role: 'Head of Education', initials: 'AV' },
+  { name: 'Peter Young', role: 'Executive Director', img: peterImg, initials: 'PY' },
+  { name: 'Merrick Morgan', role: 'Clinical Director', img: merrickImg, initials: 'MM' },
+  { name: 'Anders Houghton', role: 'Operations Manager', img: andersImg, initials: 'AD' },
+  { name: 'Jake Fuhriman', role: 'Head of Education', img: jakeImg, initials: 'JF' },
 ];
 
 export default function AboutPage() {
+  const { isAuthenticated } = useAuth();
+  const donateLink = isAuthenticated ? '/donate' : '/login';
   const [summary, setSummary] = useState<PublicOrgSummary | null>(null);
 
   useEffect(() => {
@@ -102,7 +110,7 @@ export default function AboutPage() {
           <p className="text-white mb-4" style={{ opacity: 0.85, fontSize: '1.05rem', lineHeight: 1.6 }}>
             New Dawn Foundation was born from a simple conviction: every girl deserves a safe place to heal, grow, and dream.
           </p>
-          <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-4">
+          <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-4">
             Support Our Mission
           </Link>
         </div>
@@ -137,9 +145,14 @@ export default function AboutPage() {
                 style={{ aspectRatio: '4/3', background: 'var(--brand-light)' }}
               >
                 <img
-                  src="https://images.unsplash.com/photo-1544717305-2782549b5136?w=800&q=80"
-                  alt="Staff working with children"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  src={aboutOrigin}
+                  alt="Children smiling and playing in a Filipino community"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center'
+                  }}
                 />
               </div>
             </div>
@@ -273,20 +286,16 @@ export default function AboutPage() {
           <div className="row g-4 justify-content-center">
             {team.map((member) => (
               <div key={member.name} className="col-6 col-md-3 text-center">
-                <div
-                  className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                  style={{
-                    width: 80,
-                    height: 80,
-                    background: 'var(--brand-primary)',
-                    color: '#fff',
-                    fontSize: '1.4rem',
-                    fontWeight: 700,
-                  }}
-                  aria-hidden="true"
-                >
-                  {member.initials}
-                </div>
+              <img
+                src={member.img}
+                alt={member.name}
+                className="rounded-circle mx-auto mb-3"
+                style={{
+                  width: 150,
+                  height: 150,
+                  objectFit: 'cover',
+                }}
+              />
                 <h6 className="fw-bold mb-1" style={{ color: 'var(--brand-dark)' }}>
                   {member.name}
                 </h6>
@@ -305,7 +314,7 @@ export default function AboutPage() {
             Your support gives girls the foundation they deserve. Every contribution makes a difference.
           </p>
           <div className="d-flex gap-3 justify-content-center flex-wrap">
-            <Link to="/donate" className="btn btn-warning btn-lg fw-bold px-5">
+            <Link to={donateLink} className="btn btn-warning btn-lg fw-bold px-5">
               Donate Today
             </Link>
             <Link to="/get-involved" className="btn btn-outline-light btn-lg px-5">

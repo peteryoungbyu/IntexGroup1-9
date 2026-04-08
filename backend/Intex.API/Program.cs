@@ -126,10 +126,31 @@ builder.Services.AddScoped<ISupporterService, SupporterService>();
 builder.Services.AddScoped<IResidentService, ResidentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IReportInferenceTableService, ReportInferenceTableService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
 builder.Services.Configure<DonorChurnInferenceOptions>(
     builder.Configuration.GetSection("DonorChurnInference"));
 builder.Services.AddScoped<IDonorChurnInferenceService, DonorChurnInferenceService>();
+
+builder.Services.Configure<ReintegrationReadinessOptions>(
+    builder.Configuration.GetSection("ReintegrationReadiness"));
+builder.Services.AddScoped<IReintegrationReadinessService, ReintegrationReadinessService>();
+
+builder.Services.Configure<DonorUpsellOptions>(
+    builder.Configuration.GetSection("DonorUpsell"));
+builder.Services.AddScoped<IDonorUpsellService, DonorUpsellService>();
+
+builder.Services.Configure<InterventionEffectivenessOptions>(
+    builder.Configuration.GetSection("InterventionEffectiveness"));
+builder.Services.AddScoped<IInterventionEffectivenessService, InterventionEffectivenessService>();
+
+builder.Services.Configure<SocialMediaDonationsOptions>(
+    builder.Configuration.GetSection("SocialMediaDonations"));
+builder.Services.AddScoped<ISocialMediaDonationsService, SocialMediaDonationsService>();
+
+builder.Services.Configure<ResidentRiskOptions>(
+    builder.Configuration.GetSection("ResidentRisk"));
+builder.Services.AddScoped<IResidentRiskService, ResidentRiskService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

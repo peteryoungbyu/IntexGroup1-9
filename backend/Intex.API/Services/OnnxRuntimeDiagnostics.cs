@@ -1,4 +1,5 @@
 using Microsoft.ML.OnnxRuntime;
+using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -6,6 +7,32 @@ namespace Intex.API.Services;
 
 public static class OnnxRuntimeDiagnostics
 {
+    public static InferenceSession CreateCpuOnlySession(string modelPath, ILogger logger, string pipelineName)
+    {
+        var options = new Microsoft.ML.OnnxRuntime.SessionOptions
+        {
+            GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_BASIC,
+            ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
+            InterOpNumThreads = 1,
+            IntraOpNumThreads = 1,
+            EnableCpuMemArena = false,
+            EnableMemoryPattern = false,
+            LogSeverityLevel = OrtLoggingLevel.ORT_LOGGING_LEVEL_WARNING,
+            LogVerbosityLevel = 0,
+        };
+
+        options.AppendExecutionProvider_CPU(0);
+
+        logger.LogInformation(
+            "Initializing ONNX Runtime with CPU provider. Pipeline={Pipeline}, ProcessArch={ProcessArch}, OSArch={OsArch}, ModelPath={ModelPath}",
+            pipelineName,
+            RuntimeInformation.ProcessArchitecture,
+            RuntimeInformation.OSArchitecture,
+            modelPath);
+
+        return new InferenceSession(modelPath, options);
+    }
+
     public static string GetRuntimeDiagnostics()
     {
         var candidates = new[]

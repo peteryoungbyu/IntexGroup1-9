@@ -40,6 +40,9 @@ export default function Header() {
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
           style={{ borderColor: 'rgba(255,255,255,0.3)' }}
         >
           <span
@@ -200,7 +203,7 @@ export default function Header() {
                 <li className="nav-item">
                   <Link
                     className="btn btn-sm px-4"
-                    to="/donate"
+                    to="/login"
                     style={{
                       background: 'var(--brand-accent)',
                       color: 'var(--brand-dark)',
