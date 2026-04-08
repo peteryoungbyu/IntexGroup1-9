@@ -11,6 +11,7 @@ namespace Intex.API.Controllers;
 public class ReportController : ControllerBase
 {
     private readonly IReportService _reports;
+    private readonly IReportInferenceTableService _inferenceTables;
     private readonly IReintegrationReadinessService _reintegration;
     private readonly IDonorUpsellService _donorUpsell;
     private readonly IInterventionEffectivenessService _interventionEffectiveness;
@@ -19,6 +20,7 @@ public class ReportController : ControllerBase
 
     public ReportController(
         IReportService reports,
+        IReportInferenceTableService inferenceTables,
         IReintegrationReadinessService reintegration,
         IDonorUpsellService donorUpsell,
         IInterventionEffectivenessService interventionEffectiveness,
@@ -26,6 +28,7 @@ public class ReportController : ControllerBase
         IResidentRiskService residentRisk)
     {
         _reports = reports;
+        _inferenceTables = inferenceTables;
         _reintegration = reintegration;
         _donorUpsell = donorUpsell;
         _interventionEffectiveness = interventionEffectiveness;
@@ -48,6 +51,16 @@ public class ReportController : ControllerBase
     [HttpGet("safehouse-comparison")]
     public async Task<IActionResult> GetSafehouseComparison() =>
         Ok(await _reports.GetSafehouseComparisonAsync());
+
+    [HttpGet("inference-results/{jobKey}")]
+    public async Task<IActionResult> GetInferenceResults(
+        string jobKey,
+        [FromQuery] int limit = 100,
+        CancellationToken ct = default)
+    {
+        var result = await _inferenceTables.GetAsync(jobKey, limit, ct);
+        return result is null ? NotFound() : Ok(result);
+    }
 
     // ── ML Inference Trigger Endpoints ──────────────────────────────────────
 

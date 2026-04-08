@@ -111,3 +111,35 @@ export async function getPredictionsByModel(modelName: string, limit = 100): Pro
   const res = await apiFetch(`/api/predictions/model/${encodeURIComponent(modelName)}?limit=${limit}`);
   return res.json();
 }
+
+export type ReportInferenceColumnFormat =
+  | 'text'
+  | 'percent'
+  | 'currency'
+  | 'badge'
+  | 'datetime';
+
+export interface ReportInferenceColumn {
+  key: string;
+  label: string;
+  format: ReportInferenceColumnFormat;
+}
+
+export type ReportInferenceRow = Record<string, string | number | null>;
+
+export interface ReportInferenceTable {
+  jobKey: string;
+  note: string | null;
+  columns: ReportInferenceColumn[];
+  rows: ReportInferenceRow[];
+}
+
+export async function getInferenceResults(
+  jobKey: string,
+  limit = 100
+): Promise<ReportInferenceTable> {
+  const res = await apiFetch(
+    `/api/reports/inference-results/${encodeURIComponent(jobKey)}?limit=${limit}`
+  );
+  return res.json();
+}

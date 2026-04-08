@@ -20,14 +20,16 @@ import {
   getDonationTrends,
   getReintegrationOutcomes,
   getSafehouseComparison,
+  getInferenceResults,
   runReintegrationReadiness,
   runDonorUpsell,
   runInterventionEffectiveness,
   runSocialMediaDonations,
   runResidentRisk,
-  getPredictionsByModel,
   type InferenceResult,
-  type PredictionRow,
+  type ReportInferenceColumnFormat,
+  type ReportInferenceRow,
+  type ReportInferenceTable,
 } from '../lib/reportAPI';
 
 const BRAND_COLORS = [
@@ -67,51 +69,82 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
 
   type InferenceJob = {
+    jobKey: string;
     label: string;
-    modelNames: string[];
     run: () => Promise<InferenceResult>;
   };
 
   const inferenceJobs: InferenceJob[] = [
-    { label: 'Reintegration Readiness', modelNames: ['reintegration_readiness'], run: runReintegrationReadiness },
-    { label: 'Donor Upsell', modelNames: ['donor_upsell'], run: runDonorUpsell },
-    { label: 'Intervention Effectiveness', modelNames: ['intervention_effectiveness'], run: runInterventionEffectiveness },
-    { label: 'Social Media Donations', modelNames: ['social_media_classification', 'social_media_regression'], run: runSocialMediaDonations },
-    { label: 'Resident Risk', modelNames: ['resident_risk_classification', 'resident_risk_regression'], run: runResidentRisk },
+    {
+      jobKey: 'reintegration-readiness',
+      label: 'Reintegration Readiness',
+      run: runReintegrationReadiness,
+    },
+    {
+      jobKey: 'donor-upsell',
+      label: 'Donor Upsell',
+      run: runDonorUpsell,
+    },
+    {
+      jobKey: 'intervention-effectiveness',
+      label: 'Intervention Effectiveness',
+      run: runInterventionEffectiveness,
+    },
+    {
+      jobKey: 'social-media-donations',
+      label: 'Social Media Donations',
+      run: runSocialMediaDonations,
+    },
+    {
+      jobKey: 'resident-risk',
+      label: 'Resident Risk',
+      run: runResidentRisk,
+    },
   ];
 
   const [inferenceStatus, setInferenceStatus] = useState<
     Record<string, { running: boolean; result: InferenceResult | null; error: string | null }>
   >({});
 
-  const [predictionRows, setPredictionRows] = useState<Record<string, PredictionRow[]>>({});
+  const [inferenceTables, setInferenceTables] = useState<
+    Record<string, ReportInferenceTable | null>
+  >({});
   const [loadingResults, setLoadingResults] = useState<Record<string, boolean>>({});
 
   async function fetchResults(job: InferenceJob) {
-    setLoadingResults((prev) => ({ ...prev, [job.label]: true }));
-    const allRows = (
-      await Promise.all(job.modelNames.map((m) => getPredictionsByModel(m, 100)))
-    ).flat().sort((a, b) => b.score - a.score);
-    setPredictionRows((prev) => ({ ...prev, [job.label]: allRows }));
-    setLoadingResults((prev) => ({ ...prev, [job.label]: false }));
+    setLoadingResults((prev) => ({ ...prev, [job.jobKey]: true }));
+    try {
+      const table = await getInferenceResults(job.jobKey, 100);
+      setInferenceTables((prev) => ({ ...prev, [job.jobKey]: table }));
+    } finally {
+      setLoadingResults((prev) => ({ ...prev, [job.jobKey]: false }));
+    }
   }
 
   async function runInference(job: InferenceJob) {
     setInferenceStatus((prev) => ({
       ...prev,
-      [job.label]: { running: true, result: null, error: null },
+      [job.jobKey]: { running: true, result: null, error: null },
     }));
     try {
       const result = await job.run();
       setInferenceStatus((prev) => ({
         ...prev,
-        [job.label]: { running: false, result, error: result.success ? null : result.error },
+        [job.jobKey]: {
+          running: false,
+          result,
+          error: result.success ? null : result.error,
+        },
       }));
       if (result.success) await fetchResults(job);
     } catch (e: any) {
       setInferenceStatus((prev) => ({
         ...prev,
-        [job.label]: { running: false, result: null, error: e?.message ?? 'Unknown error' },
+        [job.jobKey]: {
+          running: false,
+          result: null,
+          error: e?.message ?? 'Unknown error',
+        },
       }));
     }
   }
@@ -183,42 +216,71 @@ export default function ReportsPage() {
   );
   const servicesRows: any[] = (servicesSection?.data as any[]) ?? [];
 
-  function getScoreDisplay(row: PredictionRow): {
-    text: string;
-    className: string;
-  } {
-    if (
-      row.modelName === 'social_media_regression' &&
-      row.featureImportanceJson
-    ) {
-      try {
-        const details = JSON.parse(row.featureImportanceJson) as {
-          predictedAmountPhp?: number;
-        };
+  function formatCellValue(
+    value: string | number | null | undefined,
+    format: ReportInferenceColumnFormat
+  ): string {
+    if (value == null) return '—';
 
-        if (typeof details.predictedAmountPhp === 'number') {
-          return {
-            text: `PHP ${details.predictedAmountPhp.toLocaleString(undefined, {
+    switch (format) {
+      case 'percent':
+        return typeof value === 'number'
+          ? `${(value * 100).toFixed(1)}%`
+          : String(value);
+      case 'currency':
+        return typeof value === 'number'
+          ? `PHP ${value.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
-            })}`,
-            className: 'badge text-bg-info',
-          };
-        }
-      } catch {
-        // Fall through to default score rendering.
-      }
+            })}`
+          : String(value);
+      case 'datetime':
+        return new Date(String(value)).toLocaleString();
+      default:
+        return String(value);
+    }
+  }
+
+  function getBadgeClass(value: string | number | null | undefined): string {
+    const normalized = String(value ?? '').trim().toLowerCase();
+
+    if (
+      normalized === 'high' ||
+      normalized === 'highrisk' ||
+      normalized === 'notready' ||
+      normalized === 'noteffective' ||
+      normalized === 'willnotupgrade' ||
+      normalized === 'willnotgeneratedonation'
+    ) {
+      return 'badge bg-danger';
     }
 
-    return {
-      text: row.score.toFixed(3),
-      className:
-        row.score >= 0.6
-          ? 'badge bg-danger'
-          : row.score >= 0.3
-          ? 'badge bg-warning text-dark'
-          : 'badge bg-success',
-    };
+    if (normalized === 'medium') {
+      return 'badge bg-warning text-dark';
+    }
+
+    if (
+      normalized === 'ready' ||
+      normalized === 'effective' ||
+      normalized === 'willupgrade' ||
+      normalized === 'willgeneratedonation' ||
+      normalized === 'low' ||
+      normalized === 'lowrisk' ||
+      normalized === 'active'
+    ) {
+      return 'badge bg-success';
+    }
+
+    return 'badge bg-secondary';
+  }
+
+  function getRowKey(
+    jobKey: string,
+    row: ReportInferenceRow,
+    index: number
+  ): string {
+    const entityId = row.postId ?? row.residentId ?? row.supporterId ?? index;
+    return `${jobKey}-${entityId}-${index}`;
   }
 
   return (
@@ -401,11 +463,12 @@ export default function ReportsPage() {
             </p>
             <div className="d-flex flex-column gap-4">
               {inferenceJobs.map((job) => {
-                const status = inferenceStatus[job.label];
-                const rows = predictionRows[job.label] ?? [];
-                const loadingRes = loadingResults[job.label];
+                const status = inferenceStatus[job.jobKey];
+                const table = inferenceTables[job.jobKey];
+                const rows = table?.rows ?? [];
+                const loadingRes = loadingResults[job.jobKey];
                 return (
-                  <div key={job.label} className="border rounded p-3">
+                  <div key={job.jobKey} className="border rounded p-3">
                     <div className="d-flex align-items-center gap-2 mb-2">
                       <span className="fw-semibold">{job.label}</span>
                       <button
@@ -443,39 +506,47 @@ export default function ReportsPage() {
                       )}
                     </div>
 
+                    {table?.note && (
+                      <p className="text-muted small mb-2">{table.note}</p>
+                    )}
+
                     {rows.length > 0 && (
                       <div className="table-responsive" style={{ maxHeight: 320, overflowY: 'auto' }}>
                         <table className="table table-sm table-bordered table-hover mb-0">
                           <thead className="table-light sticky-top">
                             <tr>
-                              <th>Model</th>
-                              {rows[0].residentId != null && <th>Resident ID</th>}
-                              {rows[0].supporterId != null && <th>Supporter ID</th>}
-                              <th>Score</th>
-                              <th>Label</th>
-                              <th>Generated</th>
+                              {table?.columns.map((column) => (
+                                <th key={column.key}>{column.label}</th>
+                              ))}
                             </tr>
                           </thead>
                           <tbody>
-                            {rows.map((r) => {
-                              const scoreDisplay = getScoreDisplay(r);
-                              return (
-                              <tr key={r.predictionId}>
-                                <td className="text-muted small">{r.modelName}</td>
-                                {r.residentId != null && <td>{r.residentId}</td>}
-                                {r.supporterId != null && <td>{r.supporterId}</td>}
-                                <td>
-                                  <span className={scoreDisplay.className}>
-                                    {scoreDisplay.text}
-                                  </span>
-                                </td>
-                                <td className="small">{r.label ?? '—'}</td>
-                                <td className="text-muted small">
-                                  {new Date(r.generatedAt).toLocaleString()}
-                                </td>
+                            {rows.map((row, index) => (
+                              <tr key={getRowKey(job.jobKey, row, index)}>
+                                {table?.columns.map((column) => {
+                                  const value = row[column.key];
+                                  return (
+                                    <td key={column.key}>
+                                      {column.format === 'badge' ? (
+                                        <span className={getBadgeClass(value)}>
+                                          {formatCellValue(value, column.format)}
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className={
+                                            column.format === 'datetime'
+                                              ? 'text-muted small'
+                                              : undefined
+                                          }
+                                        >
+                                          {formatCellValue(value, column.format)}
+                                        </span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
                               </tr>
-                              );
-                            })}
+                            ))}
                           </tbody>
                         </table>
                       </div>
