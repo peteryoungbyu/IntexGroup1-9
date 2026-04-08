@@ -58,6 +58,36 @@ flowchart LR
 - The live public frontend and API are expected to terminate TLS with Microsoft-managed certificates on their Azure hostnames.
 - Both application data and Identity currently connect through the same SQL Server connection string.
 
+## Python Runtime Without Docker Rebuilds
+
+The API can run the donor churn Python script directly using the App Service system Python.
+
+- Python executable is configured through `DonorChurnInference:PythonExecutablePath`.
+- Script is configured through `DonorChurnInference:ScriptPath`.
+- Python dependencies are loaded from `DonorChurnInference:PythonPackagesPath` (wired to `PYTHONPATH` by the API before process start).
+
+Default settings are already configured in [`backend/Intex.API/appsettings.json`](./backend/Intex.API/appsettings.json):
+
+- `PythonExecutablePath`: `/usr/bin/python3`
+- `ScriptPath`: `ml-runtime/run_donor_churn_inference.py`
+- `PythonPackagesPath`: `ml-runtime/python-packages`
+
+Install dependencies into the target folder with:
+
+```bash
+cd backend/Intex.API/ml-runtime
+chmod +x install_python_packages.sh
+./install_python_packages.sh
+```
+
+For Azure App Service Linux, run the equivalent command in a startup step or deployment script:
+
+```bash
+python3 -m pip install --upgrade --target /home/site/wwwroot/ml-runtime/python-packages -r /home/site/wwwroot/ml-runtime/requirements.txt
+```
+
+This avoids global pip installs and works with PEP 668 restrictions.
+
 ## Container Deployment (Azure)
 
 This project is set up to deploy as a single Docker container. The image build:

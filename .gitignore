@@ -45,6 +45,7 @@ backend/Intex.API/appsettings.Development.json
 .venv-ml312/
 **/.venv/
 **/.venv-ml312/
+backend/Intex.API/ml-runtime/python-packages/
 __pycache__/
 **/__pycache__/
 *.pyc
