@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import horizontalLightLogo from '../assets/horizontal_light.png';
 import {
@@ -25,9 +25,18 @@ export default function LoginPage() {
     { name: string; displayName: string }[]
   >([]);
 
-  const { refreshAuthSession } = useAuth();
+  const { authSession, isAuthenticated, refreshAuthSession } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  if (isAuthenticated) {
+    const dest = authSession.roles.includes('Admin')
+      ? '/admin'
+      : authSession.roles.includes('Donor')
+        ? '/donor/history'
+        : '/';
+    return <Navigate to={dest} replace />;
+  }
   const returnPath =
     (location.state as { returnPath?: string })?.returnPath ?? '/';
 

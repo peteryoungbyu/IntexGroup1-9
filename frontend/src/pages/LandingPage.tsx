@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import type { ImpactSnapshot } from '../types/DashboardMetric';
 import { getPublicImpact } from '../lib/reportAPI';
+import { useAuth } from '../context/AuthContext';
 
 export default function LandingPage() {
+  const { authSession, isAuthenticated } = useAuth();
   const [snapshots, setSnapshots] = useState<ImpactSnapshot[]>([]);
   // TODO backend: add GET /api/public/stats returning { totalOccupancy, sessionCount, avgAttendanceRate } without auth
   // All three stats are currently behind AdminRead auth (DashboardController, ResidentController).
@@ -16,6 +18,18 @@ export default function LandingPage() {
       .then(setSnapshots)
       .catch(() => {});
   }, []);
+
+  const heroLink = isAuthenticated
+    ? authSession.roles.includes('Admin') ? '/admin' : '/donor/history'
+    : '/login';
+  const heroLabel = isAuthenticated
+    ? authSession.roles.includes('Admin') ? 'Go to Admin Portal' : 'My Donations'
+    : 'Supporter Login';
+  const ctaLink = isAuthenticated
+    ? authSession.roles.includes('Admin') ? '/admin' : '/donor/history'
+    : '/login';
+  const isAdmin = authSession.roles.includes('Admin');
+  const isDonor = authSession.roles.includes('Donor');
 
   const pillars = [
     {
@@ -111,8 +125,8 @@ export default function LandingPage() {
             <Link to="/impact" className="btn btn-warning btn-lg fw-bold px-4">
               See Our Impact
             </Link>
-            <Link to="/login" className="btn btn-outline-light btn-lg px-4">
-              Supporter Login
+            <Link to={heroLink} className="btn btn-outline-light btn-lg px-4">
+              {heroLabel}
             </Link>
           </div>
         </div>
@@ -253,16 +267,37 @@ export default function LandingPage() {
       {/* CTA strip */}
       <section className="cta-strip">
         <div className="container">
-          <h2 className="text-white fw-bold mb-2">
-            Ready to Make a Difference?
-          </h2>
-          <p className="mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>
-            Join our community of supporters helping girls build brighter
-            futures.
-          </p>
-          <Link to="/login" className="btn btn-warning btn-lg fw-bold px-5">
-            Get Started
-          </Link>
+          {isAdmin ? (
+            <>
+              <h2 className="text-white mb-2" style={{ fontWeight: 800 }}>Good to Have You Back</h2>
+              <p className="mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                There are girls counting on your work today.
+              </p>
+              <Link to="/admin" className="btn btn-warning btn-lg fw-bold px-5">
+                Go to Admin Portal
+              </Link>
+            </>
+          ) : isDonor ? (
+            <>
+              <h2 className="text-white mb-2" style={{ fontWeight: 800 }}>Thank You for Your Support</h2>
+              <p className="mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                Your generosity is making a real difference for girls across the Philippines.
+              </p>
+              <Link to="/donor/history" className="btn btn-warning btn-lg fw-bold px-5">
+                View My Donations
+              </Link>
+            </>
+          ) : (
+            <>
+              <h2 className="text-white fw-bold mb-2">Ready to Make a Difference?</h2>
+              <p className="mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                Join our community of supporters helping girls build brighter futures.
+              </p>
+              <Link to="/login" className="btn btn-warning btn-lg fw-bold px-5">
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
       </section>
     </div>
