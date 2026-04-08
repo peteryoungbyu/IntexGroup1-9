@@ -5,7 +5,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Intex.API.Services;
 
@@ -162,12 +161,12 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
         }
         catch (TypeInitializationException ex)
         {
-            var details = BuildDetailedExceptionMessage(ex);
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
             _logger.LogError(
                 ex,
                 "ONNX runtime type initialization failed during donor churn inference. Details: {Details}. Diagnostics: {Diagnostics}",
                 details,
-                GetRuntimeDiagnostics());
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
 
             return new DonorChurnRunResult(
                 Success: false,
@@ -179,12 +178,12 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
         }
         catch (DllNotFoundException ex)
         {
-            var details = BuildDetailedExceptionMessage(ex);
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
             _logger.LogError(
                 ex,
                 "ONNX runtime native dependency load failed during donor churn inference. Details: {Details}. Diagnostics: {Diagnostics}",
                 details,
-                GetRuntimeDiagnostics());
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
 
             return new DonorChurnRunResult(
                 Success: false,
@@ -196,12 +195,12 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
         }
         catch (BadImageFormatException ex)
         {
-            var details = BuildDetailedExceptionMessage(ex);
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
             _logger.LogError(
                 ex,
                 "ONNX runtime architecture mismatch or invalid native image during donor churn inference. Details: {Details}. Diagnostics: {Diagnostics}",
                 details,
-                GetRuntimeDiagnostics());
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
 
             return new DonorChurnRunResult(
                 Success: false,
@@ -415,7 +414,7 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
                 "Type initialization failed while executing ONNX inference. Rows={Rows}, ModelPath={ModelPath}, Details={Details}",
                 rows.Count,
                 modelPath,
-                BuildDetailedExceptionMessage(ex));
+                OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex));
             throw;
         }
         catch (Exception ex)
@@ -475,63 +474,6 @@ public class DonorChurnInferenceService : IDonorChurnInferenceService
         var list = values.ToList();
         if (list.Count == 0) return "Unknown";
         return list.GroupBy(v => v).OrderByDescending(g => g.Count()).First().Key;
-    }
-
-    private string GetRuntimeDiagnostics()
-    {
-        var candidates = new[]
-        {
-            Path.Combine(AppContext.BaseDirectory, "onnxruntime.dll"),
-            Path.Combine(AppContext.BaseDirectory, "runtimes", "win-x64", "native", "onnxruntime.dll"),
-            Path.Combine(AppContext.BaseDirectory, "runtimes", "win-arm64", "native", "onnxruntime.dll"),
-            Path.Combine(AppContext.BaseDirectory, "runtimes", "win-x86", "native", "onnxruntime.dll"),
-        };
-
-        var sb = new StringBuilder();
-        sb.Append($"OS={RuntimeInformation.OSDescription}; ");
-        sb.Append($"ProcessArch={RuntimeInformation.ProcessArchitecture}; ");
-        sb.Append($"OSArch={RuntimeInformation.OSArchitecture}; ");
-        sb.Append($"BaseDir={AppContext.BaseDirectory}; ");
-        sb.Append($"CurrentDir={Environment.CurrentDirectory}; ");
-        sb.Append($"OnnxAssembly={typeof(InferenceSession).Assembly.Location}; ");
-
-        var path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        var pathPreview = string.Join(';', path.Split(';', StringSplitOptions.RemoveEmptyEntries).Take(8));
-        sb.Append($"PathPreview={pathPreview}; ");
-
-        var nativeFiles = candidates
-            .Select(path => $"{path}:{(File.Exists(path) ? "exists" : "missing")}");
-        sb.Append($"NativeCandidates=[{string.Join(", ", nativeFiles)}]");
-
-        return sb.ToString();
-    }
-
-    private static string BuildDetailedExceptionMessage(Exception ex)
-    {
-        var sb = new StringBuilder();
-        var current = ex;
-        var depth = 0;
-
-        while (current != null && depth < 6)
-        {
-            sb.Append($"[{depth}] {current.GetType().FullName}: {current.Message}");
-            if (!string.IsNullOrWhiteSpace(current.StackTrace))
-            {
-                sb.AppendLine();
-                sb.Append(current.StackTrace);
-            }
-
-            current = current.InnerException;
-            depth++;
-
-            if (current != null)
-            {
-                sb.AppendLine();
-                sb.Append(" ---> ");
-            }
-        }
-
-        return sb.ToString();
     }
 
     private sealed class FeatureRow
