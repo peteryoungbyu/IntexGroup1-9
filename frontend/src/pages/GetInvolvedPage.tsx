@@ -152,7 +152,7 @@ export default function GetInvolvedPage() {
       <section style={{ background: 'var(--brand-primary)' }}>
         <div className="container-fluid px-0">
           <div className="row g-0" style={{ minHeight: 380 }}>
-            <div className="col-lg-6 d-flex align-items-center px-5 py-5">
+            <div className="col-lg-6 d-flex align-items-center px-4 px-lg-5 py-5">
               <div style={{ maxWidth: 520 }}>
                 <p className="section-label" style={{ color: 'var(--brand-accent)', opacity: 1 }}>
                   The Most Impactful Step
@@ -227,7 +227,7 @@ export default function GetInvolvedPage() {
         <div className="hero-content text-center" style={{ maxWidth: 680 }}>
           <p
             className="text-white fw-bold mb-0"
-            style={{ fontSize: '1.5rem', lineHeight: 1.6, fontStyle: 'italic' }}
+            style={{ fontSize: 'clamp(1.1rem, 4vw, 1.5rem)', lineHeight: 1.6, fontStyle: 'italic' }}
           >
             "One act of generosity can change the entire trajectory of a girl's life."
           </p>
