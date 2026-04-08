@@ -81,6 +81,14 @@ public class DashboardService : IDashboardService
             .ToListAsync();
     }
 
+    public async Task<object?> GetPublicSnapshotByDateAsync(DateOnly snapshotDate)
+    {
+        return await _db.PublicImpactSnapshots
+            .Where(s => s.IsPublished && s.SnapshotDate == snapshotDate)
+            .Select(s => (object)new { s.SnapshotId, s.SnapshotDate, s.Headline, s.SummaryText, s.MetricPayloadJson })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<PublicOrgSummary> GetPublicOrgSummaryAsync()
     {
         var totalGirls = await _db.Residents.CountAsync();

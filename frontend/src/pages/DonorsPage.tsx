@@ -9,6 +9,10 @@ import {
   getSupporters,
   deleteSupporter,
   createSupporter,
+  runDonorChurnInference,
+  getSupporterChurnPredictions,
+  type DonorChurnRunResult,
+  type SupporterChurnItem,
 } from '../lib/supporterAPI';
 import Pagination from '../components/Pagination';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
@@ -54,6 +58,25 @@ export default function DonorsPage() {
   >({ ...EMPTY_SUPPORTER });
   const [addBusy, setAddBusy] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [runBusy, setRunBusy] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [runResult, setRunResult] = useState<DonorChurnRunResult | null>(null);
+  const [churnRows, setChurnRows] = useState<SupporterChurnItem[]>([]);
+  const [churnLoading, setChurnLoading] = useState(false);
+  const [churnLastUpdatedAt, setChurnLastUpdatedAt] = useState<Date | null>(
+    null
+  );
+
+  const loadChurnRows = async () => {
+    setChurnLoading(true);
+    try {
+      const rows = await getSupporterChurnPredictions();
+      setChurnRows(rows);
+      setChurnLastUpdatedAt(new Date());
+    } finally {
+      setChurnLoading(false);
+    }
+  };
 
   const load = () => {
     setLoading(true);
@@ -125,6 +148,32 @@ export default function DonorsPage() {
       setAddBusy(false);
     }
   };
+
+  const handleRunInference = async () => {
+    setRunBusy(true);
+    setRunError(null);
+    try {
+      const result = await runDonorChurnInference();
+      setRunResult(result);
+      if (!result.success) {
+        setRunError(result.standardError || 'Inference process failed.');
+      } else {
+        await loadChurnRows();
+      }
+      load();
+    } catch {
+      setRunError(
+        'Failed to run donor churn inference. Check backend configuration and try again.'
+      );
+    } finally {
+      setRunBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showChurnCard) return;
+    void loadChurnRows();
+  }, [showChurnCard]);
 
   return (
     <div>
@@ -347,9 +396,9 @@ export default function DonorsPage() {
       </div>
 
       <div className="container-fluid py-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <form className="row g-2 mb-0" onSubmit={handleSearch}>
-            <div className="col-sm-4">
+        <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+          <form className="row g-2 mb-0 flex-grow-1" onSubmit={handleSearch}>
+            <div className="col-lg-4 col-md-6 col-12">
               <input
                 className="form-control"
                 placeholder="Search name or email…"
@@ -357,7 +406,7 @@ export default function DonorsPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <div className="col-sm-3">
+            <div className="col-lg-3 col-md-6 col-12">
               <select
                 className="form-select"
                 value={status}
@@ -368,13 +417,27 @@ export default function DonorsPage() {
                 <option value="Inactive">Inactive</option>
               </select>
             </div>
-            <div className="col-auto">
+            <div className="col-lg-auto col-12">
               <button type="submit" className="btn btn-primary">
                 Search
               </button>
             </div>
           </form>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-column flex-md-row gap-2 w-100 w-md-auto">
+            <button
+              className="btn btn-outline-primary"
+              onClick={handleRunInference}
+              disabled={runBusy}
+            >
+              {runBusy ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Running Model...
+                </>
+              ) : (
+                'Run Churn Inference'
+              )}
+            </button>
             <button
               className={`btn ${showChurnCard ? 'btn-outline-primary' : 'btn-primary'}`}
               onClick={() => setShowChurnCard((s) => !s)}
@@ -396,35 +459,75 @@ export default function DonorsPage() {
               <span className="badge bg-secondary">Preview</span>
             </div>
             <div className="card-body p-0">
+              {runError && (
+                <div className="alert alert-danger m-3 mb-0">{runError}</div>
+              )}
+              {runResult && !runError && (
+                <div className="alert alert-success m-3 mb-0">
+                  Inference completed.
+                </div>
+              )}
               <p className="text-muted small px-3 pt-3 mb-2">
-                Placeholder list until pipeline 01 integration is connected.
+                Live churn predictions loaded from the supporters table.
+              </p>
+              <p className="text-muted small px-3 mb-2">
+                Last updated:{' '}
+                {churnLastUpdatedAt
+                  ? churnLastUpdatedAt.toLocaleString()
+                  : 'Not loaded yet'}
               </p>
               <div className="table-responsive">
                 <table className="table table-hover mb-0">
                   <thead className="table-light">
                     <tr>
                       <th>Name</th>
+                      <th>Churn Probability</th>
+                      <th>Likely Churn</th>
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(result?.items ?? []).map((s) => (
-                      <tr key={`churn-${s.supporterId}`}>
-                        <td>{s.displayName}</td>
-                        <td>
-                          <Link
-                            to={`/admin/donors/${s.supporterId}`}
-                            className="btn btn-sm btn-primary"
-                          >
-                            View
-                          </Link>
+                    {churnLoading && (
+                      <tr>
+                        <td colSpan={4} className="text-center text-muted py-4">
+                          Loading churn predictions...
                         </td>
                       </tr>
-                    ))}
-                    {(result?.items ?? []).length === 0 && (
+                    )}
+                    {!churnLoading &&
+                      churnRows.map((s) => (
+                        <tr key={`churn-${s.supporterId}`}>
+                          <td>{s.displayName}</td>
+                          <td>
+                            {s.churnProbability == null
+                              ? '—'
+                              : `${(s.churnProbability * 100).toFixed(1)}%`}
+                          </td>
+                          <td>
+                            {s.likelyChurn == null ? (
+                              <span className="badge bg-secondary">
+                                Unknown
+                              </span>
+                            ) : s.likelyChurn ? (
+                              <span className="badge bg-danger">True</span>
+                            ) : (
+                              <span className="badge bg-success">False</span>
+                            )}
+                          </td>
+                          <td>
+                            <Link
+                              to={`/admin/donors/${s.supporterId}`}
+                              className="btn btn-sm btn-primary"
+                            >
+                              View
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    {!churnLoading && churnRows.length === 0 && (
                       <tr>
-                        <td colSpan={2} className="text-center text-muted py-4">
-                          No donors loaded yet.
+                        <td colSpan={4} className="text-center text-muted py-4">
+                          No churn predictions found.
                         </td>
                       </tr>
                     )}
@@ -482,20 +585,22 @@ export default function DonorsPage() {
                         <td>{s.totalDonated.toLocaleString()}</td>
                         <td>{s.firstDonationDate ?? '—'}</td>
                         <td>
-                          <Link
-                            to={`/admin/donors/${s.supporterId}`}
-                            className="btn btn-sm btn-primary me-1"
-                          >
-                            View
-                          </Link>
-                          <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() =>
-                              handleDeleteClick(s.supporterId, s.displayName)
-                            }
-                          >
-                            Delete
-                          </button>
+                          <div className="d-flex flex-column flex-md-row gap-1">
+                            <Link
+                              to={`/admin/donors/${s.supporterId}`}
+                              className="btn btn-sm btn-primary"
+                            >
+                              View
+                            </Link>
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() =>
+                                handleDeleteClick(s.supporterId, s.displayName)
+                              }
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

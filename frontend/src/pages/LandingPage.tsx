@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import type { ImpactSnapshot } from '../types/DashboardMetric';
-import { getPublicImpact } from '../lib/reportAPI';
+import { getPublicImpactByDate } from '../lib/reportAPI';
 import { useAuth } from '../context/AuthContext';
 
 function normalizeKey(value: string): string {
@@ -66,22 +66,10 @@ function formatMetric(value: number | null, type: 'score' | 'percent'): string {
   }
 }
 
-function parseSnapshotDate(snapshotDate: string): Date | null {
-  if (!snapshotDate.trim()) return null;
-
-  const normalized = new Date(snapshotDate);
-  if (Number.isNaN(normalized.getTime())) return null;
-
-  return normalized;
-}
-
-function toYearMonth(date: Date): number {
-  return date.getFullYear() * 100 + (date.getMonth() + 1);
-}
-
 export default function LandingPage() {
   const { authSession, isAuthenticated } = useAuth();
   const [snapshots, setSnapshots] = useState<ImpactSnapshot[]>([]);
+  const [referenceDate] = useState(() => new Date());
 
   // TODO backend: add GET /api/public/stats returning
   // { totalOccupancy, sessionCount, avgAttendanceRate } without auth.
@@ -90,13 +78,20 @@ export default function LandingPage() {
   const sessionsLogged = '1,200+';
   const avgAttendance = '87%';
 
+  const targetSnapshotDate = new Date(referenceDate);
+  targetSnapshotDate.setMonth(targetSnapshotDate.getMonth() - 2);
+  targetSnapshotDate.setDate(1);
+  const targetSnapshotDateText = `${targetSnapshotDate.getFullYear()}-${String(
+    targetSnapshotDate.getMonth() + 1
+  ).padStart(2, '0')}-01`;
+
   useEffect(() => {
-    getPublicImpact(12)
+    getPublicImpactByDate(targetSnapshotDateText)
       .then(setSnapshots)
       .catch(() => {
         setSnapshots([]);
       });
-  }, []);
+  }, [targetSnapshotDateText]);
 
   const isAdmin = authSession.roles.includes('Admin');
   const isDonor = authSession.roles.includes('Donor');
@@ -122,22 +117,10 @@ export default function LandingPage() {
       ? 'View My Donations'
       : 'Get Started';
 
-  const today = new Date(Date.now());
-  const targetDate = new Date(today);
-  targetDate.setMonth(targetDate.getMonth() - 2);
-  const targetYearMonth = toYearMonth(targetDate);
-  const latestSnapshot = [...snapshots]
-    .map((snapshot) => ({
-      snapshot,
-      parsedDate: parseSnapshotDate(snapshot.snapshotDate),
-    }))
-    .filter(
-      (entry) =>
-        entry.parsedDate !== null &&
-        toYearMonth(entry.parsedDate) === targetYearMonth
-    )
-    .sort((a, b) => b.parsedDate!.getTime() - a.parsedDate!.getTime())[0]?.snapshot;
-  const latestSnapshotPayload = parseMetricPayload(latestSnapshot?.metricPayloadJson ?? null);
+  const latestSnapshot = snapshots[0];
+  const latestSnapshotPayload = parseMetricPayload(
+    latestSnapshot?.metricPayloadJson ?? null
+  );
   const latestAvgHealthScore = readNumericMetric(latestSnapshotPayload, [
     'avgHealthScore',
     'avg_health_score',
@@ -395,7 +378,9 @@ export default function LandingPage() {
                       fontWeight: 700,
                       letterSpacing: '1.5px',
                       textTransform: 'uppercase',
-                      color: isFeatured ? 'rgba(255,255,255,0.4)' : pillar.bodyColor,
+                      color: isFeatured
+                        ? 'rgba(255,255,255,0.4)'
+                        : pillar.bodyColor,
                       marginTop: isFeatured ? 6 : 4,
                     }}
                   >
@@ -474,7 +459,15 @@ export default function LandingPage() {
                     marginBottom: 8,
                   }}
                 >
-                  {latestSnapshot.headline}
+                  NewDawn Impact Report -{' '}
+                  {new Date(latestSnapshot.snapshotDate).toLocaleDateString(
+                    'en-US',
+                    {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    }
+                  )}
                 </div>
                 <p style={{ color: '#52606d', lineHeight: 1.65, margin: 0 }}>
                   {latestSnapshot.summaryText}
@@ -584,7 +577,10 @@ export default function LandingPage() {
               <p className="mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>
                 There are girls counting on your work today.
               </p>
-              <Link to={ctaLink} className="btn btn-warning btn-lg fw-bold px-5">
+              <Link
+                to={ctaLink}
+                className="btn btn-warning btn-lg fw-bold px-5"
+              >
                 {ctaLabel}
               </Link>
             </>
@@ -597,7 +593,10 @@ export default function LandingPage() {
                 Your generosity is making a real difference for girls across the
                 Philippines.
               </p>
-              <Link to={ctaLink} className="btn btn-warning btn-lg fw-bold px-5">
+              <Link
+                to={ctaLink}
+                className="btn btn-warning btn-lg fw-bold px-5"
+              >
                 {ctaLabel}
               </Link>
             </>
@@ -610,7 +609,10 @@ export default function LandingPage() {
                 Join our community of supporters helping girls build brighter
                 futures.
               </p>
-              <Link to={ctaLink} className="btn btn-warning btn-lg fw-bold px-5">
+              <Link
+                to={ctaLink}
+                className="btn btn-warning btn-lg fw-bold px-5"
+              >
                 {ctaLabel}
               </Link>
             </>

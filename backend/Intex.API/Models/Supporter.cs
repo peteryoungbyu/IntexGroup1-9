@@ -18,6 +18,9 @@ public class Supporter
     public string? AcquisitionChannel { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public decimal? ChurnProbability { get; set; }
+    public bool? LikelyChurn { get; set; }
+
     public ICollection<Donation> Donations { get; set; } = [];
     public ICollection<SupporterUserLink> UserLinks { get; set; } = [];
 }

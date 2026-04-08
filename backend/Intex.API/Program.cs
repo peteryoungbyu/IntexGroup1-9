@@ -2,9 +2,11 @@ using Intex.API.Data;
 using Intex.API.Infrastructure;
 using Intex.API.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using DotNetEnv;
+using System.Net;
 
 Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -66,6 +68,10 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
 // 5. Register policies
 builder.Services.AddAuthorization(options =>
 {
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+
     options.AddPolicy(AuthPolicies.AdminManage, policy => policy.RequireRole(AuthRoles.Admin));
     options.AddPolicy(AuthPolicies.AdminRead, policy => policy.RequireRole(AuthRoles.Admin));
     options.AddPolicy(AuthPolicies.DonorSelf, policy => policy.RequireRole(AuthRoles.Donor, AuthRoles.Admin));
@@ -105,12 +111,25 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    // Trust Azure private proxy ranges instead of accepting forwarded headers from any source.
+    options.KnownIPNetworks.Add(new(IPAddress.Parse("10.0.0.0"), 8));
+    options.KnownIPNetworks.Add(new(IPAddress.Parse("172.16.0.0"), 12));
+    options.KnownIPNetworks.Add(new(IPAddress.Parse("192.168.0.0"), 16));
+});
+
 // 9. Register app services
 builder.Services.AddScoped<ISupporterService, SupporterService>();
 builder.Services.AddScoped<IResidentService, ResidentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IPredictionService, PredictionService>();
+builder.Services.Configure<DonorChurnInferenceOptions>(
+    builder.Configuration.GetSection("DonorChurnInference"));
+builder.Services.AddScoped<IDonorChurnInferenceService, DonorChurnInferenceService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -134,6 +153,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // 11. Middleware pipeline — order matters
+app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
@@ -146,7 +167,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapGroup("/api/auth").MapIdentityApi<ApplicationUser>();
+app.MapGroup("/api/auth").MapIdentityApi<ApplicationUser>().AllowAnonymous();
 
 // Serve React build in production
 if (!app.Environment.IsDevelopment())

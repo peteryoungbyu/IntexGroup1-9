@@ -1,5 +1,6 @@
 using Intex.API.Data;
 using Intex.API.Models;
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Intex.API.Services;
@@ -36,6 +37,56 @@ public class SupporterService : ISupporterService
             .ToListAsync();
 
         return new PagedResult<SupporterListItem>(items, total, page, pageSize);
+    }
+
+    public async Task<IReadOnlyList<SupporterChurnItem>> GetChurnPredictionsAsync()
+    {
+        var items = new List<SupporterChurnItem>();
+
+        await using var connection = _db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = @"
+SELECT
+    supporter_id,
+    display_name,
+    churn_probability,
+    likely_churn
+FROM supporters
+ORDER BY
+    COALESCE(churn_probability, 0) DESC,
+    display_name ASC";
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var supporterId = reader.GetInt32(0);
+            var displayName = reader.IsDBNull(1) ? "Unknown" : reader.GetString(1);
+            decimal? churnProbability = reader.IsDBNull(2)
+                ? null
+                : Convert.ToDecimal(reader.GetValue(2));
+
+            bool? likelyChurn = null;
+            if (!reader.IsDBNull(3))
+            {
+                var raw = reader.GetValue(3);
+                likelyChurn = raw switch
+                {
+                    bool b => b,
+                    byte by => by != 0,
+                    short s => s != 0,
+                    int i => i != 0,
+                    long l => l != 0,
+                    _ => Convert.ToBoolean(raw),
+                };
+            }
+
+            items.Add(new SupporterChurnItem(supporterId, displayName, churnProbability, likelyChurn));
+        }
+
+        return items;
     }
 
     public async Task<SupporterDetail?> GetByIdAsync(int id)
