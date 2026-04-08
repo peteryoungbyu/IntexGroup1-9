@@ -28,6 +28,14 @@ export default function LoginPage() {
   const { authSession, isAuthenticated, refreshAuthSession } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const returnPath =
+    (location.state as { returnPath?: string })?.returnPath ?? '/';
+
+  useEffect(() => {
+    getExternalProviders()
+      .then(setProviders)
+      .catch(() => {});
+  }, []);
 
   if (isAuthenticated) {
     const dest = authSession.roles.includes('Admin')
@@ -37,14 +45,6 @@ export default function LoginPage() {
         : '/';
     return <Navigate to={dest} replace />;
   }
-  const returnPath =
-    (location.state as { returnPath?: string })?.returnPath ?? '/';
-
-  useEffect(() => {
-    getExternalProviders()
-      .then(setProviders)
-      .catch(() => {});
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
