@@ -32,6 +32,8 @@ import DonorSelfPage from './pages/DonorSelfPage';
 import ReportsPage from './pages/ReportsPage';
 import SocialMediaPage from './pages/SocialMediaPage';
 import PartnersPage from './pages/PartnersPage';
+import HomeVisitationPage from './pages/HomeVisitationPage';
+import ProcessRecordingPage from './pages/ProcessRecordingPage';
 
 function AppShell() {
   const location = useLocation();
@@ -137,6 +139,22 @@ function AppShell() {
             element={
               <ProtectedRoute roles={['Admin']}>
                 <AdminLayout><PartnersPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/home-visitation"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><HomeVisitationPage /></AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/process-recording"
+            element={
+              <ProtectedRoute roles={['Admin']}>
+                <AdminLayout><ProcessRecordingPage /></AdminLayout>
               </ProtectedRoute>
             }
           />

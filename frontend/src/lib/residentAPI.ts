@@ -71,6 +71,11 @@ export async function deleteResident(id: number): Promise<void> {
   await apiFetch(`/api/residents/${id}`, { method: 'DELETE' });
 }
 
+export async function getResidentRecordings(residentId: number): Promise<ProcessRecording[]> {
+  const res = await apiFetch(`/api/residents/${residentId}/recordings`);
+  return res.json();
+}
+
 export async function addRecording(
   residentId: number,
   data: Omit<ProcessRecording, 'recordingId'>
@@ -88,6 +93,11 @@ export async function deleteRecording(
   await apiFetch(`/api/residents/${residentId}/recordings/${recordingId}`, {
     method: 'DELETE',
   });
+}
+
+export async function getResidentVisitations(residentId: number): Promise<HomeVisitation[]> {
+  const res = await apiFetch(`/api/residents/${residentId}/visitations`);
+  return res.json();
 }
 
 export async function addVisitation(

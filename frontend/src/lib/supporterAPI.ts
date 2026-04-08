@@ -69,11 +69,13 @@ export async function getSupporterById(id: number): Promise<SupporterDetail> {
   return res.json();
 }
 
-export async function getMyDonorHistory(): Promise<SupporterDetail> {
-  const res = await apiFetch('/api/donor/me');
-  if (!res.ok) {
-    throw new Error(extractErrorMessage(res.status));
-  }
+export async function getMyDonorHistory(): Promise<SupporterDetail | null> {
+  const res = await fetch(`${BASE}/api/donor/me`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(extractErrorMessage(res.status));
   return res.json();
 }
 
