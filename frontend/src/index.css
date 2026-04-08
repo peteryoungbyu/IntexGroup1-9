@@ -94,6 +94,14 @@ body {
   transform: translateY(-3px);
 }
 
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(26, 82, 118, 0.12);
+}
+
 .cta-strip {
   background: var(--brand-dark);
   padding: 64px 0;
