@@ -94,13 +94,17 @@ const EMPTY_RESIDENT: Omit<Resident, 'residentId' | 'createdAt'> = {
 
 export default function CaseloadPage() {
   const navigate = useNavigate();
-  const [result, setResult] = useState<PagedResult<ResidentListItem> | null>(null);
+  const [result, setResult] = useState<PagedResult<ResidentListItem> | null>(
+    null
+  );
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<ResidentFilters>({ ...EMPTY_FILTERS });
-  const [draftFilters, setDraftFilters] = useState<ResidentFilters>({ ...EMPTY_FILTERS });
-  const [safehouseOptions, setSafehouseOptions] = useState<ResidentSafehouseOption[]>(
-    []
-  );
+  const [draftFilters, setDraftFilters] = useState<ResidentFilters>({
+    ...EMPTY_FILTERS,
+  });
+  const [safehouseOptions, setSafehouseOptions] = useState<
+    ResidentSafehouseOption[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   const [pending, setPending] = useState<PendingDelete | null>(null);
@@ -108,14 +112,13 @@ export default function CaseloadPage() {
   const [deleteError, setDeleteError] = useState<string | undefined>();
 
   const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState<Omit<Resident, 'residentId' | 'createdAt'>>({ ...EMPTY_RESIDENT });
+  const [addForm, setAddForm] = useState<
+    Omit<Resident, 'residentId' | 'createdAt'>
+  >({ ...EMPTY_RESIDENT });
   const [addBusy, setAddBusy] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  const load = (
-    nextPage = page,
-    nextFilters = filters
-  ) => {
+  const load = (nextPage = page, nextFilters = filters) => {
     setLoading(true);
     const safehouseId = nextFilters.safehouseId
       ? Number(nextFilters.safehouseId)
@@ -159,7 +162,7 @@ export default function CaseloadPage() {
   };
 
   const handleFilterChange = <
-    K extends Exclude<keyof ResidentFilters, 'search'>
+    K extends Exclude<keyof ResidentFilters, 'search'>,
   >(
     field: K,
     value: ResidentFilters[K]
@@ -229,7 +232,7 @@ export default function CaseloadPage() {
   };
 
   const set = (field: keyof typeof addForm, value: unknown) =>
-    setAddForm(f => ({ ...f, [field]: value }));
+    setAddForm((f) => ({ ...f, [field]: value }));
 
   return (
     <div>
@@ -251,67 +254,144 @@ export default function CaseloadPage() {
 
       {/* Add Resident Modal */}
       {showAdd && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeAdd}>
-          <div className="modal-dialog modal-xl modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
+        <div
+          className="modal d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={closeAdd}
+        >
+          <div
+            className="modal-dialog modal-xl modal-dialog-scrollable"
+            onClick={(e) => e.stopPropagation()}
+          >
             <form onSubmit={handleAddSubmit}>
               <div className="modal-content">
                 <div className="modal-header">
                   <h5 className="modal-title">Add New Resident</h5>
-                  <button type="button" className="btn-close" onClick={closeAdd} disabled={addBusy} />
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeAdd}
+                    disabled={addBusy}
+                  />
                 </div>
                 <div className="modal-body">
-                  {addError && <div className="alert alert-danger">{addError}</div>}
+                  {addError && (
+                    <div className="alert alert-danger">{addError}</div>
+                  )}
 
                   {/* Basic Info */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">Basic Information</h6>
+                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                    Basic Information
+                  </h6>
                   <div className="row g-3 mb-4">
                     <div className="col-md-4">
-                      <label className="form-label">Case Control No. <span className="text-danger">*</span></label>
-                      <input type="text" className="form-control" required value={addForm.caseControlNo}
-                        onChange={e => set('caseControlNo', e.target.value)} />
+                      <label className="form-label">
+                        Case Control No. <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        required
+                        value={addForm.caseControlNo}
+                        onChange={(e) => set('caseControlNo', e.target.value)}
+                      />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Internal Code <span className="text-danger">*</span></label>
-                      <input type="text" className="form-control" required value={addForm.internalCode}
-                        onChange={e => set('internalCode', e.target.value)} />
+                      <label className="form-label">
+                        Internal Code <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        required
+                        value={addForm.internalCode}
+                        onChange={(e) => set('internalCode', e.target.value)}
+                      />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Safehouse ID <span className="text-danger">*</span></label>
-                      <input type="number" className="form-control" required min={1} value={addForm.safehouseId}
-                        onChange={e => set('safehouseId', Number(e.target.value))} />
+                      <label className="form-label">
+                        Safehouse ID <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        required
+                        min={1}
+                        value={addForm.safehouseId}
+                        onChange={(e) =>
+                          set('safehouseId', Number(e.target.value))
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Sex <span className="text-danger">*</span></label>
-                      <select className="form-select" required value={addForm.sex}
-                        onChange={e => set('sex', e.target.value)}>
+                      <label className="form-label">
+                        Sex <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={addForm.sex}
+                        onChange={(e) => set('sex', e.target.value)}
+                      >
                         <option>Female</option>
                         <option>Male</option>
                       </select>
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Date of Birth <span className="text-danger">*</span></label>
-                      <input type="date" className="form-control" required value={addForm.dateOfBirth}
-                        onChange={e => set('dateOfBirth', e.target.value)} />
+                      <label className="form-label">
+                        Date of Birth <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        required
+                        value={addForm.dateOfBirth}
+                        onChange={(e) => set('dateOfBirth', e.target.value)}
+                      />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Place of Birth</label>
-                      <input type="text" className="form-control" value={addForm.placeOfBirth ?? ''}
-                        onChange={e => set('placeOfBirth', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addForm.placeOfBirth ?? ''}
+                        onChange={(e) =>
+                          set('placeOfBirth', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Birth Status</label>
-                      <input type="text" className="form-control" value={addForm.birthStatus ?? ''}
-                        onChange={e => set('birthStatus', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addForm.birthStatus ?? ''}
+                        onChange={(e) =>
+                          set('birthStatus', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Religion</label>
-                      <input type="text" className="form-control" value={addForm.religion ?? ''}
-                        onChange={e => set('religion', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addForm.religion ?? ''}
+                        onChange={(e) =>
+                          set('religion', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Case Status <span className="text-danger">*</span></label>
-                      <select className="form-select" required value={addForm.caseStatus}
-                        onChange={e => set('caseStatus', e.target.value)}>
+                      <label className="form-label">
+                        Case Status <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={addForm.caseStatus}
+                        onChange={(e) => set('caseStatus', e.target.value)}
+                      >
                         <option>Active</option>
                         <option>Closed</option>
                         <option>Transferred</option>
@@ -320,13 +400,21 @@ export default function CaseloadPage() {
                   </div>
 
                   {/* Case Category */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">Case Category &amp; Sub-categories</h6>
+                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                    Case Category &amp; Sub-categories
+                  </h6>
                   <div className="row g-3 mb-4">
                     <div className="col-md-6">
-                      <label className="form-label">Case Category <span className="text-danger">*</span></label>
-                      <select className="form-select" required value={addForm.caseCategory}
-                        onChange={e => set('caseCategory', e.target.value)}>
-                        {RESIDENT_CASE_CATEGORIES.map(category => (
+                      <label className="form-label">
+                        Case Category <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={addForm.caseCategory}
+                        onChange={(e) => set('caseCategory', e.target.value)}
+                      >
+                        {RESIDENT_CASE_CATEGORIES.map((category) => (
                           <option key={category} value={category}>
                             {category}
                           </option>
@@ -334,26 +422,39 @@ export default function CaseloadPage() {
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label d-block">Sub-categories</label>
+                      <label className="form-label d-block">
+                        Sub-categories
+                      </label>
                       <div className="row g-2">
-                        {([
-                          ['subCatOrphaned', 'Orphaned'],
-                          ['subCatTrafficked', 'Trafficked'],
-                          ['subCatChildLabor', 'Child Labor'],
-                          ['subCatPhysicalAbuse', 'Physical Abuse'],
-                          ['subCatSexualAbuse', 'Sexual Abuse'],
-                          ['subCatOsaec', 'OSAEC'],
-                          ['subCatCicl', 'CICL'],
-                          ['subCatAtRisk', 'At Risk'],
-                          ['subCatStreetChild', 'Street Child'],
-                          ['subCatChildWithHiv', 'Child with HIV'],
-                        ] as const).map(([field, label]) => (
+                        {(
+                          [
+                            ['subCatOrphaned', 'Orphaned'],
+                            ['subCatTrafficked', 'Trafficked'],
+                            ['subCatChildLabor', 'Child Labor'],
+                            ['subCatPhysicalAbuse', 'Physical Abuse'],
+                            ['subCatSexualAbuse', 'Sexual Abuse'],
+                            ['subCatOsaec', 'OSAEC'],
+                            ['subCatCicl', 'CICL'],
+                            ['subCatAtRisk', 'At Risk'],
+                            ['subCatStreetChild', 'Street Child'],
+                            ['subCatChildWithHiv', 'Child with HIV'],
+                          ] as const
+                        ).map(([field, label]) => (
                           <div key={field} className="col-6">
                             <div className="form-check">
-                              <input type="checkbox" className="form-check-input" id={`add-${field}`}
+                              <input
+                                type="checkbox"
+                                className="form-check-input"
+                                id={`add-${field}`}
                                 checked={addForm[field] as boolean}
-                                onChange={e => set(field, e.target.checked)} />
-                              <label className="form-check-label" htmlFor={`add-${field}`}>{label}</label>
+                                onChange={(e) => set(field, e.target.checked)}
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor={`add-${field}`}
+                              >
+                                {label}
+                              </label>
                             </div>
                           </div>
                         ))}
@@ -362,88 +463,168 @@ export default function CaseloadPage() {
                   </div>
 
                   {/* Disability */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">Disability Information</h6>
+                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                    Disability Information
+                  </h6>
                   <div className="row g-3 mb-4">
                     <div className="col-md-3">
                       <div className="form-check mt-2">
-                        <input type="checkbox" className="form-check-input" id="add-isPwd"
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          id="add-isPwd"
                           checked={addForm.isPwd}
-                          onChange={e => set('isPwd', e.target.checked)} />
-                        <label className="form-check-label" htmlFor="add-isPwd">Person with Disability (PWD)</label>
+                          onChange={(e) => set('isPwd', e.target.checked)}
+                        />
+                        <label className="form-check-label" htmlFor="add-isPwd">
+                          Person with Disability (PWD)
+                        </label>
                       </div>
                     </div>
                     {addForm.isPwd && (
                       <div className="col-md-4">
                         <label className="form-label">PWD Type</label>
-                        <input type="text" className="form-control" value={addForm.pwdType ?? ''}
-                          onChange={e => set('pwdType', e.target.value || null)} />
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={addForm.pwdType ?? ''}
+                          onChange={(e) =>
+                            set('pwdType', e.target.value || null)
+                          }
+                        />
                       </div>
                     )}
                     <div className="col-md-3">
                       <div className="form-check mt-2">
-                        <input type="checkbox" className="form-check-input" id="add-hasSpecialNeeds"
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          id="add-hasSpecialNeeds"
                           checked={addForm.hasSpecialNeeds}
-                          onChange={e => set('hasSpecialNeeds', e.target.checked)} />
-                        <label className="form-check-label" htmlFor="add-hasSpecialNeeds">Has Special Needs</label>
+                          onChange={(e) =>
+                            set('hasSpecialNeeds', e.target.checked)
+                          }
+                        />
+                        <label
+                          className="form-check-label"
+                          htmlFor="add-hasSpecialNeeds"
+                        >
+                          Has Special Needs
+                        </label>
                       </div>
                     </div>
                     {addForm.hasSpecialNeeds && (
                       <div className="col-md-4">
                         <label className="form-label">Diagnosis</label>
-                        <input type="text" className="form-control" value={addForm.specialNeedsDiagnosis ?? ''}
-                          onChange={e => set('specialNeedsDiagnosis', e.target.value || null)} />
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={addForm.specialNeedsDiagnosis ?? ''}
+                          onChange={(e) =>
+                            set('specialNeedsDiagnosis', e.target.value || null)
+                          }
+                        />
                       </div>
                     )}
                   </div>
 
                   {/* Family Socio-demographic */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">Family Socio-demographic Profile</h6>
+                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                    Family Socio-demographic Profile
+                  </h6>
                   <div className="row g-2 mb-4">
-                    {([
-                      ['familyIs4Ps', '4Ps Beneficiary'],
-                      ['familySoloParent', 'Solo Parent'],
-                      ['familyIndigenous', 'Indigenous Group'],
-                      ['familyParentPwd', 'Parent with Disability'],
-                      ['familyInformalSettler', 'Informal Settler'],
-                    ] as const).map(([field, label]) => (
+                    {(
+                      [
+                        ['familyIs4Ps', '4Ps Beneficiary'],
+                        ['familySoloParent', 'Solo Parent'],
+                        ['familyIndigenous', 'Indigenous Group'],
+                        ['familyParentPwd', 'Parent with Disability'],
+                        ['familyInformalSettler', 'Informal Settler'],
+                      ] as const
+                    ).map(([field, label]) => (
                       <div key={field} className="col-md-4">
                         <div className="form-check">
-                          <input type="checkbox" className="form-check-input" id={`add-${field}`}
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            id={`add-${field}`}
                             checked={addForm[field] as boolean}
-                            onChange={e => set(field, e.target.checked)} />
-                          <label className="form-check-label" htmlFor={`add-${field}`}>{label}</label>
+                            onChange={(e) => set(field, e.target.checked)}
+                          />
+                          <label
+                            className="form-check-label"
+                            htmlFor={`add-${field}`}
+                          >
+                            {label}
+                          </label>
                         </div>
                       </div>
                     ))}
                   </div>
 
                   {/* Admission Details */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">Admission &amp; Referral</h6>
+                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                    Admission &amp; Referral
+                  </h6>
                   <div className="row g-3 mb-4">
                     <div className="col-md-4">
-                      <label className="form-label">Date of Admission <span className="text-danger">*</span></label>
-                      <input type="date" className="form-control" required value={addForm.dateOfAdmission}
-                        onChange={e => set('dateOfAdmission', e.target.value)} />
+                      <label className="form-label">
+                        Date of Admission <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        required
+                        value={addForm.dateOfAdmission}
+                        onChange={(e) => set('dateOfAdmission', e.target.value)}
+                      />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Assigned Social Worker</label>
-                      <input type="text" className="form-control" value={addForm.assignedSocialWorker ?? ''}
-                        onChange={e => set('assignedSocialWorker', e.target.value || null)} />
+                      <label className="form-label">
+                        Assigned Social Worker
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addForm.assignedSocialWorker ?? ''}
+                        onChange={(e) =>
+                          set('assignedSocialWorker', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Referral Source</label>
-                      <input type="text" className="form-control" value={addForm.referralSource ?? ''}
-                        onChange={e => set('referralSource', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addForm.referralSource ?? ''}
+                        onChange={(e) =>
+                          set('referralSource', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Referring Agency / Person</label>
-                      <input type="text" className="form-control" value={addForm.referringAgencyPerson ?? ''}
-                        onChange={e => set('referringAgencyPerson', e.target.value || null)} />
+                      <label className="form-label">
+                        Referring Agency / Person
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addForm.referringAgencyPerson ?? ''}
+                        onChange={(e) =>
+                          set('referringAgencyPerson', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Initial Risk Level</label>
-                      <select className="form-select" value={addForm.initialRiskLevel ?? ''}
-                        onChange={e => set('initialRiskLevel', e.target.value || null)}>
+                      <select
+                        className="form-select"
+                        value={addForm.initialRiskLevel ?? ''}
+                        onChange={(e) =>
+                          set('initialRiskLevel', e.target.value || null)
+                        }
+                      >
                         <option value="">— None —</option>
                         <option>Low</option>
                         <option>Medium</option>
@@ -453,8 +634,13 @@ export default function CaseloadPage() {
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Current Risk Level</label>
-                      <select className="form-select" value={addForm.currentRiskLevel ?? ''}
-                        onChange={e => set('currentRiskLevel', e.target.value || null)}>
+                      <select
+                        className="form-select"
+                        value={addForm.currentRiskLevel ?? ''}
+                        onChange={(e) =>
+                          set('currentRiskLevel', e.target.value || null)
+                        }
+                      >
                         <option value="">— None —</option>
                         <option>Low</option>
                         <option>Medium</option>
@@ -463,19 +649,34 @@ export default function CaseloadPage() {
                       </select>
                     </div>
                     <div className="col-12">
-                      <label className="form-label">Initial Case Assessment</label>
-                      <textarea className="form-control" rows={2} value={addForm.initialCaseAssessment ?? ''}
-                        onChange={e => set('initialCaseAssessment', e.target.value || null)} />
+                      <label className="form-label">
+                        Initial Case Assessment
+                      </label>
+                      <textarea
+                        className="form-control"
+                        rows={2}
+                        value={addForm.initialCaseAssessment ?? ''}
+                        onChange={(e) =>
+                          set('initialCaseAssessment', e.target.value || null)
+                        }
+                      />
                     </div>
                   </div>
 
                   {/* Reintegration */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">Reintegration</h6>
+                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                    Reintegration
+                  </h6>
                   <div className="row g-3">
                     <div className="col-md-4">
                       <label className="form-label">Reintegration Type</label>
-                      <select className="form-select" value={addForm.reintegrationType ?? ''}
-                        onChange={e => set('reintegrationType', e.target.value || null)}>
+                      <select
+                        className="form-select"
+                        value={addForm.reintegrationType ?? ''}
+                        onChange={(e) =>
+                          set('reintegrationType', e.target.value || null)
+                        }
+                      >
                         <option value="">— None —</option>
                         <option>Family Reintegration</option>
                         <option>Community Reintegration</option>
@@ -486,8 +687,13 @@ export default function CaseloadPage() {
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Reintegration Status</label>
-                      <select className="form-select" value={addForm.reintegrationStatus ?? ''}
-                        onChange={e => set('reintegrationStatus', e.target.value || null)}>
+                      <select
+                        className="form-select"
+                        value={addForm.reintegrationStatus ?? ''}
+                        onChange={(e) =>
+                          set('reintegrationStatus', e.target.value || null)
+                        }
+                      >
                         <option value="">— None —</option>
                         <option>Ongoing</option>
                         <option>Completed</option>
@@ -497,17 +703,39 @@ export default function CaseloadPage() {
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Date Enrolled</label>
-                      <input type="date" className="form-control" value={addForm.dateEnrolled ?? ''}
-                        onChange={e => set('dateEnrolled', e.target.value || null)} />
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={addForm.dateEnrolled ?? ''}
+                        onChange={(e) =>
+                          set('dateEnrolled', e.target.value || null)
+                        }
+                      />
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={closeAdd} disabled={addBusy}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closeAdd}
+                    disabled={addBusy}
+                  >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary" disabled={addBusy}>
-                    {addBusy ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : 'Add Resident'}
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={addBusy}
+                  >
+                    {addBusy ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" />
+                        Saving…
+                      </>
+                    ) : (
+                      'Add Resident'
+                    )}
                   </button>
                 </div>
               </div>
@@ -544,9 +772,7 @@ export default function CaseloadPage() {
               <select
                 className="form-select"
                 value={draftFilters.status}
-                onChange={(e) =>
-                  handleFilterChange('status', e.target.value)
-                }
+                onChange={(e) => handleFilterChange('status', e.target.value)}
               >
                 <option value="">All Statuses</option>
                 <option value="Active">Active</option>
@@ -662,7 +888,7 @@ export default function CaseloadPage() {
                             </span>
                           )}
                         </td>
-                        <td>{r.safehouseName ?? `Safehouse ${r.safehouseId}`}</td>
+                        <td>{`Safehouse ${r.safehouseId}`}</td>
                         <td>
                           <div className="d-flex flex-column flex-md-row gap-1">
                             <Link

@@ -148,6 +148,36 @@ public class ResidentRiskService : IResidentRiskService
             return new ResidentRiskResult(true, toUpdate.Count, startedAt, DateTimeOffset.UtcNow,
                 $"Updated {toUpdate.Count} residents, wrote {newResults.Count} prediction records.", string.Empty);
         }
+        catch (TypeInitializationException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime type initialization failed during resident risk inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new ResidentRiskResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
+        catch (DllNotFoundException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime native dependency load failed during resident risk inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new ResidentRiskResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
+        catch (BadImageFormatException ex)
+        {
+            var details = OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex);
+            _logger.LogError(
+                ex,
+                "ONNX runtime architecture mismatch or invalid native image during resident risk inference. Details: {Details}. Diagnostics: {Diagnostics}",
+                details,
+                OnnxRuntimeDiagnostics.GetRuntimeDiagnostics());
+            return new ResidentRiskResult(false, 0, startedAt, DateTimeOffset.UtcNow, string.Empty, details);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Resident risk inference failed.");
@@ -313,24 +343,68 @@ public class ResidentRiskService : IResidentRiskService
 
     private List<(int ResidentId, float Probability)> RunClassificationInference(string modelPath, List<RiskFeatureRow> rows)
     {
-        using var session = new InferenceSession(modelPath);
-        var inputs = BuildInputs(rows);
-        using var results = session.Run(inputs);
-        var probOutput = results.First(r => r.Name == "probabilities").AsTensor<float>();
-        return Enumerable.Range(0, rows.Count)
-            .Select(i => (rows[i].ResidentId, probOutput[i, 1]))
-            .ToList();
+        try
+        {
+            using var session = OnnxRuntimeDiagnostics.CreateCpuOnlySession(modelPath, _logger, "ResidentRisk-Classification");
+            var inputs = BuildInputs(rows);
+            using var results = session.Run(inputs);
+            var probOutput = results.First(r => r.Name == "probabilities").AsTensor<float>();
+            return Enumerable.Range(0, rows.Count)
+                .Select(i => (rows[i].ResidentId, probOutput[i, 1]))
+                .ToList();
+        }
+        catch (TypeInitializationException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Type initialization failed while executing ONNX classification inference. Rows={Rows}, ModelPath={ModelPath}, Details={Details}",
+                rows.Count,
+                modelPath,
+                OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex));
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "ONNX classification inference execution failed. Rows={Rows}, ModelPath={ModelPath}",
+                rows.Count,
+                modelPath);
+            throw;
+        }
     }
 
     private List<(int ResidentId, float Score)> RunRegressionInference(string modelPath, List<RiskFeatureRow> rows)
     {
-        using var session = new InferenceSession(modelPath);
-        var inputs = BuildInputs(rows);
-        using var results = session.Run(inputs);
-        var output = results.First(r => r.Name == "variable").AsTensor<float>();
-        return Enumerable.Range(0, rows.Count)
-            .Select(i => (rows[i].ResidentId, output[i]))
-            .ToList();
+        try
+        {
+            using var session = OnnxRuntimeDiagnostics.CreateCpuOnlySession(modelPath, _logger, "ResidentRisk-Regression");
+            var inputs = BuildInputs(rows);
+            using var results = session.Run(inputs);
+            var output = results.First(r => r.Name == "variable").AsTensor<float>();
+            return Enumerable.Range(0, rows.Count)
+                .Select(i => (rows[i].ResidentId, output[i]))
+                .ToList();
+        }
+        catch (TypeInitializationException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Type initialization failed while executing ONNX regression inference. Rows={Rows}, ModelPath={ModelPath}, Details={Details}",
+                rows.Count,
+                modelPath,
+                OnnxRuntimeDiagnostics.BuildDetailedExceptionMessage(ex));
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "ONNX regression inference execution failed. Rows={Rows}, ModelPath={ModelPath}",
+                rows.Count,
+                modelPath);
+            throw;
+        }
     }
 
     private List<NamedOnnxValue> BuildInputs(List<RiskFeatureRow> rows)
