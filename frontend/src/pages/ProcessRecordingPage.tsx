@@ -1,15 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import type { ProcessRecording, ResidentListItem } from '../types/ResidentDetail';
+import type { ProcessRecording, ResidentListItem, ProcessRecordingFormOptions } from '../types/ResidentDetail';
 import {
   getResidents,
   getResidentRecordings,
-  addRecording,
+  addSessionEntryRecording,
   deleteRecording,
+  getProcessRecordingFormOptions,
 } from '../lib/residentAPI';
 
 const SESSION_TYPES = ['Individual', 'Group'];
 const EMOTIONAL_STATES = ['Calm', 'Anxious', 'Sad', 'Angry', 'Hopeful', 'Withdrawn', 'Happy', 'Distressed'];
+const INTERVENTION_OPTIONS = ['Legal Services', 'Healing', 'Teaching', 'Caring'];
 const PAGE_SIZE = 10;
 
 interface FlatRecording extends ProcessRecording {
@@ -42,7 +44,22 @@ function emotionBadgeStyle(state: string | null): React.CSSProperties {
   };
 }
 
-const EMPTY_FORM = {
+type NewSessionForm = {
+  residentId: string;
+  sessionDate: string;
+  socialWorker: string;
+  sessionType: '' | 'Individual' | 'Group';
+  sessionDurationMinutes: string;
+  emotionalStateObserved: string;
+  emotionalStateEnd: string;
+  interventionsApplied: string[];
+  followUpActions: string;
+  progressNoted: '' | 'yes' | 'no';
+  concernsFlagged: '' | 'yes' | 'no';
+  referralMade: '' | 'yes' | 'no';
+};
+
+const EMPTY_FORM: NewSessionForm = {
   residentId: '',
   sessionDate: '',
   socialWorker: '',
@@ -50,12 +67,11 @@ const EMPTY_FORM = {
   sessionDurationMinutes: '',
   emotionalStateObserved: '',
   emotionalStateEnd: '',
-  sessionNarrative: '',
-  interventionsApplied: '',
+  interventionsApplied: [],
   followUpActions: '',
-  progressNoted: false,
-  concernsFlagged: false,
-  referralMade: false,
+  progressNoted: '',
+  concernsFlagged: '',
+  referralMade: '',
 };
 
 export default function ProcessRecordingPage() {
@@ -80,6 +96,13 @@ export default function ProcessRecordingPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [recordingFormOptions, setRecordingFormOptions] = useState<ProcessRecordingFormOptions>({
+    residents: [],
+    socialWorkers: [],
+    emotionalStateObserved: [],
+    emotionalStateEnd: [],
+    followUpActions: [],
+  });
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<FlatRecording | null>(null);
@@ -89,8 +112,12 @@ export default function ProcessRecordingPage() {
     setLoading(true);
     setError('');
     try {
-      const paged = await getResidents(1, 500);
+      const [paged, formOptions] = await Promise.all([
+        getResidents(1, 500),
+        getProcessRecordingFormOptions(),
+      ]);
       setResidents(paged.items);
+      setRecordingFormOptions(formOptions);
       const perResident = await Promise.all(
         paged.items.map((r) =>
           getResidentRecordings(r.residentId).catch(() => [] as ProcessRecording[])
@@ -187,27 +214,38 @@ export default function ProcessRecordingPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.residentId || !form.sessionDate || !form.socialWorker || !form.sessionType) {
-      setFormError('Resident, date, social worker, and session type are required.');
+    if (
+      !form.residentId ||
+      !form.sessionDate ||
+      !form.socialWorker ||
+      !form.sessionType ||
+      !form.sessionDurationMinutes ||
+      !form.emotionalStateObserved ||
+      !form.emotionalStateEnd ||
+      form.interventionsApplied.length === 0 ||
+      !form.followUpActions ||
+      !form.progressNoted ||
+      !form.concernsFlagged ||
+      !form.referralMade
+    ) {
+      setFormError('Please complete all fields before submitting this session.');
       return;
     }
     setSaving(true);
     setFormError('');
     try {
-      await addRecording(Number(form.residentId), {
-        residentId: Number(form.residentId),
+      await addSessionEntryRecording(Number(form.residentId), {
         sessionDate: form.sessionDate,
         socialWorker: form.socialWorker,
         sessionType: form.sessionType,
-        sessionDurationMinutes: form.sessionDurationMinutes ? Number(form.sessionDurationMinutes) : 0,
-        emotionalStateObserved: form.emotionalStateObserved || null,
-        emotionalStateEnd: form.emotionalStateEnd || null,
-        sessionNarrative: form.sessionNarrative || null,
-        interventionsApplied: form.interventionsApplied || null,
-        followUpActions: form.followUpActions || null,
-        progressNoted: form.progressNoted,
-        concernsFlagged: form.concernsFlagged,
-        referralMade: form.referralMade,
+        sessionDurationMinutes: Number(form.sessionDurationMinutes),
+        emotionalStateObserved: form.emotionalStateObserved,
+        emotionalStateEnd: form.emotionalStateEnd,
+        interventionsApplied: form.interventionsApplied,
+        followUpActions: form.followUpActions,
+        progressNoted: form.progressNoted === 'yes',
+        concernsFlagged: form.concernsFlagged === 'yes',
+        referralMade: form.referralMade === 'yes',
       });
       closeModal();
       await loadAll();
@@ -620,7 +658,7 @@ export default function ProcessRecordingPage() {
                         required
                       >
                         <option value="">Select resident…</option>
-                        {residents.map((r) => (
+                        {recordingFormOptions.residents.map((r) => (
                           <option key={r.residentId} value={r.residentId}>{r.caseControlNo}</option>
                         ))}
                       </select>
@@ -641,13 +679,17 @@ export default function ProcessRecordingPage() {
                     {/* Social Worker */}
                     <div className="col-12 col-md-6">
                       <label className="form-label fw-semibold">Social Worker <span className="text-danger">*</span></label>
-                      <input
-                        className="form-control"
-                        placeholder="Name"
+                      <select
+                        className="form-select"
                         value={form.socialWorker}
                         onChange={(e) => setForm({ ...form, socialWorker: e.target.value })}
                         required
-                      />
+                      >
+                        <option value="">Select social worker…</option>
+                        {recordingFormOptions.socialWorkers.map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
                     </div>
 
                     {/* Session Type */}
@@ -666,113 +708,146 @@ export default function ProcessRecordingPage() {
 
                     {/* Duration */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Duration (minutes)</label>
+                      <label className="form-label fw-semibold">Session Duration (minutes) <span className="text-danger">*</span></label>
                       <input
                         type="number"
                         className="form-control"
-                        min={0}
+                        min={1}
                         placeholder="e.g. 60"
                         value={form.sessionDurationMinutes}
                         onChange={(e) => setForm({ ...form, sessionDurationMinutes: e.target.value })}
+                        required
                       />
                     </div>
 
                     {/* Emotional State Observed */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Emotional State (Start)</label>
+                      <label className="form-label fw-semibold">Emotional State (Start) <span className="text-danger">*</span></label>
                       <select
                         className="form-select"
                         value={form.emotionalStateObserved}
                         onChange={(e) => setForm({ ...form, emotionalStateObserved: e.target.value })}
+                        required
                       >
                         <option value="">Select…</option>
-                        {EMOTIONAL_STATES.map((s) => <option key={s}>{s}</option>)}
+                        {(recordingFormOptions.emotionalStateObserved.length > 0
+                          ? recordingFormOptions.emotionalStateObserved
+                          : EMOTIONAL_STATES
+                        ).map((s) => <option key={s}>{s}</option>)}
                       </select>
                     </div>
 
                     {/* Emotional State End */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Emotional State (End)</label>
+                      <label className="form-label fw-semibold">Emotional State (End) <span className="text-danger">*</span></label>
                       <select
                         className="form-select"
                         value={form.emotionalStateEnd}
                         onChange={(e) => setForm({ ...form, emotionalStateEnd: e.target.value })}
+                        required
                       >
                         <option value="">Select…</option>
-                        {EMOTIONAL_STATES.map((s) => <option key={s}>{s}</option>)}
+                        {(recordingFormOptions.emotionalStateEnd.length > 0
+                          ? recordingFormOptions.emotionalStateEnd
+                          : EMOTIONAL_STATES
+                        ).map((s) => <option key={s}>{s}</option>)}
                       </select>
-                    </div>
-
-                    {/* Session Narrative */}
-                    <div className="col-12">
-                      <label className="form-label fw-semibold">Session Narrative</label>
-                      <textarea
-                        className="form-control"
-                        rows={5}
-                        placeholder="Document the session in detail — what was discussed, observed, and accomplished"
-                        value={form.sessionNarrative}
-                        onChange={(e) => setForm({ ...form, sessionNarrative: e.target.value })}
-                      />
                     </div>
 
                     {/* Interventions Applied */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Interventions Applied</label>
-                      <textarea
-                        className="form-control"
-                        rows={3}
-                        placeholder="List therapeutic or case management interventions used"
-                        value={form.interventionsApplied}
-                        onChange={(e) => setForm({ ...form, interventionsApplied: e.target.value })}
-                      />
+                      <label className="form-label fw-semibold">Interventions Applied <span className="text-danger">*</span></label>
+                      <div className="border rounded p-3" style={{ background: '#fff' }}>
+                        <div className="d-flex flex-column gap-2">
+                          {INTERVENTION_OPTIONS.map((option) => {
+                            const isChecked = form.interventionsApplied.includes(option);
+                            return (
+                              <label key={option} className="form-check-label d-flex align-items-center gap-2">
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setForm({
+                                        ...form,
+                                        interventionsApplied: [...form.interventionsApplied, option],
+                                      });
+                                    } else {
+                                      setForm({
+                                        ...form,
+                                        interventionsApplied: form.interventionsApplied.filter((v) => v !== option),
+                                      });
+                                    }
+                                  }}
+                                />
+                                <span>{option}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {form.interventionsApplied.length === 0 && (
+                        <div className="form-text text-danger">Select at least one intervention.</div>
+                      )}
                     </div>
 
                     {/* Follow-Up Actions */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Follow-Up Actions</label>
-                      <textarea
-                        className="form-control"
-                        rows={3}
-                        placeholder="Describe any actions to take before the next session"
+                      <label className="form-label fw-semibold">Follow-Up Actions <span className="text-danger">*</span></label>
+                      <select
+                        className="form-select"
                         value={form.followUpActions}
                         onChange={(e) => setForm({ ...form, followUpActions: e.target.value })}
-                      />
+                        required
+                      >
+                        <option value="">Select follow-up action…</option>
+                        {recordingFormOptions.followUpActions.map((action) => (
+                          <option key={action} value={action}>{action}</option>
+                        ))}
+                      </select>
                     </div>
 
-                    {/* Checkboxes */}
-                    <div className="col-12">
-                      <div className="d-flex flex-wrap gap-4">
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="progressNoted"
-                            checked={form.progressNoted}
-                            onChange={(e) => setForm({ ...form, progressNoted: e.target.checked })}
-                          />
-                          <label className="form-check-label fw-semibold" htmlFor="progressNoted">Progress Noted</label>
-                        </div>
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="concernsFlagged"
-                            checked={form.concernsFlagged}
-                            onChange={(e) => setForm({ ...form, concernsFlagged: e.target.checked })}
-                          />
-                          <label className="form-check-label fw-semibold" htmlFor="concernsFlagged">Concerns Flagged</label>
-                        </div>
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="referralMade"
-                            checked={form.referralMade}
-                            onChange={(e) => setForm({ ...form, referralMade: e.target.checked })}
-                          />
-                          <label className="form-check-label fw-semibold" htmlFor="referralMade">Referral Made</label>
-                        </div>
-                      </div>
+                    <div className="col-12 col-md-4">
+                      <label className="form-label fw-semibold">Progress Noted? <span className="text-danger">*</span></label>
+                      <select
+                        className="form-select"
+                        value={form.progressNoted}
+                        onChange={(e) => setForm({ ...form, progressNoted: e.target.value as 'yes' | 'no' | '' })}
+                        required
+                      >
+                        <option value="">Select…</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                      </select>
+                    </div>
+
+                    <div className="col-12 col-md-4">
+                      <label className="form-label fw-semibold">Large Concerns? <span className="text-danger">*</span></label>
+                      <select
+                        className="form-select"
+                        value={form.concernsFlagged}
+                        onChange={(e) => setForm({ ...form, concernsFlagged: e.target.value as 'yes' | 'no' | '' })}
+                        required
+                      >
+                        <option value="">Select…</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                      </select>
+                    </div>
+
+                    <div className="col-12 col-md-4">
+                      <label className="form-label fw-semibold">Referral Made? <span className="text-danger">*</span></label>
+                      <select
+                        className="form-select"
+                        value={form.referralMade}
+                        onChange={(e) => setForm({ ...form, referralMade: e.target.value as 'yes' | 'no' | '' })}
+                        required
+                      >
+                        <option value="">Select…</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                      </select>
                     </div>
                   </div>
                 </div>

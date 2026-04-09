@@ -13,6 +13,10 @@ namespace Intex.API.Controllers;
 [Authorize(Policy = AuthPolicies.AdminRead)]
 public class ResidentController : ControllerBase
 {
+    private static readonly string[] AllowedSessionTypes = ["Individual", "Group"];
+    private static readonly string[] AllowedEmotionalStates = ["Calm", "Anxious", "Sad", "Angry", "Hopeful", "Withdrawn", "Happy", "Distressed"];
+    private static readonly string[] AllowedInterventions = ["Legal Services", "Healing", "Teaching", "Caring"];
+
     private readonly IResidentService _service;
     private readonly AppDbContext _db;
 
@@ -44,6 +48,64 @@ public class ResidentController : ControllerBase
             .ToListAsync();
 
         return Ok(safehouses);
+    }
+
+    [HttpGet("recordings/form-options")]
+    public async Task<IActionResult> GetRecordingFormOptions()
+    {
+        var residents = await _db.Residents
+            .AsNoTracking()
+            .OrderBy(r => r.CaseControlNo)
+            .Select(r => new RecordingFormResidentOption(r.ResidentId, r.CaseControlNo))
+            .ToListAsync();
+
+        var socialWorkers = await _db.ProcessRecordings
+            .AsNoTracking()
+            .Select(r => r.SocialWorker)
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync();
+
+        var emotionalStateObserved = await _db.ProcessRecordings
+            .AsNoTracking()
+            .Select(r => r.EmotionalStateObserved)
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Select(v => v!)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync();
+
+        var emotionalStateEnd = await _db.ProcessRecordings
+            .AsNoTracking()
+            .Select(r => r.EmotionalStateEnd)
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Select(v => v!)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync();
+
+        var followUpActions = await _db.ProcessRecordings
+            .AsNoTracking()
+            .Select(r => r.FollowUpActions)
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Select(v => v!)
+            .Distinct()
+            .OrderBy(v => v)
+            .ToListAsync();
+
+        if (emotionalStateObserved.Count == 0)
+            emotionalStateObserved = AllowedEmotionalStates.ToList();
+
+        if (emotionalStateEnd.Count == 0)
+            emotionalStateEnd = AllowedEmotionalStates.ToList();
+
+        return Ok(new ProcessRecordingFormOptionsResponse(
+            residents,
+            socialWorkers,
+            emotionalStateObserved,
+            emotionalStateEnd,
+            followUpActions));
     }
 
     [HttpGet("{id:int}")]
@@ -98,6 +160,65 @@ public class ResidentController : ControllerBase
         return CreatedAtAction(nameof(GetRecordings), new { id }, recording);
     }
 
+    [HttpPost("{id:int}/recordings/session-entry")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> AddSessionEntryRecording(int id, [FromBody] SessionEntryRequest request)
+    {
+        if (!await _db.Residents.AsNoTracking().AnyAsync(r => r.ResidentId == id))
+            return NotFound();
+
+        if (!AllowedSessionTypes.Contains(request.SessionType))
+            return BadRequest("Session type must be Individual or Group.");
+
+        if (!AllowedEmotionalStates.Contains(request.EmotionalStateObserved))
+            return BadRequest("Invalid emotional state for start.");
+
+        if (!AllowedEmotionalStates.Contains(request.EmotionalStateEnd))
+            return BadRequest("Invalid emotional state for end.");
+
+        if (request.SessionDurationMinutes <= 0)
+            return BadRequest("Session duration must be greater than 0 minutes.");
+
+        var selectedInterventions = request.InterventionsApplied
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Select(v => v.Trim())
+            .Distinct()
+            .ToList();
+
+        if (selectedInterventions.Count == 0)
+            return BadRequest("At least one intervention must be selected.");
+
+        if (selectedInterventions.Any(v => !AllowedInterventions.Contains(v)))
+            return BadRequest("One or more interventions are invalid.");
+
+        var nextRecordingId = (await _db.ProcessRecordings.MaxAsync(r => (int?)r.RecordingId) ?? 0) + 1;
+        var sessionNarrative = $"Session with resident. Type: {request.SessionType}. Duration: {request.SessionDurationMinutes} minutes.";
+
+        var recording = new ProcessRecording
+        {
+            RecordingId = nextRecordingId,
+            ResidentId = id,
+            SessionDate = request.SessionDate,
+            SocialWorker = request.SocialWorker.Trim(),
+            SessionType = request.SessionType,
+            SessionDurationMinutes = request.SessionDurationMinutes,
+            EmotionalStateObserved = request.EmotionalStateObserved,
+            EmotionalStateEnd = request.EmotionalStateEnd,
+            SessionNarrative = sessionNarrative,
+            InterventionsApplied = string.Join(", ", selectedInterventions),
+            FollowUpActions = request.FollowUpActions,
+            ProgressNoted = request.ProgressNoted,
+            ConcernsFlagged = request.ConcernsFlagged,
+            ReferralMade = request.ReferralMade,
+            NotesRestricted = null,
+        };
+
+        _db.ProcessRecordings.Add(recording);
+        await _db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetRecordings), new { id }, recording);
+    }
+
     [HttpDelete("{id:int}/recordings/{recordingId:int}")]
     [Authorize(Policy = AuthPolicies.AdminManage)]
     public async Task<IActionResult> DeleteRecording(int id, int recordingId)
@@ -139,5 +260,29 @@ public class ResidentController : ControllerBase
         _db.HomeVisitations.Remove(visit);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    public sealed record RecordingFormResidentOption(int ResidentId, string CaseControlNo);
+
+    public sealed record ProcessRecordingFormOptionsResponse(
+        IReadOnlyList<RecordingFormResidentOption> Residents,
+        IReadOnlyList<string> SocialWorkers,
+        IReadOnlyList<string> EmotionalStateObserved,
+        IReadOnlyList<string> EmotionalStateEnd,
+        IReadOnlyList<string> FollowUpActions);
+
+    public sealed class SessionEntryRequest
+    {
+        public required DateOnly SessionDate { get; set; }
+        public required string SocialWorker { get; set; }
+        public required string SessionType { get; set; }
+        public required int SessionDurationMinutes { get; set; }
+        public required string EmotionalStateObserved { get; set; }
+        public required string EmotionalStateEnd { get; set; }
+        public required List<string> InterventionsApplied { get; set; }
+        public required string FollowUpActions { get; set; }
+        public required bool ProgressNoted { get; set; }
+        public required bool ConcernsFlagged { get; set; }
+        public required bool ReferralMade { get; set; }
     }
 }
