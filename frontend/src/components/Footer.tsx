@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom';
+import { useCookieConsent } from '../context/CookieConsentContext';
 
 export default function Footer() {
+  const { resetConsent } = useCookieConsent();
+
+  const footerLinkStyle = {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: '0.85rem',
+    textDecoration: 'none',
+  } as const;
+
   return (
     <footer
       style={{
@@ -18,11 +27,7 @@ export default function Footer() {
         <div className="d-flex gap-3">
           <Link
             to="/privacy"
-            style={{
-              color: 'rgba(255,255,255,0.6)',
-              fontSize: '0.85rem',
-              textDecoration: 'none',
-            }}
+            style={footerLinkStyle}
             onMouseEnter={(e) =>
               (e.currentTarget.style.color = 'rgba(255,255,255,0.9)')
             }
@@ -34,11 +39,7 @@ export default function Footer() {
           </Link>
           <Link
             to="/cookie-policy"
-            style={{
-              color: 'rgba(255,255,255,0.6)',
-              fontSize: '0.85rem',
-              textDecoration: 'none',
-            }}
+            style={footerLinkStyle}
             onMouseEnter={(e) =>
               (e.currentTarget.style.color = 'rgba(255,255,255,0.9)')
             }
@@ -48,6 +49,24 @@ export default function Footer() {
           >
             Cookie Policy
           </Link>
+          <button
+            type="button"
+            style={{
+              ...footerLinkStyle,
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = 'rgba(255,255,255,0.9)')
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')
+            }
+            onClick={resetConsent}
+          >
+            Cookie Settings
+          </button>
         </div>
       </div>
     </footer>
