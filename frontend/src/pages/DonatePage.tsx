@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { createDonorPledge } from '../lib/supporterAPI';
+import { createDonorPledge, getDonorPledgeOptions } from '../lib/supporterAPI';
 
 const tiers = [
   {
@@ -42,15 +42,39 @@ const allocation = [
 ];
 
 export default function DonatePage() {
-  const { isAuthenticated, refreshAuthSession } = useAuth();
+  const { authSession, isAuthenticated, refreshAuthSession } = useAuth();
   const [selected, setSelected] = useState<number | null>(1000);
   const [custom, setCustom] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [recurring, setRecurring] = useState(false);
+  const [programAreas, setProgramAreas] = useState<string[]>([]);
+  const [safehouseIds, setSafehouseIds] = useState<number[]>([]);
+  const [selectedProgramArea, setSelectedProgramArea] = useState('Any');
+  const [selectedSafehouse, setSelectedSafehouse] = useState('Any');
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isAdmin = authSession.roles.includes('Admin');
+  const isDonor = authSession.roles.includes('Donor');
+  const canAccessDonorHistory = isAdmin || isDonor;
+  const accountDestination = isAdmin
+    ? '/admin'
+    : isDonor
+      ? '/donor/history'
+      : '/impact';
+  const accountCtaLabel = isAdmin
+    ? 'Go to Admin Portal'
+    : isDonor
+      ? 'View My Donation History'
+      : 'See Public Impact';
 
   const effectiveAmount = custom ? Number(custom) : selected;
+
+  useEffect(() => {
+    getDonorPledgeOptions().then((options) => {
+      setProgramAreas(options.programAreas);
+      setSafehouseIds(options.safehouseIds);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +84,12 @@ export default function DonatePage() {
     if (isAuthenticated) {
       try {
         setIsSubmitting(true);
-        await createDonorPledge(Number(effectiveAmount), recurring);
+        await createDonorPledge(
+          Number(effectiveAmount),
+          recurring,
+          selectedProgramArea === 'Any' ? null : selectedProgramArea,
+          selectedSafehouse === 'Any' ? null : Number(selectedSafehouse)
+        );
         await refreshAuthSession();
       } catch {
         setSubmitError(
@@ -120,17 +149,19 @@ export default function DonatePage() {
             className="text-muted mb-4"
             style={{ maxWidth: 480, margin: '0 auto 1.5rem' }}
           >
-            {isAuthenticated
+            {canAccessDonorHistory
               ? 'Your donation has been recorded. You can view your personal donor history and impact details now.'
+              : isAuthenticated
+                ? 'Your pledge has been recorded. You can continue to the appropriate account area now.'
               : 'Create a free account to track the real-world impact of your donations and receive updates on the girls your support helps.'}
           </p>
           <div className="d-flex gap-3 justify-content-center flex-wrap">
             {isAuthenticated ? (
               <Link
-                to="/donor/history"
+                to={accountDestination}
                 className="btn btn-primary btn-lg fw-bold px-5"
               >
-                View My Donation History
+                {accountCtaLabel}
               </Link>
             ) : (
               <Link
@@ -270,6 +301,55 @@ export default function DonatePage() {
                   </div>
                 </div>
 
+                {/* Allocation preferences */}
+                <div className="row g-3 mb-4">
+                  <div className="col-md-6">
+                    <label
+                      htmlFor="program-area"
+                      className="form-label fw-semibold"
+                      style={{ color: 'var(--brand-dark)' }}
+                    >
+                      Program Area
+                    </label>
+                    <select
+                      id="program-area"
+                      className="form-select"
+                      value={selectedProgramArea}
+                      onChange={(e) => setSelectedProgramArea(e.target.value)}
+                    >
+                      <option value="Any">Any</option>
+                      {programAreas.map((area) => (
+                        <option key={area} value={area}>
+                          {area}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-6">
+                    <label
+                      htmlFor="safehouse"
+                      className="form-label fw-semibold"
+                      style={{ color: 'var(--brand-dark)' }}
+                    >
+                      Safehouse
+                    </label>
+                    <select
+                      id="safehouse"
+                      className="form-select"
+                      value={selectedSafehouse}
+                      onChange={(e) => setSelectedSafehouse(e.target.value)}
+                    >
+                      <option value="Any">Any</option>
+                      {safehouseIds.map((safehouseId) => (
+                        <option key={safehouseId} value={String(safehouseId)}>
+                          {safehouseId}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 {/* Recurring */}
                 <div className="mb-4">
                   <div className="form-check form-switch">
@@ -357,7 +437,7 @@ export default function DonatePage() {
                   className="fw-bold mb-3"
                   style={{ color: 'var(--brand-dark)' }}
                 >
-                  How Your Donation Is Used
+                  How Your Donation Will Be Used
                 </h5>
                 {allocation.map((a) => (
                   <div key={a.label} className="mb-3">
@@ -381,13 +461,13 @@ export default function DonatePage() {
                       role="progressbar"
                       aria-valuenow={a.percent}
                       aria-valuemin={0}
-                      aria-valuemax={100}
+                      aria-valuemax={80}
                       aria-label={`${a.label}: ${a.percent}%`}
                     >
                       <div
                         className="progress-bar"
                         style={{
-                          width: `${a.percent}%`,
+                          width: `${Math.min((a.percent / 80) * 100, 100)}%`,
                           background: a.color,
                           borderRadius: 8,
                         }}
@@ -444,7 +524,11 @@ export default function DonatePage() {
                   style={{ background: 'var(--brand-dark)', border: 'none' }}
                 >
                   <h6 className="fw-bold text-white mb-2">
-                    Thank you for your support
+                    {isAdmin
+                      ? 'Administrator account detected'
+                      : isDonor
+                        ? 'Thank you for your support'
+                        : 'Signed in successfully'}
                   </h6>
                   <p
                     className="mb-3"
@@ -454,13 +538,17 @@ export default function DonatePage() {
                       lineHeight: 1.6,
                     }}
                   >
-                    View your donation history and impact in your account.
+                    {isAdmin
+                      ? 'Return to the admin portal to continue managing donor and program data.'
+                      : isDonor
+                        ? 'View your donation history and impact in your account.'
+                        : 'Continue to the public impact dashboard while donor history is not available for this account.'}
                   </p>
                   <Link
-                    to="/donor/history"
+                    to={accountDestination}
                     className="btn btn-warning btn-sm fw-bold w-100"
                   >
-                    View My Donations
+                    {isAdmin ? 'Go to Admin Portal' : isDonor ? 'View My Donations' : 'See Public Impact'}
                   </Link>
                 </div>
               ) : (

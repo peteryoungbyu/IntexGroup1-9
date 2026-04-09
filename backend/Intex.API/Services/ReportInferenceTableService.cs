@@ -76,7 +76,8 @@ public class ReportInferenceTableService : IReportInferenceTableService
         int limit = 100,
         CancellationToken cancellationToken = default)
     {
-        limit = Math.Clamp(limit, 1, 500);
+        // limit <= 0 means return all rows for the selected inference job.
+        limit = limit <= 0 ? int.MaxValue : Math.Max(1, limit);
 
         return NormalizeJobKey(jobKey) switch
         {

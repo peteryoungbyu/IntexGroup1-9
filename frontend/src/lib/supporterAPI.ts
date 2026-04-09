@@ -25,6 +25,11 @@ export interface SupporterChurnItem {
   likelyChurn: boolean | null;
 }
 
+export interface DonorPledgeOptions {
+  programAreas: string[];
+  safehouseIds: number[];
+}
+
 function extractErrorMessage(status: number): string {
   switch (status) {
     case 401:
@@ -117,12 +122,30 @@ export async function addDonation(
 
 export async function createDonorPledge(
   amount: number,
-  isRecurring: boolean
+  isRecurring: boolean,
+  programArea: string | null,
+  safehouseId: number | null
 ): Promise<Donation> {
   const res = await apiFetch('/api/donor/me/pledge', {
     method: 'POST',
-    body: JSON.stringify({ amount, isRecurring }),
+    body: JSON.stringify({ amount, isRecurring, programArea, safehouseId }),
   });
+  return res.json();
+}
+
+export async function getDonorPledgeOptions(): Promise<DonorPledgeOptions> {
+  const res = await fetch(`${BASE}/api/donor/me/pledge-options`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!res.ok) {
+    return {
+      programAreas: ['Education', 'Maintenance', 'Operations', 'Outreach', 'Transport', 'Wellbeing'],
+      safehouseIds: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    };
+  }
+
   return res.json();
 }
 

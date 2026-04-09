@@ -3,7 +3,6 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 import { CookieConsentProvider } from './context/CookieConsentContext';
-import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout';
@@ -71,7 +70,7 @@ function AppShell() {
           <Route
             path="/donor/history"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['Donor', 'Admin']}>
                 <DonorSelfPage />
               </ProtectedRoute>
             }
@@ -169,13 +168,11 @@ function AppShell() {
 export default function App() {
   return (
     <CookieConsentProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <Router>
-            <AppShell />
-          </Router>
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <AppShell />
+        </Router>
+      </AuthProvider>
     </CookieConsentProvider>
   );
 }

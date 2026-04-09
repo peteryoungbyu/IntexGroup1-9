@@ -12,6 +12,6 @@ public interface IReportInferenceTableService
 {
     Task<ReportInferenceTableDto?> GetAsync(
         string jobKey,
-        int limit = 100,
+    int limit = 100,
         CancellationToken cancellationToken = default);
 }

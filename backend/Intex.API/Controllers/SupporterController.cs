@@ -138,7 +138,7 @@ public class DonorSelfController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = AuthPolicies.AnyAuthenticated)]
+    [Authorize(Policy = AuthPolicies.DonorSelf)]
     public async Task<IActionResult> GetMyHistory()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -148,8 +148,13 @@ public class DonorSelfController : ControllerBase
         return result is null ? NotFound() : Ok(result);
     }
 
+    [HttpGet("pledge-options")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPledgeOptions()
+        => Ok(await _service.GetDonorPledgeOptionsAsync());
+
     [HttpPost("pledge")]
-    [Authorize(Policy = AuthPolicies.AnyAuthenticated)]
+    [Authorize(Policy = AuthPolicies.DonorSelf)]
     public async Task<IActionResult> CreatePledge([FromBody] CreateDonorPledgeRequest request)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
@@ -167,10 +172,19 @@ public class DonorSelfController : ControllerBase
             });
         }
 
-        var donation = await _service.CreateDonorPledgeAsync(user.Id, user.Email, request.Amount, request.IsRecurring);
+        var donation = await _service.CreateDonorPledgeAsync(
+            user.Id,
+            user.Email,
+            request.Amount,
+            request.IsRecurring,
+            request.ProgramArea,
+            request.SafehouseId);
 
-        if (!await _userManager.IsInRoleAsync(user, AuthRoles.Donor))
+        if (!await _userManager.IsInRoleAsync(user, AuthRoles.Admin) &&
+            !await _userManager.IsInRoleAsync(user, AuthRoles.Donor))
+        {
             await _userManager.AddToRoleAsync(user, AuthRoles.Donor);
+        }
 
         return Ok(donation);
     }
@@ -182,4 +196,8 @@ public sealed class CreateDonorPledgeRequest
     public decimal Amount { get; set; }
 
     public bool IsRecurring { get; set; }
+
+    public string? ProgramArea { get; set; }
+
+    public int? SafehouseId { get; set; }
 }
