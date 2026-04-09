@@ -5,6 +5,32 @@ import type {
 } from '../types/DashboardMetric';
 import { getAdminDashboard } from '../lib/reportAPI';
 
+type SafehouseRow = {
+  safehouseId: number;
+  name: string;
+  region: string;
+  currentOccupancy: number;
+  capacityGirls: number;
+  status: string;
+};
+
+type ConferenceRow = {
+  conferenceId: number;
+  conferenceDate: string;
+  residentId: number;
+  facilitatedBy: string;
+  agenda: string;
+};
+
+type MonthlyMetricRow = {
+  metricId: number;
+  monthStart: string;
+  safehousesReported?: number;
+  activeResidents: number;
+  avgHealthScore: number | null;
+  incidentCount: number;
+};
+
 export default function AdminDashboardPage() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +106,7 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(data?.safehouseBreakdown ?? []).map((s: any) => (
+                    {(data?.safehouseBreakdown ?? []).map((s: SafehouseRow) => (
                       <tr key={s.safehouseId}>
                         <td>{s.name}</td>
                         <td>{s.region}</td>
@@ -123,14 +149,21 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(data?.upcomingConferences ?? []).map((c: any) => (
-                      <tr key={c.conferenceId}>
-                        <td>{c.conferenceDate}</td>
-                        <td>{c.residentId}</td>
-                        <td>{c.facilitatedBy}</td>
-                        <td className="text-truncate" style={{ maxWidth: 180 }}>{c.agenda}</td>
-                      </tr>
-                    ))}
+                    {(data?.upcomingConferences ?? []).map(
+                      (c: ConferenceRow) => (
+                        <tr key={c.conferenceId}>
+                          <td>{c.conferenceDate}</td>
+                          <td>{c.residentId}</td>
+                          <td>{c.facilitatedBy}</td>
+                          <td
+                            className="text-truncate"
+                            style={{ maxWidth: 180 }}
+                          >
+                            {c.agenda}
+                          </td>
+                        </tr>
+                      )
+                    )}
                     {(data?.upcomingConferences ?? []).length === 0 && (
                       <tr>
                         <td colSpan={4} className="text-center text-muted py-3">
@@ -152,32 +185,39 @@ export default function AdminDashboardPage() {
                   <thead>
                     <tr>
                       <th>Month</th>
+                      <th>Safehouses</th>
                       <th>Residents</th>
                       <th>Avg Health</th>
                       <th>Incidents</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(data?.monthlyMetrics ?? []).slice(0, 6).map((m: any) => (
-                      <tr key={m.metricId}>
-                        <td>
-                          {new Date(m.monthStart).toLocaleDateString('en-US', {
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </td>
-                        <td>{m.activeResidents}</td>
-                        <td>
-                          {m.avgHealthScore == null
-                            ? 'N/A'
-                            : Number(m.avgHealthScore).toFixed(1)}
-                        </td>
-                        <td>{m.incidentCount}</td>
-                      </tr>
-                    ))}
+                    {(data?.monthlyMetrics ?? [])
+                      .slice(0, 6)
+                      .map((m: MonthlyMetricRow) => (
+                        <tr key={m.monthStart ?? m.metricId}>
+                          <td>
+                            {new Date(m.monthStart).toLocaleDateString(
+                              'en-US',
+                              {
+                                month: 'short',
+                                year: 'numeric',
+                              }
+                            )}
+                          </td>
+                          <td>{m.safehousesReported ?? '—'}</td>
+                          <td>{m.activeResidents}</td>
+                          <td>
+                            {m.avgHealthScore == null
+                              ? 'N/A'
+                              : Number(m.avgHealthScore).toFixed(1)}
+                          </td>
+                          <td>{m.incidentCount}</td>
+                        </tr>
+                      ))}
                     {data?.monthlyMetrics.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="text-center text-muted py-3">
+                        <td colSpan={5} className="text-center text-muted py-3">
                           No metric data
                         </td>
                       </tr>
