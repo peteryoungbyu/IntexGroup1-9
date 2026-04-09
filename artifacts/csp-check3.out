@@ -1,0 +1,4 @@
+info: Startup[0]
+      Applying application database migrations
+warn: Startup[0]
+      Skipping automatic application database migrations because the EF migration snapshot is out of sync with the mapped model. Verifying connectivity only.
