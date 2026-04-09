@@ -122,7 +122,11 @@ export async function getTwoFactorStatus(): Promise<TwoFactorStatus> {
     method: 'POST',
     body: JSON.stringify({}),
   });
-  return res.json();
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(extractError(body));
+  }
+  return body as TwoFactorStatus;
 }
 
 export async function enableTwoFactor(code: string): Promise<TwoFactorStatus> {
@@ -134,14 +138,29 @@ export async function enableTwoFactor(code: string): Promise<TwoFactorStatus> {
       resetRecoveryCodes: true,
     }),
   });
-  return res.json();
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(extractError(body));
+  }
+  if (
+    typeof body !== 'object' ||
+    body === null ||
+    (body as Partial<TwoFactorStatus>).isTwoFactorEnabled !== true
+  ) {
+    throw new Error('Two-factor authentication was not enabled.');
+  }
+  return body as TwoFactorStatus;
 }
 
 export async function disableTwoFactor(): Promise<void> {
-  await apiFetch('/api/auth/manage/2fa', {
+  const res = await apiFetch('/api/auth/manage/2fa', {
     method: 'POST',
     body: JSON.stringify({ enable: false }),
   });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(extractError(body));
+  }
 }
 
 export async function resetRecoveryCodes(): Promise<TwoFactorStatus> {
@@ -149,5 +168,9 @@ export async function resetRecoveryCodes(): Promise<TwoFactorStatus> {
     method: 'POST',
     body: JSON.stringify({ resetRecoveryCodes: true }),
   });
-  return res.json();
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(extractError(body));
+  }
+  return body as TwoFactorStatus;
 }
