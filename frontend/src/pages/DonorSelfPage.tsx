@@ -95,12 +95,44 @@ export default function DonorSelfPage() {
     {}
   );
 
-  const allocationByArea = allocations.reduce<Record<string, number>>(
-    (acc, a) => { acc[a.programArea] = (acc[a.programArea] ?? 0) + a.amountAllocated; return acc; },
+  const allocationByArea = allocations.reduce<Record<string, { total: number; safehouses: Set<number> }>>(
+    (acc, a) => {
+      const key = a.programArea;
+      const safehouseId = (a.safehouseId ?? a.safeHouseId) ?? null;
+      if (!acc[key]) {
+        acc[key] = { total: 0, safehouses: new Set<number>() };
+      }
+
+      acc[key].total += a.amountAllocated;
+      if (safehouseId != null) acc[key].safehouses.add(safehouseId);
+      return acc;
+    },
     {}
   );
-  const allocationEntries = Object.entries(allocationByArea).sort(([, a], [, b]) => b - a);
-  const maxAllocation = allocationEntries[0]?.[1] ?? 0;
+  const allocationEntries = Object.entries(allocationByArea)
+    .map(([area, data]) => ({
+      area,
+      total: data.total,
+      safehouseText:
+        data.safehouses.size > 0
+          ? Array.from(data.safehouses).sort((a, b) => a - b).join(', ')
+          : '—',
+    }))
+    .sort((a, b) => b.total - a.total);
+  const totalAllocated = allocationEntries.reduce((sum, entry) => sum + entry.total, 0);
+  const allocationSegments = allocationEntries.map((entry) => ({
+    ...entry,
+    pct: totalAllocated > 0 ? (entry.total / totalAllocated) * 100 : 0,
+    color: PROGRAM_AREA_COLORS[entry.area] ?? 'var(--brand-primary)',
+  }));
+
+  const safehousesServed = Array.from(
+    allocations.reduce((acc, a) => {
+      const safehouseId = (a.safehouseId ?? a.safeHouseId) ?? null;
+      if (safehouseId != null) acc.add(safehouseId);
+      return acc;
+    }, new Set<number>())
+  ).sort((a, b) => a - b);
 
   function toggleRow(donationId: number) {
     setExpandedRows((prev) => {
@@ -197,7 +229,6 @@ export default function DonorSelfPage() {
                     <th>Type</th>
                     <th style={{ whiteSpace: 'nowrap' }}>Amount / Value</th>
                     <th>Impact Unit</th>
-                    <th>Campaign</th>
                     <th>Channel</th>
                     <th style={{ whiteSpace: 'nowrap' }}>Recurring</th>
                     <th style={{ width: 36 }} />
@@ -206,7 +237,7 @@ export default function DonorSelfPage() {
                 <tbody>
                   {donations.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="text-center text-muted py-5">
+                      <td colSpan={7} className="text-center text-muted py-5">
                         <p className="mb-1" style={{ fontSize: '1.5rem' }}>🎁</p>
                         <p className="mb-0">No donations on record yet.</p>
                       </td>
@@ -228,7 +259,6 @@ export default function DonorSelfPage() {
                           <td><span className="badge bg-primary" style={{ fontSize: '0.75rem' }}>{DONATION_TYPE_LABELS[d.donationType] ?? d.donationType}</span></td>
                           <td style={{ whiteSpace: 'nowrap' }}>{amountDisplay}</td>
                           <td>{d.impactUnit ?? '—'}</td>
-                          <td>{d.campaignName ?? '—'}</td>
                           <td>{d.channelSource ?? '—'}</td>
                           <td>
                             {d.isRecurring
@@ -246,7 +276,7 @@ export default function DonorSelfPage() {
                         </tr>
                         {hasInKind && isExpanded && (
                           <tr>
-                            <td colSpan={8} style={{ padding: 0, background: '#f8f7f4' }}>
+                            <td colSpan={7} style={{ padding: 0, background: '#f8f7f4' }}>
                               <table className="table table-sm mb-0" style={{ fontSize: '0.85rem' }}>
                                 <thead>
                                   <tr style={{ background: '#eef0f3' }}>
@@ -294,21 +324,109 @@ export default function DonorSelfPage() {
                   </span>
                 </p>
               ) : (
-                allocationEntries.map(([area, total]) => {
-                  const pct = maxAllocation > 0 ? (total / maxAllocation) * 100 : 0;
-                  const color = PROGRAM_AREA_COLORS[area] ?? 'var(--brand-primary)';
-                  return (
-                    <div key={area} className="mb-3">
-                      <div className="d-flex justify-content-between align-items-center mb-1">
-                        <span className="fw-semibold" style={{ fontSize: '0.9rem', color: 'var(--brand-dark)' }}>{area}</span>
-                        <span className="fw-bold" style={{ fontSize: '0.9rem', color }}>{formatPHP(total)}</span>
-                      </div>
-                      <div style={{ height: 8, borderRadius: 4, background: '#e5e7eb', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 4, transition: 'width 0.4s ease' }} />
-                      </div>
+                <>
+                  <div className="mb-4">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <span className="fw-semibold" style={{ fontSize: '0.92rem', color: 'var(--brand-dark)' }}>
+                        Program Area Allocation Split
+                      </span>
+                      <span className="fw-bold" style={{ fontSize: '0.9rem', color: 'var(--brand-dark)' }}>
+                        {formatPHP(totalAllocated)}
+                      </span>
                     </div>
-                  );
-                })
+                    <div
+                      style={{
+                        height: 22,
+                        borderRadius: 10,
+                        background: '#e5e7eb',
+                        overflow: 'hidden',
+                        display: 'flex',
+                      }}
+                      aria-label="Donation allocation split"
+                    >
+                      {allocationSegments.map(({ area, pct, color }) => (
+                        <div
+                          key={area}
+                          style={{
+                            width: `${pct}%`,
+                            background: color,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            padding: pct >= 10 ? '0 6px' : 0,
+                          }}
+                          title={`${area}: ${pct.toFixed(1)}%`}
+                        >
+                          {pct >= 12 ? area : ''}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    {allocationSegments.map(({ area, total, pct, color }) => (
+                      <div key={area} className="d-flex justify-content-between align-items-center mb-2">
+                        <div className="d-flex align-items-center gap-2">
+                          <span
+                            style={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: '50%',
+                              background: color,
+                              display: 'inline-block',
+                            }}
+                            aria-hidden="true"
+                          />
+                          <span className="fw-semibold" style={{ fontSize: '0.88rem', color: 'var(--brand-dark)' }}>
+                            {area}
+                          </span>
+                          <span className="text-muted" style={{ fontSize: '0.82rem' }}>
+                            ({pct.toFixed(1)}%)
+                          </span>
+                        </div>
+                        <span className="fw-bold" style={{ fontSize: '0.86rem', color }}>
+                          {formatPHP(total)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 12 }}>
+                    <p className="mb-2 fw-semibold" style={{ fontSize: '0.92rem', color: 'var(--brand-dark)' }}>
+                      Safehouses Served
+                    </p>
+                    {safehousesServed.length === 0 ? (
+                      <p className="text-muted mb-0" style={{ fontSize: '0.84rem' }}>
+                        No safehouse allocations on record yet.
+                      </p>
+                    ) : (
+                      <div className="d-flex flex-wrap gap-2">
+                        {safehousesServed.map((id) => (
+                          <span
+                            key={id}
+                            className="badge"
+                            style={{
+                              background: 'rgba(26,82,118,0.12)',
+                              color: '#1a5276',
+                              border: '1px solid rgba(26,82,118,0.25)',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              padding: '0.4rem 0.55rem',
+                            }}
+                          >
+                            Safehouse {id}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>

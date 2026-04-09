@@ -148,6 +148,11 @@ public class DonorSelfController : ControllerBase
         return result is null ? NotFound() : Ok(result);
     }
 
+    [HttpGet("pledge-options")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPledgeOptions()
+        => Ok(await _service.GetDonorPledgeOptionsAsync());
+
     [HttpPost("pledge")]
     [Authorize(Policy = AuthPolicies.AnyAuthenticated)]
     public async Task<IActionResult> CreatePledge([FromBody] CreateDonorPledgeRequest request)
@@ -167,7 +172,13 @@ public class DonorSelfController : ControllerBase
             });
         }
 
-        var donation = await _service.CreateDonorPledgeAsync(user.Id, user.Email, request.Amount, request.IsRecurring);
+        var donation = await _service.CreateDonorPledgeAsync(
+            user.Id,
+            user.Email,
+            request.Amount,
+            request.IsRecurring,
+            request.ProgramArea,
+            request.SafehouseId);
 
         if (!await _userManager.IsInRoleAsync(user, AuthRoles.Donor))
             await _userManager.AddToRoleAsync(user, AuthRoles.Donor);
@@ -182,4 +193,8 @@ public sealed class CreateDonorPledgeRequest
     public decimal Amount { get; set; }
 
     public bool IsRecurring { get; set; }
+
+    public string? ProgramArea { get; set; }
+
+    public int? SafehouseId { get; set; }
 }

@@ -9,6 +9,9 @@ public record SupporterDetail(
     IReadOnlyList<Donation> Donations,
     IReadOnlyList<InKindDonationItem> InKindItems,
     IReadOnlyList<DonationAllocation> Allocations);
+public record DonorPledgeOptions(
+    IReadOnlyList<string> ProgramAreas,
+    IReadOnlyList<int> SafehouseIds);
 public record PagedResult<T>(IReadOnlyList<T> Items, int TotalCount, int Page, int PageSize);
 
 public interface ISupporterService
@@ -21,6 +24,13 @@ public interface ISupporterService
     Task<Supporter?> UpdateAsync(int id, Supporter supporter);
     Task<bool> DeleteAsync(int id);
     Task<Donation> AddDonationAsync(int supporterId, Donation donation);
-    Task<Donation> CreateDonorPledgeAsync(string userId, string email, decimal amount, bool isRecurring);
+    Task<DonorPledgeOptions> GetDonorPledgeOptionsAsync();
+    Task<Donation> CreateDonorPledgeAsync(
+        string userId,
+        string email,
+        decimal amount,
+        bool isRecurring,
+        string? selectedProgramArea,
+        int? selectedSafehouseId);
     Task<bool> DeleteDonationAsync(int supporterId, int donationId);
 }

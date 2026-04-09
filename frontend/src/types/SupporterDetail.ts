@@ -45,6 +45,7 @@ export interface InKindDonationItem {
 export interface DonationAllocation {
   allocationId: number;
   donationId: number;
+  safehouseId?: number | null;
   safeHouseId: number | null;
   programArea: string;
   amountAllocated: number;

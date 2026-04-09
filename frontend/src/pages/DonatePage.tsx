@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { createDonorPledge } from '../lib/supporterAPI';
+import { createDonorPledge, getDonorPledgeOptions } from '../lib/supporterAPI';
 
 const tiers = [
   {
@@ -47,10 +47,21 @@ export default function DonatePage() {
   const [custom, setCustom] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [recurring, setRecurring] = useState(false);
+  const [programAreas, setProgramAreas] = useState<string[]>([]);
+  const [safehouseIds, setSafehouseIds] = useState<number[]>([]);
+  const [selectedProgramArea, setSelectedProgramArea] = useState('Any');
+  const [selectedSafehouse, setSelectedSafehouse] = useState('Any');
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const effectiveAmount = custom ? Number(custom) : selected;
+
+  useEffect(() => {
+    getDonorPledgeOptions().then((options) => {
+      setProgramAreas(options.programAreas);
+      setSafehouseIds(options.safehouseIds);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +71,12 @@ export default function DonatePage() {
     if (isAuthenticated) {
       try {
         setIsSubmitting(true);
-        await createDonorPledge(Number(effectiveAmount), recurring);
+        await createDonorPledge(
+          Number(effectiveAmount),
+          recurring,
+          selectedProgramArea === 'Any' ? null : selectedProgramArea,
+          selectedSafehouse === 'Any' ? null : Number(selectedSafehouse)
+        );
         await refreshAuthSession();
       } catch {
         setSubmitError(
@@ -270,6 +286,55 @@ export default function DonatePage() {
                   </div>
                 </div>
 
+                {/* Allocation preferences */}
+                <div className="row g-3 mb-4">
+                  <div className="col-md-6">
+                    <label
+                      htmlFor="program-area"
+                      className="form-label fw-semibold"
+                      style={{ color: 'var(--brand-dark)' }}
+                    >
+                      Program Area
+                    </label>
+                    <select
+                      id="program-area"
+                      className="form-select"
+                      value={selectedProgramArea}
+                      onChange={(e) => setSelectedProgramArea(e.target.value)}
+                    >
+                      <option value="Any">Any</option>
+                      {programAreas.map((area) => (
+                        <option key={area} value={area}>
+                          {area}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-md-6">
+                    <label
+                      htmlFor="safehouse"
+                      className="form-label fw-semibold"
+                      style={{ color: 'var(--brand-dark)' }}
+                    >
+                      Safehouse
+                    </label>
+                    <select
+                      id="safehouse"
+                      className="form-select"
+                      value={selectedSafehouse}
+                      onChange={(e) => setSelectedSafehouse(e.target.value)}
+                    >
+                      <option value="Any">Any</option>
+                      {safehouseIds.map((safehouseId) => (
+                        <option key={safehouseId} value={String(safehouseId)}>
+                          {safehouseId}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 {/* Recurring */}
                 <div className="mb-4">
                   <div className="form-check form-switch">
@@ -357,7 +422,7 @@ export default function DonatePage() {
                   className="fw-bold mb-3"
                   style={{ color: 'var(--brand-dark)' }}
                 >
-                  How Your Donation Is Used
+                  How Your Donation Will Be Used
                 </h5>
                 {allocation.map((a) => (
                   <div key={a.label} className="mb-3">
@@ -381,13 +446,13 @@ export default function DonatePage() {
                       role="progressbar"
                       aria-valuenow={a.percent}
                       aria-valuemin={0}
-                      aria-valuemax={100}
+                      aria-valuemax={80}
                       aria-label={`${a.label}: ${a.percent}%`}
                     >
                       <div
                         className="progress-bar"
                         style={{
-                          width: `${a.percent}%`,
+                          width: `${Math.min((a.percent / 80) * 100, 100)}%`,
                           background: a.color,
                           borderRadius: 8,
                         }}
