@@ -156,7 +156,14 @@ public class ResidentController : ControllerBase
     {
         recording.ResidentId = id;
         _db.ProcessRecordings.Add(recording);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message, inner = ex.InnerException?.Message });
+        }
         return CreatedAtAction(nameof(GetRecordings), new { id }, recording);
     }
 
