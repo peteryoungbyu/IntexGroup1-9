@@ -1,0 +1,18 @@
+dbug: Microsoft.EntityFrameworkCore.Infrastructure[10401]
+      An 'IServiceProvider' was created for internal use by Entity Framework.
+info: Startup[0]
+      Applying application database migrations
+dbug: Microsoft.EntityFrameworkCore.Model[10601]
+      The index {'SupporterId'} was not created on entity type 'SupporterUserLink' as the properties are already covered by the index {'SupporterId', 'UserId'}.
+dbug: Microsoft.EntityFrameworkCore.Infrastructure[10403]
+      Entity Framework Core 10.0.5 initialized 'AppDbContext' using provider 'Microsoft.EntityFrameworkCore.SqlServer:10.0.5' with options: EngineType=SqlServer 
+dbug: Microsoft.EntityFrameworkCore.Model[10601]
+      The index {'SupporterId'} was not created on entity type 'SupporterUserLink' as the properties are already covered by the index {'SupporterId', 'UserId'}.
+warn: Startup[0]
+      Skipping automatic application database migrations because the EF migration snapshot is out of sync with the mapped model. Verifying connectivity only.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20005]
+      Creating DbConnection.
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20006]
+      Created DbConnection. (31ms).
+dbug: Microsoft.EntityFrameworkCore.Database.Connection[20000]
+      Opening connection to database 'NewDawnDB' on server 'tcp:intex1-9.database.windows.net,1433'.

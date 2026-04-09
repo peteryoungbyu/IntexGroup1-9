@@ -3,7 +3,7 @@ namespace Intex.API.Infrastructure;
 public static class SecurityHeaders
 {
     public const string ContentSecurityPolicy =
-        "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'";
+        "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com; connect-src 'self' https://newdawnapp-bsb6bbg4akbjhgg2.francecentral-01.azurewebsites.net";
 
     public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
     {
