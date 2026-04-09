@@ -366,7 +366,7 @@ export default function HomeVisitationPage() {
                       <td>
                         <div className="d-flex gap-2">
                           <Link
-                            to={`/admin/residents/${v.residentId}`}
+                            to={`/admin/residents/${v.residentId}?tab=visitations&highlightId=${v.visitationId}`}
                             className="btn btn-sm btn-outline-primary"
                             style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}
                           >

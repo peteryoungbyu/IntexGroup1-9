@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import type {
   ResidentDetail,
   ProcessRecording,
@@ -20,6 +20,9 @@ import {
   deleteCaseConference,
 } from '../lib/caseConferenceAPI';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import Pagination from '../components/Pagination';
+
+const ITEMS_PER_PAGE = 10;
 
 const RISK_COLORS: Record<string, string> = {
   Low: 'success',
@@ -82,10 +85,19 @@ export default function ResidentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const residentId = Number(id);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [detail, setDetail] = useState<ResidentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [highlightedRecordingId, setHighlightedRecordingId] = useState<
+    number | null
+  >(null);
+  const [currentRecordingPage, setCurrentRecordingPage] = useState(1);
+  const [highlightedVisitationId, setHighlightedVisitationId] = useState<
+    number | null
+  >(null);
+  const [currentVisitationPage, setCurrentVisitationPage] = useState(1);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<EditableResident | null>(null);
@@ -130,6 +142,63 @@ export default function ResidentDetailPage() {
     setVisitationForm((f) => ({ ...f, residentId }));
     setConferenceForm((f) => ({ ...f, residentId }));
   }, [residentId]);
+
+  // Read tab and highlightId from URL query params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    const highlightId = params.get('highlightId');
+    if (tab === 'recordings' || tab === 'visitations') setActiveTab(tab);
+    if (highlightId) {
+      if (tab === 'visitations') {
+        setHighlightedVisitationId(Number(highlightId));
+      } else {
+        setHighlightedRecordingId(Number(highlightId));
+      }
+    }
+  }, [location.search]);
+
+  // Scroll to, page to, and clear highlighted recording once data loads
+  useEffect(() => {
+    if (!highlightedRecordingId || !detail) return;
+    const recs = detail.recordings;
+    const idx = recs.findIndex((r) => r.recordingId === highlightedRecordingId);
+    if (idx >= 0) {
+      setCurrentRecordingPage(Math.floor(idx / ITEMS_PER_PAGE) + 1);
+    }
+    const scrollTimer = setTimeout(() => {
+      document
+        .getElementById('recording-' + highlightedRecordingId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    const clearTimer = setTimeout(() => setHighlightedRecordingId(null), 4000);
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [highlightedRecordingId, detail]);
+
+  // Scroll to, page to, and clear highlighted visitation once data loads
+  useEffect(() => {
+    if (!highlightedVisitationId || !detail) return;
+    const visits = detail.visitations;
+    const idx = visits.findIndex(
+      (v) => v.visitationId === highlightedVisitationId
+    );
+    if (idx >= 0) {
+      setCurrentVisitationPage(Math.floor(idx / ITEMS_PER_PAGE) + 1);
+    }
+    const scrollTimer = setTimeout(() => {
+      document
+        .getElementById('visitation-' + highlightedVisitationId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    const clearTimer = setTimeout(() => setHighlightedVisitationId(null), 4000);
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [highlightedVisitationId, detail]);
 
   if (loading)
     return (
@@ -923,7 +992,11 @@ export default function ResidentDetailPage() {
                 <span>Process Recordings ({recordings.length})</span>
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() => navigate('/admin/process-recording?residentId=' + residentId)}
+                  onClick={() =>
+                    navigate(
+                      '/admin/process-recording?residentId=' + residentId
+                    )
+                  }
                 >
                   + Add Recording
                 </button>
@@ -932,66 +1005,106 @@ export default function ResidentDetailPage() {
                 {recordings.length === 0 ? (
                   <p className="text-muted">No recordings yet.</p>
                 ) : (
-                  <div className="list-group list-group-flush">
-                    {recordings.map((r) => (
-                      <div key={r.recordingId} className="list-group-item px-0">
-                        <div className="d-flex justify-content-between align-items-start">
-                          <div>
-                            <div className="d-flex align-items-center gap-2 mb-1">
-                              <strong>{r.sessionDate}</strong>
-                              <span className="text-muted small">
-                                {r.sessionType} · {r.sessionDurationMinutes} min
-                                · {r.socialWorker}
-                              </span>
-                            </div>
-                            {r.sessionNarrative && (
-                              <p className="mb-1 small">{r.sessionNarrative}</p>
-                            )}
-                            {r.interventionsApplied && (
-                              <p className="mb-1 small text-muted">
-                                <strong>Interventions:</strong>{' '}
-                                {r.interventionsApplied}
-                              </p>
-                            )}
-                            {r.followUpActions && (
-                              <p className="mb-1 small text-muted">
-                                <strong>Follow-up:</strong> {r.followUpActions}
-                              </p>
-                            )}
-                            <div className="d-flex gap-2 mt-1">
-                              {r.progressNoted && (
-                                <span className="badge bg-success">
-                                  Progress
-                                </span>
-                              )}
-                              {r.concernsFlagged && (
-                                <span className="badge bg-warning text-dark">
-                                  Concerns Flagged
-                                </span>
-                              )}
-                              {r.referralMade && (
-                                <span className="badge bg-primary">
-                                  Referral Made
-                                </span>
-                              )}
+                  <>
+                    <p className="text-muted small mb-2">
+                      Showing {(currentRecordingPage - 1) * ITEMS_PER_PAGE + 1}–
+                      {Math.min(
+                        currentRecordingPage * ITEMS_PER_PAGE,
+                        recordings.length
+                      )}{' '}
+                      of {recordings.length} recordings
+                    </p>
+                    <div className="list-group list-group-flush">
+                      {recordings
+                        .slice(
+                          (currentRecordingPage - 1) * ITEMS_PER_PAGE,
+                          currentRecordingPage * ITEMS_PER_PAGE
+                        )
+                        .map((r) => (
+                          <div
+                            key={r.recordingId}
+                            id={'recording-' + r.recordingId}
+                            className="list-group-item px-0"
+                            style={
+                              r.recordingId === highlightedRecordingId
+                                ? {
+                                    backgroundColor: '#fff3cd',
+                                    borderLeft: '4px solid #e8a838',
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                  }
+                                : undefined
+                            }
+                          >
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div>
+                                <div className="d-flex align-items-center gap-2 mb-1">
+                                  <strong>{r.sessionDate}</strong>
+                                  <span className="text-muted small">
+                                    {r.sessionType} · {r.sessionDurationMinutes}{' '}
+                                    min · {r.socialWorker}
+                                  </span>
+                                </div>
+                                {r.sessionNarrative && (
+                                  <p className="mb-1 small">
+                                    {r.sessionNarrative}
+                                  </p>
+                                )}
+                                {r.interventionsApplied && (
+                                  <p className="mb-1 small text-muted">
+                                    <strong>Interventions:</strong>{' '}
+                                    {r.interventionsApplied}
+                                  </p>
+                                )}
+                                {r.followUpActions && (
+                                  <p className="mb-1 small text-muted">
+                                    <strong>Follow-up:</strong>{' '}
+                                    {r.followUpActions}
+                                  </p>
+                                )}
+                                <div className="d-flex gap-2 mt-1">
+                                  {r.progressNoted && (
+                                    <span className="badge bg-success">
+                                      Progress
+                                    </span>
+                                  )}
+                                  {r.concernsFlagged && (
+                                    <span className="badge bg-warning text-dark">
+                                      Concerns Flagged
+                                    </span>
+                                  )}
+                                  {r.referralMade && (
+                                    <span className="badge bg-primary">
+                                      Referral Made
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
+                                onClick={() => {
+                                  setDeleteError(null);
+                                  setDeleteTarget({
+                                    type: 'recording',
+                                    id: r.recordingId,
+                                  });
+                                }}
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
-                          <button
-                            className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                            onClick={() => {
-                              setDeleteError(null);
-                              setDeleteTarget({
-                                type: 'recording',
-                                id: r.recordingId,
-                              });
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        ))}
+                    </div>
+                    <div className="mt-3">
+                      <Pagination
+                        page={currentRecordingPage}
+                        totalCount={recordings.length}
+                        pageSize={ITEMS_PER_PAGE}
+                        onPageChange={setCurrentRecordingPage}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -1279,7 +1392,9 @@ export default function ResidentDetailPage() {
                 <span>Home Visitations ({visitations.length})</span>
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() => navigate('/admin/home-visitation?residentId=' + residentId)}
+                  onClick={() =>
+                    navigate('/admin/home-visitation?residentId=' + residentId)
+                  }
                 >
                   + Add Visitation
                 </button>
@@ -1288,67 +1403,105 @@ export default function ResidentDetailPage() {
                 {visitations.length === 0 ? (
                   <p className="text-muted">No visitations yet.</p>
                 ) : (
-                  <div className="list-group list-group-flush">
-                    {visitations.map((v) => (
-                      <div
-                        key={v.visitationId}
-                        className="list-group-item px-0"
-                      >
-                        <div className="d-flex justify-content-between align-items-start">
-                          <div>
-                            <div className="d-flex align-items-center gap-2 mb-1">
-                              <strong>{v.visitDate}</strong>
-                              <span className="text-muted small">
-                                {v.visitType} · {v.socialWorker}
-                              </span>
-                            </div>
-                            {v.locationVisited && (
-                              <p className="mb-1 small">{v.locationVisited}</p>
-                            )}
-                            {v.observations && (
-                              <p className="mb-1 small text-muted">
-                                {v.observations}
-                              </p>
-                            )}
-                            {v.followUpNotes && (
-                              <p className="mb-1 small text-muted">
-                                <strong>Follow-up:</strong> {v.followUpNotes}
-                              </p>
-                            )}
-                            <div className="d-flex gap-2">
-                              <span
-                                className={`badge bg-${v.visitOutcome === 'Favorable' ? 'success' : v.visitOutcome === 'Unfavorable' ? 'danger' : 'secondary'}`}
+                  <>
+                    <p className="text-muted small mb-2">
+                      Showing {(currentVisitationPage - 1) * ITEMS_PER_PAGE + 1}
+                      –
+                      {Math.min(
+                        currentVisitationPage * ITEMS_PER_PAGE,
+                        visitations.length
+                      )}{' '}
+                      of {visitations.length} visitations
+                    </p>
+                    <div className="list-group list-group-flush">
+                      {visitations
+                        .slice(
+                          (currentVisitationPage - 1) * ITEMS_PER_PAGE,
+                          currentVisitationPage * ITEMS_PER_PAGE
+                        )
+                        .map((v) => (
+                          <div
+                            key={v.visitationId}
+                            id={'visitation-' + v.visitationId}
+                            className="list-group-item px-0"
+                            style={
+                              v.visitationId === highlightedVisitationId
+                                ? {
+                                    backgroundColor: '#fff3cd',
+                                    borderLeft: '4px solid #e8a838',
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                  }
+                                : undefined
+                            }
+                          >
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div>
+                                <div className="d-flex align-items-center gap-2 mb-1">
+                                  <strong>{v.visitDate}</strong>
+                                  <span className="text-muted small">
+                                    {v.visitType} · {v.socialWorker}
+                                  </span>
+                                </div>
+                                {v.locationVisited && (
+                                  <p className="mb-1 small">
+                                    {v.locationVisited}
+                                  </p>
+                                )}
+                                {v.observations && (
+                                  <p className="mb-1 small text-muted">
+                                    {v.observations}
+                                  </p>
+                                )}
+                                {v.followUpNotes && (
+                                  <p className="mb-1 small text-muted">
+                                    <strong>Follow-up:</strong>{' '}
+                                    {v.followUpNotes}
+                                  </p>
+                                )}
+                                <div className="d-flex gap-2">
+                                  <span
+                                    className={`badge bg-${v.visitOutcome === 'Favorable' ? 'success' : v.visitOutcome === 'Unfavorable' ? 'danger' : 'secondary'}`}
+                                  >
+                                    {v.visitOutcome}
+                                  </span>
+                                  {v.safetyConcernsNoted && (
+                                    <span className="badge bg-danger">
+                                      Safety Concerns
+                                    </span>
+                                  )}
+                                  {v.followUpNeeded && (
+                                    <span className="badge bg-warning text-dark">
+                                      Follow-Up Needed
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
+                                onClick={() => {
+                                  setDeleteError(null);
+                                  setDeleteTarget({
+                                    type: 'visitation',
+                                    id: v.visitationId,
+                                  });
+                                }}
                               >
-                                {v.visitOutcome}
-                              </span>
-                              {v.safetyConcernsNoted && (
-                                <span className="badge bg-danger">
-                                  Safety Concerns
-                                </span>
-                              )}
-                              {v.followUpNeeded && (
-                                <span className="badge bg-warning text-dark">
-                                  Follow-Up Needed
-                                </span>
-                              )}
+                                Delete
+                              </button>
                             </div>
                           </div>
-                          <button
-                            className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                            onClick={() => {
-                              setDeleteError(null);
-                              setDeleteTarget({
-                                type: 'visitation',
-                                id: v.visitationId,
-                              });
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        ))}
+                    </div>
+                    <div className="mt-3">
+                      <Pagination
+                        page={currentVisitationPage}
+                        totalCount={visitations.length}
+                        pageSize={ITEMS_PER_PAGE}
+                        onPageChange={setCurrentVisitationPage}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </div>

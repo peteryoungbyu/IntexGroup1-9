@@ -523,7 +523,7 @@ export default function ProcessRecordingPage() {
                           <td>
                             <div className="d-flex gap-2 align-items-center">
                               <Link
-                                to={`/admin/residents/${r.residentId}`}
+                                to={`/admin/residents/${r.residentId}?tab=recordings&highlightId=${r.recordingId}`}
                                 className="btn btn-sm btn-outline-primary"
                                 style={{ fontSize: '0.75rem' }}
                               >
