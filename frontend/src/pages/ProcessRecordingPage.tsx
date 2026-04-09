@@ -108,6 +108,18 @@ export default function ProcessRecordingPage() {
     }
   }
 
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showModal]);
+
   useEffect(() => { loadAll(); }, []);
 
   // Metrics (current calendar month)
@@ -261,7 +273,7 @@ export default function ProcessRecordingPage() {
           <div className="card mb-4">
             <div className="card-body">
               <div className="row g-2 align-items-end">
-                <div className="col-12 col-md-3">
+                <div className="col-12 col-lg-3">
                   <label className="form-label fw-semibold" style={{ fontSize: '0.8rem' }}>Search</label>
                   <input
                     className="form-control rounded-3"
@@ -270,42 +282,73 @@ export default function ProcessRecordingPage() {
                     onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                   />
                 </div>
-                <div className="col-6 col-md-2">
+
+                <div className="col-6 col-lg-2">
                   <label className="form-label fw-semibold" style={{ fontSize: '0.8rem' }}>Session Type</label>
-                  <select className="form-select rounded-3" value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1); }}>
+                  <select
+                    className="form-select rounded-3"
+                    value={filterType}
+                    onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+                  >
                     <option value="">All Types</option>
                     {SESSION_TYPES.map((t) => <option key={t}>{t}</option>)}
                   </select>
                 </div>
-                <div className="col-6 col-md-2">
+
+                <div className="col-6 col-lg-2">
                   <label className="form-label fw-semibold" style={{ fontSize: '0.8rem' }}>Emotional State</label>
-                  <select className="form-select rounded-3" value={filterEmotion} onChange={(e) => { setFilterEmotion(e.target.value); setPage(1); }}>
+                  <select
+                    className="form-select rounded-3"
+                    value={filterEmotion}
+                    onChange={(e) => { setFilterEmotion(e.target.value); setPage(1); }}
+                  >
                     <option value="">All States</option>
                     {EMOTIONAL_STATES.map((s) => <option key={s}>{s}</option>)}
                   </select>
                 </div>
-                <div className="col-6 col-md-2">
+
+                <div className="col-6 col-lg-2">
                   <label className="form-label fw-semibold" style={{ fontSize: '0.8rem' }}>Progress</label>
-                  <select className="form-select rounded-3" value={filterProgress} onChange={(e) => { setFilterProgress(e.target.value); setPage(1); }}>
+                  <select
+                    className="form-select rounded-3"
+                    value={filterProgress}
+                    onChange={(e) => { setFilterProgress(e.target.value); setPage(1); }}
+                  >
                     <option value="">All</option>
                     <option value="yes">Progress Noted</option>
                     <option value="no">No Progress</option>
                   </select>
                 </div>
-                <div className="col-6 col-md-1">
+
+                <div className="col-6 col-lg-1">
                   <label className="form-label fw-semibold" style={{ fontSize: '0.8rem' }}>Concerns</label>
-                  <select className="form-select rounded-3" value={filterConcerns} onChange={(e) => { setFilterConcerns(e.target.value); setPage(1); }}>
+                  <select
+                    className="form-select rounded-3"
+                    value={filterConcerns}
+                    onChange={(e) => { setFilterConcerns(e.target.value); setPage(1); }}
+                  >
                     <option value="">All</option>
                     <option value="yes">Flagged</option>
                     <option value="no">None</option>
                   </select>
                 </div>
-                <div className="col-6 col-md-1 d-flex align-items-end">
-                  <button className="btn btn-outline-secondary w-100" onClick={resetFilters}>Clear</button>
+
+                <div className="col-6 col-lg-1">
+                  <button
+                    className="btn btn-outline-secondary w-100"
+                    onClick={resetFilters}
+                  >
+                    Clear
+                  </button>
                 </div>
-                <div className="col-12 col-md-1 d-flex align-items-end">
-                  <button className="btn btn-warning fw-semibold w-100" onClick={openModal} style={{ whiteSpace: 'nowrap' }}>
-                    + New Session
+
+                <div className="col-6 col-lg-1">
+                  <button
+                    className="btn btn-warning fw-semibold w-100"
+                    onClick={openModal}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    + Session
                   </button>
                 </div>
               </div>
@@ -316,21 +359,21 @@ export default function ProcessRecordingPage() {
           <div className="card">
             <div className="table-responsive">
               <table className="table table-hover mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th style={{ whiteSpace: 'nowrap' }}>Date</th>
-                    <th>Resident</th>
-                    <th>Social Worker</th>
-                    <th>Type</th>
-                    <th style={{ whiteSpace: 'nowrap' }}>Duration</th>
-                    <th style={{ whiteSpace: 'nowrap' }}>State (Start)</th>
-                    <th style={{ whiteSpace: 'nowrap' }}>State (End)</th>
-                    <th>Progress</th>
-                    <th>Concerns</th>
-                    <th>Referral</th>
-                    <th />
-                  </tr>
-                </thead>
+              <thead className="table-light">
+                <tr>
+                  <th style={{ whiteSpace: 'nowrap' }}>Date</th>
+                  <th>Resident</th>
+                  <th>Type</th>
+                  <th>Social Worker</th> {/* KEEP visible */}
+                  <th className="d-none d-md-table-cell" style={{ whiteSpace: 'nowrap' }}>Duration</th>
+                  <th className="d-none d-md-table-cell" style={{ whiteSpace: 'nowrap' }}>State (Start)</th>
+                  <th className="d-none d-lg-table-cell" style={{ whiteSpace: 'nowrap' }}>State (End)</th>
+                  <th>Progress</th>
+                  <th className="d-none d-md-table-cell">Concerns</th>
+                  <th className="d-none d-md-table-cell">Referral</th>
+                  <th />
+                </tr>
+              </thead>
                 <tbody>
                   {loading && (
                     <tr>
@@ -353,16 +396,26 @@ export default function ProcessRecordingPage() {
                     return (
                       <>
                         <tr key={r.recordingId}>
-                          <td style={{ whiteSpace: 'nowrap' }}>{formatDate(r.sessionDate)}</td>
-                          <td>
-                            <span className="badge bg-primary" style={{ fontSize: '0.75rem' }}>{r.residentCode}</span>
+                          {/* Date */}
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            {formatDate(r.sessionDate)}
                           </td>
-                          <td>{r.socialWorker}</td>
+
+                          {/* Resident */}
+                          <td>
+                            <span className="badge bg-primary" style={{ fontSize: '0.75rem' }}>
+                              {r.residentCode}
+                            </span>
+                          </td>
+
+                          {/* Type */}
                           <td>
                             <span
                               className="badge"
                               style={{
-                                background: r.sessionType === 'Individual' ? 'var(--brand-primary)' : '#7c3aed',
+                                background: r.sessionType === 'Individual'
+                                  ? 'var(--brand-primary)'
+                                  : '#7c3aed',
                                 color: '#fff',
                                 fontSize: '0.72rem',
                               }}
@@ -370,36 +423,57 @@ export default function ProcessRecordingPage() {
                               {r.sessionType}
                             </span>
                           </td>
-                          <td>{r.sessionDurationMinutes ? `${r.sessionDurationMinutes} min` : '—'}</td>
-                          <td>
+
+                          {/* Social Worker (VISIBLE on mobile) */}
+                          <td className="text-truncate" style={{ maxWidth: '120px' }}>
+                            {r.socialWorker}
+                          </td>
+
+                          {/* Duration (hidden on mobile) */}
+                          <td className="d-none d-md-table-cell">
+                            {r.sessionDurationMinutes ? `${r.sessionDurationMinutes} min` : '—'}
+                          </td>
+
+                          {/* State START (hidden on mobile) */}
+                          <td className="d-none d-md-table-cell">
                             {r.emotionalStateObserved ? (
                               <span className="badge" style={emotionBadgeStyle(r.emotionalStateObserved)}>
                                 {r.emotionalStateObserved}
                               </span>
                             ) : '—'}
                           </td>
-                          <td>
+
+                          {/* State END (only show on lg+) */}
+                          <td className="d-none d-lg-table-cell">
                             {r.emotionalStateEnd ? (
                               <span className="badge" style={emotionBadgeStyle(r.emotionalStateEnd)}>
                                 {r.emotionalStateEnd}
                               </span>
                             ) : '—'}
                           </td>
+
+                          {/* Progress */}
                           <td>
                             {r.progressNoted
                               ? <span className="badge bg-success" style={{ fontSize: '0.72rem' }}>Yes</span>
                               : <span className="text-muted" style={{ fontSize: '0.85rem' }}>No</span>}
                           </td>
-                          <td>
+
+                          {/* Concerns (hidden on mobile) */}
+                          <td className="d-none d-md-table-cell">
                             {r.concernsFlagged
                               ? <span className="badge bg-danger" style={{ fontSize: '0.72rem' }}>Yes</span>
                               : <span className="text-muted" style={{ fontSize: '0.85rem' }}>No</span>}
                           </td>
-                          <td>
+
+                          {/* Referral (hidden on mobile) */}
+                          <td className="d-none d-md-table-cell">
                             {r.referralMade
                               ? <span className="badge" style={{ background: 'var(--brand-accent)', color: '#fff', fontSize: '0.72rem' }}>Yes</span>
                               : <span className="text-muted" style={{ fontSize: '0.85rem' }}>No</span>}
                           </td>
+
+                          {/* Actions */}
                           <td>
                             <div className="d-flex gap-2 align-items-center">
                               <Link
@@ -409,19 +483,17 @@ export default function ProcessRecordingPage() {
                               >
                                 View
                               </Link>
+
                               {hasDetail && (
                                 <button
                                   className="btn btn-sm btn-outline-secondary"
                                   style={{ fontSize: '0.75rem' }}
                                   onClick={() => toggleRow(r.recordingId)}
-                                  title={isExpanded ? 'Collapse' : 'Expand notes'}
                                 >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                                    style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-                                    <polyline points="6 9 12 15 18 9" />
-                                  </svg>
+                                  ▼
                                 </button>
                               )}
+
                               <button
                                 className="btn btn-sm btn-outline-danger"
                                 style={{ fontSize: '0.75rem' }}
@@ -484,15 +556,57 @@ export default function ProcessRecordingPage() {
 
       {/* SECTION 5 — New Session Modal */}
       {showModal && (
-        <div className="modal d-block" tabIndex={-1} style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="modal-dialog modal-lg modal-dialog-scrollable">
-            <div className="modal-content">
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          style={{
+            background: 'rgba(0,0,0,0.4)',
+            position: 'fixed',
+            inset: 0,
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            padding: '0.75rem',
+          }}
+        >
+          <div
+            className="modal-dialog modal-lg"
+            style={{
+              margin: '0 auto',
+              minHeight: 'calc(100vh - 1.5rem)',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <div
+              className="modal-content"
+              style={{
+                width: '100%',
+                maxHeight: 'calc(100vh - 1.5rem)',
+                overflow: 'hidden',
+              }}
+            >
               <div className="modal-header">
-                <h5 className="modal-title fw-bold" style={{ color: 'var(--brand-dark)' }}>New Session Recording</h5>
+                <h5 className="modal-title fw-bold" style={{ color: 'var(--brand-dark)' }}>
+                  New Session Recording
+                </h5>
                 <button type="button" className="btn-close" onClick={closeModal} />
               </div>
-              <form onSubmit={handleSubmit}>
-                <div className="modal-body">
+
+              <form
+                onSubmit={handleSubmit}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: 0,
+                }}
+              >
+                <div
+                  className="modal-body"
+                  style={{
+                    overflowY: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                  }}
+                >
                   {formError && <div className="alert alert-danger py-2">{formError}</div>}
 
                   <div className="row g-3">
@@ -664,7 +778,9 @@ export default function ProcessRecordingPage() {
                 </div>
 
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={closeModal}>Cancel</button>
+                  <button type="button" className="btn btn-outline-secondary" onClick={closeModal}>
+                    Cancel
+                  </button>
                   <button type="submit" className="btn btn-warning fw-semibold" disabled={saving}>
                     {saving ? 'Saving…' : 'Save Session'}
                   </button>
