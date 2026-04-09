@@ -81,6 +81,34 @@ export interface ProcessRecording {
   progressNoted: boolean;
   concernsFlagged: boolean;
   referralMade: boolean;
+  notesRestricted?: string | null;
+}
+
+export interface ProcessRecordingFormResidentOption {
+  residentId: number;
+  caseControlNo: string;
+}
+
+export interface ProcessRecordingFormOptions {
+  residents: ProcessRecordingFormResidentOption[];
+  socialWorkers: string[];
+  emotionalStateObserved: string[];
+  emotionalStateEnd: string[];
+  followUpActions: string[];
+}
+
+export interface SessionEntryRecordingRequest {
+  sessionDate: string;
+  socialWorker: string;
+  sessionType: 'Individual' | 'Group';
+  sessionDurationMinutes: number;
+  emotionalStateObserved: string;
+  emotionalStateEnd: string;
+  interventionsApplied: string[];
+  followUpActions: string;
+  progressNoted: boolean;
+  concernsFlagged: boolean;
+  referralMade: boolean;
 }
 
 export interface HomeVisitation {

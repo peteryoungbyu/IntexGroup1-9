@@ -103,13 +103,20 @@ export default function ReportsPage() {
   ];
 
   const [inferenceStatus, setInferenceStatus] = useState<
-    Record<string, { running: boolean; result: InferenceResult | null; error: string | null }>
+    Record<
+      string,
+      { running: boolean; result: InferenceResult | null; error: string | null }
+    >
   >({});
 
   const [inferenceTables, setInferenceTables] = useState<
     Record<string, ReportInferenceTable | null>
   >({});
-  const [loadingResults, setLoadingResults] = useState<Record<string, boolean>>({});
+  const [loadingResults, setLoadingResults] = useState<Record<string, boolean>>(
+    {}
+  );
+
+  type RowData = Record<string, unknown>;
 
   async function fetchResults(job: InferenceJob) {
     setLoadingResults((prev) => ({ ...prev, [job.jobKey]: true }));
@@ -137,13 +144,13 @@ export default function ReportsPage() {
         },
       }));
       if (result.success) await fetchResults(job);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setInferenceStatus((prev) => ({
         ...prev,
         [job.jobKey]: {
           running: false,
           result: null,
-          error: e?.message ?? 'Unknown error',
+          error: e instanceof Error ? e.message : 'Unknown error',
         },
       }));
     }
@@ -156,12 +163,19 @@ export default function ReportsPage() {
       getReintegrationOutcomes(),
       getSafehouseComparison(),
     ])
-      .then(([annualReport, donationTrends, reintegrationOutcomes, safehouseComparison]) => {
-        setAnnual(annualReport);
-        setTrends(donationTrends);
-        setReintegration(reintegrationOutcomes);
-        setComparison(safehouseComparison);
-      })
+      .then(
+        ([
+          annualReport,
+          donationTrends,
+          reintegrationOutcomes,
+          safehouseComparison,
+        ]) => {
+          setAnnual(annualReport);
+          setTrends(donationTrends);
+          setReintegration(reintegrationOutcomes);
+          setComparison(safehouseComparison);
+        }
+      )
       .finally(() => setLoading(false));
   }, [year]);
 
@@ -176,24 +190,24 @@ export default function ReportsPage() {
     );
   }
 
-  const trendRows: any[] = (trends?.data as any[]) ?? [];
+  const trendRows: RowData[] = normalizeSectionRows(trends?.data);
   const trendChartData = trendRows.map((r) => ({
-    label: `${MONTH_NAMES[(r.month ?? 1) - 1]} ${r.year}`,
+    label: `${MONTH_NAMES[Number(r.month ?? 1) - 1]} ${r.year ?? ''}`,
     total: Number(r.total ?? 0),
     count: Number(r.count ?? 0),
   }));
 
-  const reintRows: any[] = (reintegration?.data as any[]) ?? [];
+  const reintRows: RowData[] = normalizeSectionRows(reintegration?.data);
   const reintChartData = reintRows.map((r) => ({
     name: r.status ?? 'Unknown',
     value: Number(r.count ?? 0),
   }));
 
-  const compRows: any[] = (comparison?.data as any[]) ?? [];
+  const compRows: RowData[] = normalizeSectionRows(comparison?.data);
   const safehouseMap: Record<string, { residents: number; incidents: number }> =
     {};
   for (const r of compRows) {
-    const key = r.name ?? `Safehouse ${r.safehouseId}`;
+    const key = String(r.name ?? `Safehouse ${r.safehouseId}`);
     if (!safehouseMap[key]) safehouseMap[key] = { residents: 0, incidents: 0 };
     safehouseMap[key].residents += Number(r.activeResidents ?? 0);
     safehouseMap[key].incidents += Number(r.incidentCount ?? 0);
@@ -207,14 +221,74 @@ export default function ReportsPage() {
   const donationSummarySection = annual?.find((s) =>
     s.title.toLowerCase().includes('donation')
   );
-  const donationSummaryRows: any[] =
-    (donationSummarySection?.data as any[]) ?? [];
+  const donationSummaryRows: RowData[] = normalizeSectionRows(
+    donationSummarySection?.data
+  );
+  const donationSummaryBreakdownRows = donationSummaryRows.map((row) => ({
+    type: String(
+      row?.donationType ?? row?.type ?? row?.category ?? row?.label ?? 'Unknown'
+    ),
+    count: Number(row?.count ?? 0),
+    total: Number(row?.total ?? row?.amount ?? 0),
+  }));
+  const donationSummaryChartData = donationSummaryRows
+    .map((row) => {
+      const label =
+        row?.donationType ??
+        row?.type ??
+        row?.category ??
+        row?.label ??
+        'Unknown';
+      const value = Number(row?.total ?? row?.amount ?? row?.count ?? 0);
+      return { label: String(label), value };
+    })
+    .filter((row) => Number.isFinite(row.value));
 
   // Annual services section (caring/healing/teaching counts)
   const servicesSection = annual?.find((s) =>
     s.title.toLowerCase().includes('service')
   );
-  const servicesRows: any[] = (servicesSection?.data as any[]) ?? [];
+  const servicesRows: RowData[] = normalizeSectionRows(servicesSection?.data);
+  const servicesChartData = servicesRows
+    .map((row) => ({
+      label: String(
+        row?.serviceType ?? row?.type ?? row?.category ?? 'Unknown'
+      ),
+      value: Number(row?.count ?? row?.total ?? 0),
+    }))
+    .filter((row) => Number.isFinite(row.value));
+
+  function normalizeSectionRows(sectionData: unknown): RowData[] {
+    if (Array.isArray(sectionData)) return sectionData;
+    if (sectionData && typeof sectionData === 'object')
+      return [sectionData as RowData];
+    return [];
+  }
+
+  function toReadableLabel(key: string): string {
+    return key.replace(/([A-Z])/g, ' $1').trim();
+  }
+
+  function formatSummaryValue(key: string, value: unknown): string {
+    if (value == null) return '—';
+    if (typeof value === 'number') {
+      if (key.toLowerCase().includes('year')) return String(value);
+      return value.toLocaleString();
+    }
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    return String(value);
+  }
+
+  function isSummaryObjectRow(row: RowData): boolean {
+    const values = Object.values(row);
+    return values.every(
+      (value) =>
+        value == null ||
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+    );
+  }
 
   function formatCellValue(
     value: string | number | null | undefined,
@@ -241,7 +315,9 @@ export default function ReportsPage() {
     }
   }
 
-  function formatPredictionLabel(value: string | number | null | undefined): string {
+  function formatPredictionLabel(
+    value: string | number | null | undefined
+  ): string {
     const text = String(value ?? '').trim();
     if (!text) return '—';
 
@@ -265,12 +341,18 @@ export default function ReportsPage() {
   }
 
   function getReadyPredictionCount(rows: ReportInferenceRow[]): number {
-    return rows.filter((row) => String(row.prediction ?? '').trim().toLowerCase() === 'ready')
-      .length;
+    return rows.filter(
+      (row) =>
+        String(row.prediction ?? '')
+          .trim()
+          .toLowerCase() === 'ready'
+    ).length;
   }
 
   function getBadgeClass(value: string | number | null | undefined): string {
-    const normalized = String(value ?? '').trim().toLowerCase();
+    const normalized = String(value ?? '')
+      .trim()
+      .toLowerCase();
 
     if (
       normalized === 'high' ||
@@ -364,7 +446,10 @@ export default function ReportsPage() {
                     formatter={(value, name) => {
                       const numericValue = Number(value ?? 0);
                       return name === 'total'
-                        ? [`PHP ${numericValue.toLocaleString()}`, 'Total (PHP)']
+                        ? [
+                            `PHP ${numericValue.toLocaleString()}`,
+                            'Total (PHP)',
+                          ]
                         : [numericValue.toLocaleString(), 'Donations'];
                     }}
                   />
@@ -483,11 +568,13 @@ export default function ReportsPage() {
 
         {/* ML Inference Panel */}
         <div className="card mb-4">
-          <div className="card-header fw-semibold">ML Inference — Run Predictions</div>
+          <div className="card-header fw-semibold">
+            ML Inference — Run Predictions
+          </div>
           <div className="card-body">
             <p className="text-muted small mb-3">
-              Trigger each model to score all records and write results to the database.
-              Each job may take several seconds.
+              Trigger each model to score all records and write results to the
+              database. Each job may take several seconds.
             </p>
             <div className="d-flex flex-column gap-4">
               {inferenceJobs.map((job) => {
@@ -531,10 +618,14 @@ export default function ReportsPage() {
                         </button>
                       )}
                       {status?.result?.success && (
-                        <span className="text-success small">✓ {status.result.updatedCount} records updated</span>
+                        <span className="text-success small">
+                          ✓ {status.result.updatedCount} records updated
+                        </span>
                       )}
                       {status?.error && (
-                        <span className="text-danger small">✗ {status.error}</span>
+                        <span className="text-danger small">
+                          ✗ {status.error}
+                        </span>
                       )}
                     </div>
 
@@ -542,20 +633,27 @@ export default function ReportsPage() {
                       <p className="text-muted small mb-2">{table.note}</p>
                     )}
 
-                    {job.jobKey === 'reintegration-readiness' && rows.length > 0 && (
-                      <div className="mb-3 p-3 rounded border bg-light">
-                        <p className="text-muted text-uppercase small fw-semibold mb-1">
-                          OKR: Reintegration Readiness
-                        </p>
-                        <h4 className="mb-1">{readyCount.toLocaleString()} Ready</h4>
-                        <p className="text-muted small mb-0">
-                          Total residents predicted as Ready ({rows.length.toLocaleString()} latest predictions)
-                        </p>
-                      </div>
-                    )}
+                    {job.jobKey === 'reintegration-readiness' &&
+                      rows.length > 0 && (
+                        <div className="mb-3 p-3 rounded border bg-light">
+                          <p className="text-muted text-uppercase small fw-semibold mb-1">
+                            OKR: Reintegration Readiness
+                          </p>
+                          <h4 className="mb-1">
+                            {readyCount.toLocaleString()} Ready
+                          </h4>
+                          <p className="text-muted small mb-0">
+                            Total residents predicted as Ready (
+                            {rows.length.toLocaleString()} latest predictions)
+                          </p>
+                        </div>
+                      )}
 
                     {rows.length > 0 && (
-                      <div className="table-responsive" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                      <div
+                        className="table-responsive"
+                        style={{ maxHeight: 320, overflowY: 'auto' }}
+                      >
                         <table className="table table-sm table-bordered table-hover mb-0">
                           <thead className="table-light sticky-top">
                             <tr>
@@ -573,9 +671,13 @@ export default function ReportsPage() {
                                     <td key={column.key}>
                                       {column.format === 'badge' ? (
                                         <span className={getBadgeClass(value)}>
-                                          {column.key === 'prediction' || column.key === 'riskBand'
+                                          {column.key === 'prediction' ||
+                                          column.key === 'riskBand'
                                             ? formatPredictionLabel(value)
-                                            : formatCellValue(value, column.format)}
+                                            : formatCellValue(
+                                                value,
+                                                column.format
+                                              )}
                                         </span>
                                       ) : (
                                         <span
@@ -585,7 +687,10 @@ export default function ReportsPage() {
                                               : undefined
                                           }
                                         >
-                                          {formatCellValue(value, column.format)}
+                                          {formatCellValue(
+                                            value,
+                                            column.format
+                                          )}
                                         </span>
                                       )}
                                     </td>
@@ -617,33 +722,71 @@ export default function ReportsPage() {
                 <p className="text-muted small mb-2">
                   {donationSummarySection?.description}
                 </p>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart
-                    data={donationSummaryRows}
-                    layout="vertical"
-                    margin={{ left: 20, right: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis
-                      type="number"
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(v) => `₱${Number(v).toLocaleString()}`}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="donationType"
-                      tick={{ fontSize: 12 }}
-                      width={120}
-                    />
-                    <Tooltip
-                      formatter={(v) => [
-                        `₱${Number(v ?? 0).toLocaleString()}`,
-                        'Total',
-                      ]}
-                    />
-                    <Bar dataKey="total" fill="#2563eb" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {donationSummaryChartData.length > 0 ? (
+                  <>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart
+                        data={donationSummaryChartData}
+                        layout="vertical"
+                        margin={{ left: 20, right: 20 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                          type="number"
+                          tick={{ fontSize: 12 }}
+                          tickFormatter={(v) =>
+                            `₱${Number(v).toLocaleString()}`
+                          }
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="label"
+                          tick={{ fontSize: 12 }}
+                          width={140}
+                        />
+                        <Tooltip
+                          formatter={(v) => [
+                            `₱${Number(v ?? 0).toLocaleString()}`,
+                            'Total',
+                          ]}
+                        />
+                        <Bar
+                          dataKey="value"
+                          fill="#2563eb"
+                          radius={[0, 4, 4, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="table-responsive mt-3">
+                      <table className="table table-sm table-bordered mb-0">
+                        <thead className="table-light">
+                          <tr>
+                            <th>Donation Type</th>
+                            <th className="text-end"># Donations</th>
+                            <th className="text-end">Total (PHP)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {donationSummaryBreakdownRows.map((row, index) => (
+                            <tr key={`${row.type}-${index}`}>
+                              <td>{row.type}</td>
+                              <td className="text-end">
+                                {row.count.toLocaleString()}
+                              </td>
+                              <td className="text-end">
+                                ₱{row.total.toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-muted small mb-0">
+                    Donation data loaded but no chartable values were found.
+                  </p>
+                )}
               </div>
             )}
 
@@ -653,18 +796,28 @@ export default function ReportsPage() {
                 <p className="text-muted small mb-2">
                   {servicesSection?.description}
                 </p>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart
-                    data={servicesRows}
-                    margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="serviceType" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#16a34a" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {servicesChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart
+                      data={servicesChartData}
+                      margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Bar
+                        dataKey="value"
+                        fill="#16a34a"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-muted small mb-0">
+                    Service data loaded but no chartable values were found.
+                  </p>
+                )}
               </div>
             )}
 
@@ -675,43 +828,73 @@ export default function ReportsPage() {
                   !s.title.toLowerCase().includes('donation') &&
                   !s.title.toLowerCase().includes('service')
               )
-              .map((s) => (
-                <div key={s.title} className="mb-4">
-                  <h6
-                    className="fw-semibold"
-                    style={{ color: 'var(--brand-dark)' }}
-                  >
-                    {s.title}
-                  </h6>
-                  <p className="text-muted small mb-2">{s.description}</p>
-                  {Array.isArray(s.data) && s.data.length > 0 ? (
-                    <div className="table-responsive">
-                      <table className="table table-sm table-bordered mb-0">
-                        <thead className="table-light">
-                          <tr>
-                            {Object.keys((s.data as any[])[0]).map((k) => (
-                              <th key={k} className="text-capitalize">
-                                {k.replace(/([A-Z])/g, ' $1').trim()}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(s.data as any[]).map((row, i) => (
-                            <tr key={i}>
-                              {Object.values(row).map((v, j) => (
-                                <td key={j}>{v == null ? '—' : String(v)}</td>
+              .map((s) => {
+                const sectionRows = normalizeSectionRows(s.data);
+                const isSummarySection =
+                  sectionRows.length === 1 &&
+                  isSummaryObjectRow(sectionRows[0]);
+                return (
+                  <div key={s.title} className="mb-4">
+                    <h6
+                      className="fw-semibold"
+                      style={{ color: 'var(--brand-dark)' }}
+                    >
+                      {s.title}
+                    </h6>
+                    <p className="text-muted small mb-2">{s.description}</p>
+                    {sectionRows.length > 0 ? (
+                      isSummarySection ? (
+                        <div className="row g-3">
+                          {Object.entries(sectionRows[0]).map(
+                            ([key, value]) => (
+                              <div
+                                className="col-12 col-sm-6 col-lg-4"
+                                key={key}
+                              >
+                                <div className="border rounded p-3 h-100 bg-light-subtle">
+                                  <p className="text-muted text-uppercase small fw-semibold mb-1">
+                                    {toReadableLabel(key)}
+                                  </p>
+                                  <h4 className="mb-0">
+                                    {formatSummaryValue(key, value)}
+                                  </h4>
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      ) : (
+                        <div className="table-responsive">
+                          <table className="table table-sm table-bordered mb-0">
+                            <thead className="table-light">
+                              <tr>
+                                {Object.keys(sectionRows[0]).map((k) => (
+                                  <th key={k} className="text-capitalize">
+                                    {toReadableLabel(k)}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sectionRows.map((row, i) => (
+                                <tr key={i}>
+                                  {Object.values(row).map((v, j) => (
+                                    <td key={j}>
+                                      {v == null ? '—' : String(v)}
+                                    </td>
+                                  ))}
+                                </tr>
                               ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-muted small">No data available.</p>
-                  )}
-                </div>
-              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )
+                    ) : (
+                      <p className="text-muted small">No data available.</p>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>

@@ -24,19 +24,23 @@ public class DashboardService : IDashboardService
             new("Open Incidents", totalIncidents.ToString())
         };
 
+        var metricsAnchorMonth = new DateOnly(2026, 2, 1);
+
         var monthlyMetrics = await _db.SafehouseMonthlyMetrics
+            .Where(m => m.MonthStart <= metricsAnchorMonth)
+            .GroupBy(m => m.MonthStart)
+            .Select(g => new
+            {
+                MetricId = g.Min(x => x.MetricId),
+                MonthStart = g.Key,
+                SafehousesReported = g.Count(),
+                ActiveResidents = g.Sum(x => x.ActiveResidents),
+                AvgHealthScore = g.Average(x => x.AvgHealthScore),
+                IncidentCount = g.Sum(x => x.IncidentCount)
+            })
             .OrderByDescending(m => m.MonthStart)
             .Take(12)
-            .Select(m => (object)new
-            {
-                m.MetricId,
-                m.SafehouseId,
-                m.MonthStart,
-                m.ActiveResidents,
-                AvgHealthScore = m.AvgHealthScore ?? 0m,
-                AvgEducationProgress = m.AvgEducationProgress ?? 0m,
-                m.IncidentCount
-            })
+            .Select(m => (object)m)
             .ToListAsync();
 
         var safehouseBreakdown = await _db.Safehouses

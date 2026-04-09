@@ -266,7 +266,7 @@ public class ReintegrationReadinessService : IReintegrationReadinessService
 
             // Session aggregates
             int sessionCount = recs.Count;
-            double meanSessionDuration = recs.Count > 0 ? recs.Average(s => (double)s.SessionDurationMinutes) : double.NaN;
+            double meanSessionDuration = 0;
             int progressNotedCount = recs.Count(s => s.ProgressNoted == true);
             int concernsFlaggedCount = recs.Count(s => s.ConcernsFlagged == true);
             int referralMadeCount = recs.Count(s => s.ReferralMade == true);
