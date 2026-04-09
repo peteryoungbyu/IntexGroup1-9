@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import handsImage from '../assets/hands.jpg';
+import hopeGirlsImage from '../assets/hopefulGirls.jpg';
 
 const ways = [
   {
@@ -140,7 +142,7 @@ export default function GetInvolvedPage() {
         <div className="hero-content">
           <p className="section-label">Join Us</p>
           <h1 className="display-5 fw-bold text-white mb-3" style={{ lineHeight: 1.15 }}>
-            Get Involved
+            Change a Life Today
           </h1>
           <p className="text-white" style={{ opacity: 0.85, fontSize: '1.05rem', lineHeight: 1.6 }}>
             There are many ways to support the girls of New Dawn Foundation — find the one that fits you.
@@ -149,18 +151,33 @@ export default function GetInvolvedPage() {
       </section>
 
       {/* Donation Spotlight */}
-      <section style={{ background: 'var(--brand-primary)' }}>
-        <div className="container-fluid px-0">
-          <div className="row g-0" style={{ minHeight: 380 }}>
-            <div className="col-lg-6 d-flex align-items-center px-4 px-lg-5 py-5">
+      <section className="py-5 bg-white px-3 px-md-4 px-lg-5" style={{ marginTop: '3rem' }}>
+        <div className="container">
+          <div
+            className="row align-items-center g-4 g-lg-5"
+            style={{
+              background: '#ffffff',
+              borderRadius: 24,
+              padding: '2.5rem',
+              boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
+            }}
+          >
+            <div className="col-lg-6">
               <div style={{ maxWidth: 520 }}>
                 <p className="section-label" style={{ color: 'var(--brand-accent)', opacity: 1 }}>
                   The Most Impactful Step
                 </p>
-                <h2 className="fw-bold text-white mb-3" style={{ fontSize: '2.1rem', lineHeight: 1.2 }}>
+                <h2 className="fw-bold mb-3" style={{ fontSize: '2.1rem', lineHeight: 1.2, color: 'var(--brand-dark)' }}>
                   Make a Donation
                 </h2>
-                <p className="mb-4" style={{ color: 'rgba(255,255,255,0.8)', lineHeight: 1.8, fontSize: '1.02rem' }}>
+                <p
+                  className="mb-4"
+                  style={{
+                    color: '#475569',
+                    lineHeight: 1.8,
+                    fontSize: '1.02rem',
+                  }}
+                >
                   Financial gifts of any size directly fund shelter, therapy, and education for girls in our care.
                   ₱500 feeds a resident for a week. ₱2,500 covers a month of counseling. Every peso restores hope.
                 </p>
@@ -169,19 +186,28 @@ export default function GetInvolvedPage() {
                 </Link>
               </div>
             </div>
-            <div className="col-lg-6 d-none d-lg-block" style={{ minHeight: 380, overflow: 'hidden' }}>
-              <img
-                src="https://images.unsplash.com/photo-1531206715517-5c0ba140b2b8?w=800&q=80"
-                alt="Hands giving support"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+
+            <div className="col-lg-6">
+              <div
+                className="rounded-4 overflow-hidden"
+                style={{
+                  minHeight: 380,
+                  marginTop: '0.5rem',
+                }}
+              >
+                <img
+                  src={handsImage}
+                  alt="Community support and unity"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Other Ways to Help */}
-      <section className="py-5 bg-white">
+      <section className="pt-5 pb-5 mt-4 bg-white">
         <div className="container">
           <div className="text-center mb-5">
             <p className="section-label">Beyond Donations</p>
@@ -189,7 +215,7 @@ export default function GetInvolvedPage() {
               More Ways to Make a Difference
             </h2>
           </div>
-          <div className="row g-4">
+          <div className="row g-4 justify-content-center">
             {ways.map((w) => (
               <div key={w.title} className="col-md-6 col-lg-4">
                 <div
@@ -240,11 +266,17 @@ export default function GetInvolvedPage() {
           <div className="row g-5 align-items-center">
             {/* Left photo */}
             <div className="col-lg-5 d-none d-lg-block">
-              <div className="rounded-4 overflow-hidden" style={{ aspectRatio: '4/5' }}>
+              <div className="rounded-4 overflow-hidden" style={{ aspectRatio: '1/1' }}>
                 <img
-                  src="https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=600&q=80"
-                  alt="Classroom support"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  src={hopeGirlsImage}
+                  alt="Hopeful girls"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: '50% center',
+                    transform: 'scale(1.05)',
+                  }}
                 />
               </div>
             </div>
