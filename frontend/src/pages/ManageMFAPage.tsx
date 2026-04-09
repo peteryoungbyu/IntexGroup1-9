@@ -46,12 +46,19 @@ export default function ManageMFAPage() {
     setError('');
     setMessage('');
     try {
-      const updated = await enableTwoFactor(code);
+      const updated = await enableTwoFactor(code.replace(/\s+/g, ''));
       setStatus(updated);
       setCode('');
       setMessage('Two-factor authentication enabled successfully.');
-    } catch {
-      setError('Invalid code. Please try again.');
+    } catch (err) {
+      const nextError =
+        err instanceof Error &&
+        err.message &&
+        err.message !== 'Invalid token.' &&
+        err.message !== 'Two-factor authentication was not enabled.'
+          ? err.message
+          : 'Invalid code. Please try again.';
+      setError(nextError);
     }
   };
 
