@@ -104,25 +104,34 @@ ORDER BY
         return new SupporterDetail(supporter, supporter.Donations.ToList(), inKindItems, allocations);
     }
 
-    public async Task<SupporterDetail?> GetByUserIdAsync(string userId)
+    public async Task<SupporterDetail?> GetByUserAsync(string userId, string? email)
     {
         var link = await _db.SupporterUserLinks
-            .Include(l => l.Supporter)
-                .ThenInclude(s => s.Donations)
-                    .ThenInclude(d => d.Items)
-            .Include(l => l.Supporter)
-                .ThenInclude(s => s.Donations)
-                    .ThenInclude(d => d.Allocations)
+            .AsNoTracking()
             .FirstOrDefaultAsync(l => l.UserId == userId);
 
-        if (link is null) return null;
-        var inKindItems = link.Supporter.Donations.SelectMany(d => d.Items).ToList();
-        var allocations = link.Supporter.Donations.SelectMany(d => d.Allocations).ToList();
-        return new SupporterDetail(link.Supporter, link.Supporter.Donations.ToList(), inKindItems, allocations);
+        if (link is not null)
+            return await GetByIdAsync(link.SupporterId);
+
+        if (string.IsNullOrWhiteSpace(email))
+            return null;
+
+        var supporter = await _db.Supporters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Email == email);
+
+        if (supporter is null)
+            return null;
+
+        await EnsureUserLinkAsync(userId, supporter.SupporterId);
+        return await GetByIdAsync(supporter.SupporterId);
     }
 
     public async Task<Supporter> CreateAsync(Supporter supporter)
     {
+        if (supporter.SupporterId <= 0)
+            supporter.SupporterId = await GetNextSupporterIdAsync();
+
         _db.Supporters.Add(supporter);
         await _db.SaveChangesAsync();
         return supporter;
@@ -161,6 +170,69 @@ ORDER BY
     public async Task<Donation> AddDonationAsync(int supporterId, Donation donation)
     {
         donation.SupporterId = supporterId;
+        if (donation.DonationId <= 0)
+            donation.DonationId = await GetNextDonationIdAsync();
+
+        _db.Donations.Add(donation);
+        await _db.SaveChangesAsync();
+        return donation;
+    }
+
+    public async Task<Donation> CreateDonorPledgeAsync(string userId, string email, decimal amount, bool isRecurring)
+    {
+        var normalizedEmail = email.Trim();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var supporter = await _db.Supporters
+            .FirstOrDefaultAsync(s => s.Email == normalizedEmail);
+
+        if (supporter is null)
+        {
+            supporter = new Supporter
+            {
+                SupporterId = await GetNextSupporterIdAsync(),
+                SupporterType = "MonetaryDonor",
+                DisplayName = normalizedEmail,
+                OrganizationName = null,
+                FirstName = null,
+                LastName = null,
+                RelationshipType = "Local",
+                Region = "Unknown",
+                Country = "Philippines",
+                Email = normalizedEmail,
+                Phone = "N/A",
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow,
+                FirstDonationDate = today,
+                AcquisitionChannel = "Website",
+                LikelyChurn = false,
+                ChurnProbability = 0,
+            };
+
+            _db.Supporters.Add(supporter);
+            await _db.SaveChangesAsync();
+        }
+
+        await EnsureUserLinkAsync(userId, supporter.SupporterId);
+
+        var donation = new Donation
+        {
+            DonationId = await GetNextDonationIdAsync(),
+            SupporterId = supporter.SupporterId,
+            DonationType = "Monetary",
+            DonationDate = today,
+            IsRecurring = isRecurring,
+            CampaignName = null,
+            ChannelSource = "Direct",
+            CurrencyCode = "PHP",
+            Amount = amount,
+            EstimatedValue = amount,
+            ImpactUnit = "pesos",
+            Notes = null,
+            CreatedByPartnerId = null,
+            ReferralPostId = null,
+        };
+
         _db.Donations.Add(donation);
         await _db.SaveChangesAsync();
         return donation;
@@ -174,5 +246,41 @@ ORDER BY
         _db.Donations.Remove(donation);
         await _db.SaveChangesAsync();
         return true;
+    }
+
+    private async Task EnsureUserLinkAsync(string userId, int supporterId)
+    {
+        var existingUserLink = await _db.SupporterUserLinks
+            .FirstOrDefaultAsync(l => l.UserId == userId);
+
+        if (existingUserLink is null)
+        {
+            _db.SupporterUserLinks.Add(new SupporterUserLink
+            {
+                SupporterId = supporterId,
+                UserId = userId,
+            });
+
+            await _db.SaveChangesAsync();
+            return;
+        }
+
+        if (existingUserLink.SupporterId != supporterId)
+        {
+            existingUserLink.SupporterId = supporterId;
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    private async Task<int> GetNextSupporterIdAsync()
+    {
+        var maxId = await _db.Supporters.MaxAsync(s => (int?)s.SupporterId) ?? 0;
+        return maxId + 1;
+    }
+
+    private async Task<int> GetNextDonationIdAsync()
+    {
+        var maxId = await _db.Donations.MaxAsync(d => (int?)d.DonationId) ?? 0;
+        return maxId + 1;
     }
 }

@@ -126,7 +126,6 @@ public class SupporterController : ControllerBase
 
 [ApiController]
 [Route("api/donor/me")]
-[Authorize(Policy = AuthPolicies.DonorSelf)]
 public class DonorSelfController : ControllerBase
 {
     private readonly ISupporterService _service;
@@ -139,12 +138,48 @@ public class DonorSelfController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = AuthPolicies.AnyAuthenticated)]
     public async Task<IActionResult> GetMyHistory()
     {
-        var userId = _userManager.GetUserId(User);
-        if (userId is null) return Unauthorized();
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Unauthorized();
 
-        var result = await _service.GetByUserIdAsync(userId);
+        var result = await _service.GetByUserAsync(user.Id, user.Email);
         return result is null ? NotFound() : Ok(result);
     }
+
+    [HttpPost("pledge")]
+    [Authorize(Policy = AuthPolicies.AnyAuthenticated)]
+    public async Task<IActionResult> CreatePledge([FromBody] CreateDonorPledgeRequest request)
+    {
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Unable to create pledge",
+                Detail = "The signed-in account does not have an email address.",
+                Status = StatusCodes.Status400BadRequest,
+            });
+        }
+
+        var donation = await _service.CreateDonorPledgeAsync(user.Id, user.Email, request.Amount, request.IsRecurring);
+
+        if (!await _userManager.IsInRoleAsync(user, AuthRoles.Donor))
+            await _userManager.AddToRoleAsync(user, AuthRoles.Donor);
+
+        return Ok(donation);
+    }
+}
+
+public sealed class CreateDonorPledgeRequest
+{
+    [Range(0.01, 1_000_000_000)]
+    public decimal Amount { get; set; }
+
+    public bool IsRecurring { get; set; }
 }

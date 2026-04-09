@@ -133,12 +133,8 @@ export default function DonorSelfPage() {
           {/* Pending-link notice — shown when account has no supporter record */}
           {!detail && !error && (
             <div className="alert alert-info mb-4" style={{ fontSize: '0.875rem' }}>
-              <strong>Account not yet linked to a supporter profile.</strong> Your donation
-              history will appear here once an admin links your account.
-              <br />
-              <span className="text-muted" style={{ fontSize: '0.78rem' }}>
-                Pending backend: <code>GET /api/donor/me</code> must return a supporter record for this user.
-              </span>
+              <strong>No donation history yet.</strong> Submit a pledge from the donate page and
+              your supporter profile will be created automatically.
             </div>
           )}
 
