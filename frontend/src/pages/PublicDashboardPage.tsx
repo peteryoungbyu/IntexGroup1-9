@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
 import Pagination from '../components/Pagination';
 import {
   BarChart,
@@ -12,6 +11,8 @@ import {
 } from 'recharts';
 import type { ImpactSnapshot } from '../types/DashboardMetric';
 import { getPublicImpact, getPublicImpactByDate } from '../lib/reportAPI';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -82,6 +83,30 @@ function monthLabel(snapshot: ImpactSnapshot): string {
 const HEALTH_ALIASES = ['avgHealthScore', 'avg_health_score', 'averageHealthScore', 'average_health_score', 'healthScoreAvg'];
 const EDU_ALIASES = ['avgEducationProgress', 'avg_education_progress', 'averageEducationProgress', 'average_education_progress'];
 const RESIDENT_ALIASES = ['totalResidents', 'total_residents', 'activeResidents', 'active_residents', 'residentCount'];
+const SAFEHOUSE_ALIASES = [
+  'activeSafehouses',
+  'active_safehouses',
+  'safehouseCount',
+  'safehouse_count',
+  'totalSafehouses',
+  'total_safehouses',
+];
+const DONATION_ALIASES = [
+  'donations_total_for_month',
+  'donationsTotalForMonth',
+  'monthlyDonations',
+];
+
+const SESSION_ALIASES = [
+  'sessionsCompleted',
+  'sessions_completed',
+  'counselingSessions',
+  'counseling_sessions',
+  'therapySessions',
+  'therapy_sessions',
+  'totalSessions',
+  'total_sessions',
+];
 
 const START_YM = 202301;
 const END_YM   = 202602;
@@ -106,32 +131,42 @@ export default function PublicDashboardPage() {
 
   useEffect(() => {
     getPublicImpact(120)
-      .then(setSnapshots)
-      .finally(() => setLoading(false));
-  }, []);
+      .then((data) => {
+        setSnapshots(data);
 
-  useEffect(() => {
-    getPublicImpactByDate(targetDate)
-      .then((results) => setFeaturedSnapshot(results[0] ?? null))
-      .catch(() => setFeaturedSnapshot(null));
+        const matched = data.find((s) => {
+          const payload = parseMetricPayload(s.metricPayloadJson);
+          const month = typeof payload.month === 'string' ? payload.month : s.snapshotDate?.slice(0, 7);
+          return month === targetDate.slice(0, 7);
+        });
+
+        setFeaturedSnapshot(matched ?? null);
+      })
+      .finally(() => setLoading(false));
   }, [targetDate]);
 
   // Filter + sort snapshots
-  const filteredSnapshots = snapshots.filter((s) => {
-    const payload = parseMetricPayload(s.metricPayloadJson);
-    const ym = toYearMonth(payload.month) ?? toYearMonth(s.snapshotDate);
-    return ym !== null && ym >= START_YM && ym <= END_YM;
-  });
+    const filteredSnapshots = useMemo(() => {
+      return snapshots.filter((s) => {
+        const payload = parseMetricPayload(s.metricPayloadJson);
+        const ym = toYearMonth(payload.month) ?? toYearMonth(s.snapshotDate);
+        return ym !== null && ym >= START_YM && ym <= END_YM;
+      });
+    }, [snapshots]);
 
-  const sortedDesc = [...filteredSnapshots].sort((a, b) => {
-    const pa = parseMetricPayload(a.metricPayloadJson);
-    const pb = parseMetricPayload(b.metricPayloadJson);
-    const ma = toYearMonth(pa.month) ?? toYearMonth(a.snapshotDate) ?? 0;
-    const mb = toYearMonth(pb.month) ?? toYearMonth(b.snapshotDate) ?? 0;
-    return mb - ma;
-  });
+    const sortedDesc = useMemo(() => {
+      return [...filteredSnapshots].sort((a, b) => {
+        const pa = parseMetricPayload(a.metricPayloadJson);
+        const pb = parseMetricPayload(b.metricPayloadJson);
+        const ma = toYearMonth(pa.month) ?? toYearMonth(a.snapshotDate) ?? 0;
+        const mb = toYearMonth(pb.month) ?? toYearMonth(b.snapshotDate) ?? 0;
+        return mb - ma;
+      });
+    }, [filteredSnapshots]);
 
-  const sortedAsc = [...sortedDesc].reverse();
+    const sortedAsc = useMemo(() => {
+      return [...sortedDesc].reverse();
+    }, [sortedDesc]);
 
   const pagedSnapshots = sortedDesc.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -151,8 +186,13 @@ export default function PublicDashboardPage() {
 
   // Hero card values — use most recent snapshot
   const mostRecentPayload = parseMetricPayload(sortedDesc[0]?.metricPayloadJson ?? null);
-  const heroHealth    = readNumericMetric(mostRecentPayload, HEALTH_ALIASES);
+  const heroHealth = readNumericMetric(mostRecentPayload, HEALTH_ALIASES);
   const heroResidents = readNumericMetric(mostRecentPayload, RESIDENT_ALIASES);
+  const heroSafehouses = readNumericMetric(mostRecentPayload, SAFEHOUSE_ALIASES);
+  const heroSessions = readNumericMetric(mostRecentPayload, SESSION_ALIASES);
+  const heroDonations = readNumericMetric(mostRecentPayload, DONATION_ALIASES);
+
+  console.log(mostRecentPayload);
 
   // Chart data
   const healthChartData = sortedAsc.flatMap((s) => {
@@ -194,10 +234,28 @@ export default function PublicDashboardPage() {
           {/* SECTION 2 — Hero Stat Cards */}
           <div className="row g-3 mb-4">
             {[
-              { label: 'GIRLS SERVED',       value: heroResidents != null ? Math.round(heroResidents).toLocaleString() : '—', sub: 'across all safehouses' },
-              { label: 'ACTIVE SAFEHOUSES',  value: '10',      sub: 'Luzon, Visayas, Mindanao' },
-              { label: 'SESSIONS COMPLETED', value: '1,200+',  sub: 'counseling sessions logged' },
-              { label: 'AVG HEALTH SCORE',   value: heroHealth != null ? heroHealth.toFixed(1) : '—', sub: 'out of 5.0' },
+              {
+                label: 'GIRLS SERVED',
+                value: heroResidents != null ? Math.round(heroResidents).toLocaleString() : '—',
+                sub: 'currently in care',
+              },
+              {
+                label: 'MONTHLY DONATIONS',
+                value: heroDonations != null
+                  ? `₱${Math.round(heroDonations).toLocaleString()}`
+                  : '—',
+                sub: 'funding this month',
+              },
+              {
+                label: 'AVG EDUCATION',
+                value: featuredEdu != null ? `${featuredEdu.toFixed(0)}%` : '—',
+                sub: 'learning progress',
+              },
+              {
+                label: 'AVG HEALTH SCORE',
+                value: heroHealth != null ? heroHealth.toFixed(1) : '—',
+                sub: 'out of 5.0',
+              },
             ].map(({ label, value, sub }) => (
               <div key={label} className="col-6 col-md-3">
                 <div style={{

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import healingImg from '../assets/healing.jpg';
+import shelterImg from '../assets/shelter.jpg';
 
 const programs = [
   {
@@ -185,7 +186,7 @@ export default function ProgramsPage() {
                     <img
                       src={
                         prog.id === 'caring'
-                          ? 'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=800&q=80'
+                          ? shelterImg
                           : prog.id === 'healing'
                           ? healingImg
                           : 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=80'
