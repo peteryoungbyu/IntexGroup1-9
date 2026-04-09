@@ -178,10 +178,63 @@ ORDER BY
         return donation;
     }
 
-    public async Task<Donation> CreateDonorPledgeAsync(string userId, string email, decimal amount, bool isRecurring)
+    public async Task<DonorPledgeOptions> GetDonorPledgeOptionsAsync()
+    {
+        var programAreas = await _db.DonationAllocations
+            .Select(a => a.ProgramArea)
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Distinct()
+            .OrderBy(a => a)
+            .ToListAsync();
+
+        if (programAreas.Count == 0)
+        {
+            programAreas = new List<string>
+            {
+                "Education",
+                "Maintenance",
+                "Operations",
+                "Outreach",
+                "Transport",
+                "Wellbeing",
+            };
+        }
+
+        var safehouseIds = await _db.Safehouses
+            .Select(s => s.SafehouseId)
+            .OrderBy(id => id)
+            .ToListAsync();
+
+        if (safehouseIds.Count == 0)
+            safehouseIds = Enumerable.Range(1, 9).ToList();
+
+        return new DonorPledgeOptions(programAreas, safehouseIds);
+    }
+
+    public async Task<Donation> CreateDonorPledgeAsync(
+        string userId,
+        string email,
+        decimal amount,
+        bool isRecurring,
+        string? selectedProgramArea,
+        int? selectedSafehouseId)
     {
         var normalizedEmail = email.Trim();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var pledgeOptions = await GetDonorPledgeOptionsAsync();
+
+        var selectedProgram = !string.IsNullOrWhiteSpace(selectedProgramArea)
+            && !string.Equals(selectedProgramArea, "Any", StringComparison.OrdinalIgnoreCase)
+            && pledgeOptions.ProgramAreas.Contains(selectedProgramArea)
+                ? selectedProgramArea
+                : pledgeOptions.ProgramAreas[Random.Shared.Next(pledgeOptions.ProgramAreas.Count)];
+
+        var selectedSafehouse = selectedSafehouseId.HasValue
+            && pledgeOptions.SafehouseIds.Contains(selectedSafehouseId.Value)
+                ? selectedSafehouseId.Value
+                : pledgeOptions.SafehouseIds[Random.Shared.Next(pledgeOptions.SafehouseIds.Count)];
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
 
         var supporter = await _db.Supporters
             .FirstOrDefaultAsync(s => s.Email == normalizedEmail);
@@ -235,6 +288,22 @@ ORDER BY
 
         _db.Donations.Add(donation);
         await _db.SaveChangesAsync();
+
+        var allocation = new DonationAllocation
+        {
+            AllocationId = await GetNextAllocationIdAsync(),
+            DonationId = donation.DonationId,
+            SafehouseId = selectedSafehouse,
+            ProgramArea = selectedProgram,
+            AmountAllocated = amount,
+            AllocationDate = today,
+            AllocationNotes = null,
+        };
+
+        _db.DonationAllocations.Add(allocation);
+        await _db.SaveChangesAsync();
+
+        await transaction.CommitAsync();
         return donation;
     }
 
@@ -281,6 +350,12 @@ ORDER BY
     private async Task<int> GetNextDonationIdAsync()
     {
         var maxId = await _db.Donations.MaxAsync(d => (int?)d.DonationId) ?? 0;
+        return maxId + 1;
+    }
+
+    private async Task<int> GetNextAllocationIdAsync()
+    {
+        var maxId = await _db.DonationAllocations.MaxAsync(a => (int?)a.AllocationId) ?? 0;
         return maxId + 1;
     }
 }
