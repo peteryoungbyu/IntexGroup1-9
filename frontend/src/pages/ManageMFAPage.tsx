@@ -189,7 +189,7 @@ export default function ManageMFAPage() {
                     <img
                       src={qrDataUrl}
                       alt="QR code for MFA setup"
-                      className="mb-3 d-block rounded"
+                      className="mb-3 d-block mx-auto rounded"
                       style={{ border: '2px solid var(--brand-light)' }}
                     />
                   )}
