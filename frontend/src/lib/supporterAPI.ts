@@ -115,6 +115,17 @@ export async function addDonation(
   return res.json();
 }
 
+export async function createDonorPledge(
+  amount: number,
+  isRecurring: boolean
+): Promise<Donation> {
+  const res = await apiFetch('/api/donor/me/pledge', {
+    method: 'POST',
+    body: JSON.stringify({ amount, isRecurring }),
+  });
+  return res.json();
+}
+
 export async function deleteDonation(
   supporterId: number,
   donationId: number

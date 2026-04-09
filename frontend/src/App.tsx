@@ -71,7 +71,7 @@ function AppShell() {
           <Route
             path="/donor/history"
             element={
-              <ProtectedRoute roles={['Donor', 'Admin']}>
+              <ProtectedRoute>
                 <DonorSelfPage />
               </ProtectedRoute>
             }

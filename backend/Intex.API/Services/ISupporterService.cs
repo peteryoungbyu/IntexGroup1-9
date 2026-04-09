@@ -16,10 +16,11 @@ public interface ISupporterService
     Task<PagedResult<SupporterListItem>> GetAllAsync(int page, int pageSize, string? search, string? status);
     Task<IReadOnlyList<SupporterChurnItem>> GetChurnPredictionsAsync();
     Task<SupporterDetail?> GetByIdAsync(int id);
-    Task<SupporterDetail?> GetByUserIdAsync(string userId);
+    Task<SupporterDetail?> GetByUserAsync(string userId, string? email);
     Task<Supporter> CreateAsync(Supporter supporter);
     Task<Supporter?> UpdateAsync(int id, Supporter supporter);
     Task<bool> DeleteAsync(int id);
     Task<Donation> AddDonationAsync(int supporterId, Donation donation);
+    Task<Donation> CreateDonorPledgeAsync(string userId, string email, decimal amount, bool isRecurring);
     Task<bool> DeleteDonationAsync(int supporterId, int donationId);
 }

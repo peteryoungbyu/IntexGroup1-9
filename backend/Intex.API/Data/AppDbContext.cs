@@ -57,8 +57,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PredictionResult>().ToTable("prediction_results").HasKey(e => e.PredictionId);
 
         // Decimal precision
+        modelBuilder.Entity<Supporter>(e =>
+            e.Property(s => s.SupporterId).ValueGeneratedNever());
+
         modelBuilder.Entity<Donation>(e =>
         {
+            e.Property(d => d.DonationId).ValueGeneratedNever();
             e.Property(d => d.Amount).HasPrecision(14, 2);
             e.Property(d => d.EstimatedValue).HasPrecision(14, 2);
         });
