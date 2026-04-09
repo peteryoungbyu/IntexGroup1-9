@@ -6,6 +6,8 @@ import type {
   PagedResult,
   ProcessRecording,
   HomeVisitation,
+  ProcessRecordingFormOptions,
+  SessionEntryRecordingRequest,
 } from '../types/ResidentDetail';
 import { API_BASE_URL } from './apiBase';
 
@@ -81,6 +83,21 @@ export async function addRecording(
   data: Omit<ProcessRecording, 'recordingId'>
 ): Promise<void> {
   await apiFetch(`/api/residents/${residentId}/recordings`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getProcessRecordingFormOptions(): Promise<ProcessRecordingFormOptions> {
+  const res = await apiFetch('/api/residents/recordings/form-options');
+  return res.json();
+}
+
+export async function addSessionEntryRecording(
+  residentId: number,
+  data: SessionEntryRecordingRequest
+): Promise<void> {
+  await apiFetch(`/api/residents/${residentId}/recordings/session-entry`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
