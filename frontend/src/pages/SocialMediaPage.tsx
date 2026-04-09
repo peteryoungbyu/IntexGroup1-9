@@ -213,7 +213,7 @@ export default function SocialMediaPage() {
                 </p>
                 <h3 className="mb-1">{loading ? '—' : result?.total ?? 0}</h3>
                 <p className="text-muted mb-0" style={{ fontSize: '0.85rem' }}>
-                  Posts on this page
+                  Posts
                 </p>
               </div>
             </div>
