@@ -72,7 +72,6 @@ export interface ProcessRecording {
   sessionDate: string;
   socialWorker: string;
   sessionType: string;
-  sessionDurationMinutes: number;
   emotionalStateObserved: string | null;
   emotionalStateEnd: string | null;
   sessionNarrative: string | null;
