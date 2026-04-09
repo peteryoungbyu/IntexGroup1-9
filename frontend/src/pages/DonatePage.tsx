@@ -42,13 +42,26 @@ const allocation = [
 ];
 
 export default function DonatePage() {
-  const { isAuthenticated, refreshAuthSession } = useAuth();
+  const { authSession, isAuthenticated, refreshAuthSession } = useAuth();
   const [selected, setSelected] = useState<number | null>(1000);
   const [custom, setCustom] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [recurring, setRecurring] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isAdmin = authSession.roles.includes('Admin');
+  const isDonor = authSession.roles.includes('Donor');
+  const canAccessDonorHistory = isAdmin || isDonor;
+  const accountDestination = isAdmin
+    ? '/admin'
+    : isDonor
+      ? '/donor/history'
+      : '/impact';
+  const accountCtaLabel = isAdmin
+    ? 'Go to Admin Portal'
+    : isDonor
+      ? 'View My Donation History'
+      : 'See Public Impact';
 
   const effectiveAmount = custom ? Number(custom) : selected;
 
@@ -120,17 +133,19 @@ export default function DonatePage() {
             className="text-muted mb-4"
             style={{ maxWidth: 480, margin: '0 auto 1.5rem' }}
           >
-            {isAuthenticated
+            {canAccessDonorHistory
               ? 'Your donation has been recorded. You can view your personal donor history and impact details now.'
+              : isAuthenticated
+                ? 'Your pledge has been recorded. You can continue to the appropriate account area now.'
               : 'Create a free account to track the real-world impact of your donations and receive updates on the girls your support helps.'}
           </p>
           <div className="d-flex gap-3 justify-content-center flex-wrap">
             {isAuthenticated ? (
               <Link
-                to="/donor/history"
+                to={accountDestination}
                 className="btn btn-primary btn-lg fw-bold px-5"
               >
-                View My Donation History
+                {accountCtaLabel}
               </Link>
             ) : (
               <Link
@@ -444,7 +459,11 @@ export default function DonatePage() {
                   style={{ background: 'var(--brand-dark)', border: 'none' }}
                 >
                   <h6 className="fw-bold text-white mb-2">
-                    Thank you for your support
+                    {isAdmin
+                      ? 'Administrator account detected'
+                      : isDonor
+                        ? 'Thank you for your support'
+                        : 'Signed in successfully'}
                   </h6>
                   <p
                     className="mb-3"
@@ -454,13 +473,17 @@ export default function DonatePage() {
                       lineHeight: 1.6,
                     }}
                   >
-                    View your donation history and impact in your account.
+                    {isAdmin
+                      ? 'Return to the admin portal to continue managing donor and program data.'
+                      : isDonor
+                        ? 'View your donation history and impact in your account.'
+                        : 'Continue to the public impact dashboard while donor history is not available for this account.'}
                   </p>
                   <Link
-                    to="/donor/history"
+                    to={accountDestination}
                     className="btn btn-warning btn-sm fw-bold w-100"
                   >
-                    View My Donations
+                    {isAdmin ? 'Go to Admin Portal' : isDonor ? 'View My Donations' : 'See Public Impact'}
                   </Link>
                 </div>
               ) : (

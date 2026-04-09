@@ -13,27 +13,27 @@ export default function LandingPage() {
 
   const isAdmin = authSession.roles.includes('Admin');
   const isDonor = authSession.roles.includes('Donor');
+  const signedInLink = isAdmin ? '/admin' : isDonor ? '/donor/history' : '/impact';
+  const signedInLabel = isAdmin
+    ? 'Go to Admin Portal'
+    : isDonor
+      ? 'My Donations'
+      : 'See Our Impact';
 
   const heroLink = isAuthenticated
-    ? isAdmin
-      ? '/admin'
-      : '/donor/history'
+    ? signedInLink
     : '/login';
   const heroLabel = isAuthenticated
-    ? isAdmin
-      ? 'Go to Admin Portal'
-      : 'My Donations'
+    ? signedInLabel
     : 'Supporter Login';
   const ctaLink = isAuthenticated
-    ? isAdmin
-      ? '/admin'
-      : '/donor/history'
+    ? signedInLink
     : '/login';
   const ctaLabel = isAdmin
     ? 'Go to Admin Portal'
     : isDonor
       ? 'View My Donations'
-      : 'Get Started';
+      : 'See Our Impact';
 
   const pillars = [
     {

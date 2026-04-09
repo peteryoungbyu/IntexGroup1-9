@@ -90,7 +90,8 @@ public class AuthController : ControllerBase
             user = new ApplicationUser { UserName = email, Email = email, EmailConfirmed = true };
             var createResult = await _userManager.CreateAsync(user);
             if (!createResult.Succeeded) return Redirect($"{_frontendUrl}/login?error=create_failed");
-            await _userManager.AddToRoleAsync(user, AuthRoles.Donor);
+            if (!await _userManager.IsInRoleAsync(user, AuthRoles.Donor))
+                await _userManager.AddToRoleAsync(user, AuthRoles.Donor);
         }
 
         await _userManager.AddLoginAsync(user, info);

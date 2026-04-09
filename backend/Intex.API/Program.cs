@@ -1,6 +1,7 @@
 using Intex.API.Data;
 using Intex.API.Infrastructure;
 using Intex.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,7 @@ builder.Services.AddDbContext<AuthIdentityDbContext>(options =>
 // 3. Register Identity + roles
 builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
     .AddRoles<IdentityRole>()
+    .AddUserManager<ApplicationUserManager>()
     .AddEntityFrameworkStores<AuthIdentityDbContext>();
 
 // 4. Register Google OAuth only if credentials are present
@@ -188,7 +190,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapGroup("/api/auth").MapIdentityApi<ApplicationUser>().AllowAnonymous();
+var identityApi = app.MapGroup("/api/auth").MapIdentityApi<ApplicationUser>();
+identityApi.Add(endpointBuilder =>
+{
+    if (endpointBuilder is not RouteEndpointBuilder routeEndpointBuilder)
+        return;
+
+    var routePattern = routeEndpointBuilder.RoutePattern.RawText ?? string.Empty;
+    if (!routePattern.Contains("/manage", StringComparison.OrdinalIgnoreCase))
+        endpointBuilder.Metadata.Add(new AllowAnonymousAttribute());
+});
 
 // Serve React build in production
 if (!app.Environment.IsDevelopment())
