@@ -11,7 +11,9 @@
       "Bash(grep -r \"intex1-9\\\\|AppConnection\\\\|ConnectionString\" \"c:/Users/merri/OneDrive/INTEXW2026/IntexGroup1-9/backend/Intex.API/appsettings\"*)",
       "Bash(ls \"c:/Users/merri/OneDrive/INTEXW2026/IntexGroup1-9/backend/Intex.API/\"*.sqlite)",
       "Bash(xargs grep:*)",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "Bash(python add_narrative_02.py)",
+      "Bash(rm add_narrative_02.py)"
     ]
   }
 }
