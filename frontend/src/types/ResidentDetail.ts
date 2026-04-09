@@ -72,6 +72,7 @@ export interface ProcessRecording {
   sessionDate: string;
   socialWorker: string;
   sessionType: string;
+  sessionDurationMinutes: number;
   emotionalStateObserved: string | null;
   emotionalStateEnd: string | null;
   sessionNarrative: string | null;
@@ -80,6 +81,7 @@ export interface ProcessRecording {
   progressNoted: boolean;
   concernsFlagged: boolean;
   referralMade: boolean;
+  notesRestricted?: string | null;
 }
 
 export interface ProcessRecordingFormResidentOption {

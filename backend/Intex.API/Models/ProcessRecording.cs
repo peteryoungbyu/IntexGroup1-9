@@ -7,6 +7,7 @@ public class ProcessRecording
     public DateOnly SessionDate { get; set; }
     public string SocialWorker { get; set; } = string.Empty;
     public string SessionType { get; set; } = string.Empty;
+    public int SessionDurationMinutes { get; set; }
     public string? EmotionalStateObserved { get; set; }
     public string? EmotionalStateEnd { get; set; }
     public string? SessionNarrative { get; set; }
@@ -15,6 +16,7 @@ public class ProcessRecording
     public bool ProgressNoted { get; set; }
     public bool ConcernsFlagged { get; set; }
     public bool ReferralMade { get; set; }
+    public string? NotesRestricted { get; set; }
 
     public Resident? Resident { get; set; }
 }
