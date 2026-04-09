@@ -10,7 +10,7 @@ import {
   Cell,
 } from 'recharts';
 import type { ImpactSnapshot } from '../types/DashboardMetric';
-import { getPublicImpact, getPublicImpactByDate } from '../lib/reportAPI';
+import { getPublicImpact } from '../lib/reportAPI';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 
@@ -83,29 +83,10 @@ function monthLabel(snapshot: ImpactSnapshot): string {
 const HEALTH_ALIASES = ['avgHealthScore', 'avg_health_score', 'averageHealthScore', 'average_health_score', 'healthScoreAvg'];
 const EDU_ALIASES = ['avgEducationProgress', 'avg_education_progress', 'averageEducationProgress', 'average_education_progress'];
 const RESIDENT_ALIASES = ['totalResidents', 'total_residents', 'activeResidents', 'active_residents', 'residentCount'];
-const SAFEHOUSE_ALIASES = [
-  'activeSafehouses',
-  'active_safehouses',
-  'safehouseCount',
-  'safehouse_count',
-  'totalSafehouses',
-  'total_safehouses',
-];
 const DONATION_ALIASES = [
   'donations_total_for_month',
   'donationsTotalForMonth',
   'monthlyDonations',
-];
-
-const SESSION_ALIASES = [
-  'sessionsCompleted',
-  'sessions_completed',
-  'counselingSessions',
-  'counseling_sessions',
-  'therapySessions',
-  'therapy_sessions',
-  'totalSessions',
-  'total_sessions',
 ];
 
 const START_YM = 202301;
@@ -188,8 +169,6 @@ export default function PublicDashboardPage() {
   const mostRecentPayload = parseMetricPayload(sortedDesc[0]?.metricPayloadJson ?? null);
   const heroHealth = readNumericMetric(mostRecentPayload, HEALTH_ALIASES);
   const heroResidents = readNumericMetric(mostRecentPayload, RESIDENT_ALIASES);
-  const heroSafehouses = readNumericMetric(mostRecentPayload, SAFEHOUSE_ALIASES);
-  const heroSessions = readNumericMetric(mostRecentPayload, SESSION_ALIASES);
   const heroDonations = readNumericMetric(mostRecentPayload, DONATION_ALIASES);
 
   console.log(mostRecentPayload);
