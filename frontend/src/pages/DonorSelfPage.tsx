@@ -43,9 +43,20 @@ const PROGRAM_AREA_COLORS: Record<string, string> = {
 
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';
-  const d = new Date(dateStr);
+  const d = parseApiDate(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function parseApiDate(dateStr: string): Date {
+  // DateOnly payloads like "2026-04-09" should be treated as local calendar dates.
+  // Parsing with new Date("YYYY-MM-DD") can shift to the previous day in negative offsets.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return new Date(dateStr);
 }
 
 function formatPHP(amount: number | null | undefined): string {
@@ -86,7 +97,7 @@ export default function DonorSelfPage() {
     .reduce((sum, d) => sum + (d.amount ?? 0), 0);
   const recurringCount = donations.filter((d) => d.isRecurring).length;
   const sortedByDate = [...donations].sort(
-    (a, b) => new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()
+    (a, b) => parseApiDate(b.donationDate).getTime() - parseApiDate(a.donationDate).getTime()
   );
   const mostRecentDate = sortedByDate[0]?.donationDate ?? null;
 
