@@ -281,7 +281,12 @@ export default function PublicDashboardPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                       <YAxis domain={[0, 5]} tick={{ fontSize: 10 }} />
-                      <Tooltip formatter={(v: number) => [v.toFixed(2), 'Health Score']} />
+                      <Tooltip
+                        formatter={(v) => {
+                          const value = typeof v === 'number' ? v : Number(v ?? 0);
+                          return [value.toFixed(2), 'Health Score'];
+                        }}
+                      />
                       <Bar dataKey="value" radius={[3, 3, 0, 0]}>
                         {healthChartData.map((_, i) => (
                           <Cell key={i} fill={accentRecent(healthChartData, i) ?? '#1a5276'} />
@@ -303,7 +308,12 @@ export default function PublicDashboardPage() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                       <YAxis domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 10 }} />
-                      <Tooltip formatter={(v: number) => [`${v.toFixed(1)}%`, 'Avg Education Progress']} />
+                      <Tooltip
+                        formatter={(v) => {
+                          const value = typeof v === 'number' ? v : Number(v ?? 0);
+                          return [`${value.toFixed(1)}%`, 'Avg Education Progress'];
+                        }}
+                      />
                       <Bar dataKey="value" radius={[3, 3, 0, 0]}>
                         {eduChartData.map((_, i) => (
                           <Cell key={i} fill={accentRecent(eduChartData, i) ?? '#0f6e56'} />
