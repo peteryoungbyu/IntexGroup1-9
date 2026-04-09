@@ -168,7 +168,7 @@ public class InterventionEffectivenessService : IInterventionEffectivenessServic
 
             // Session aggregates
             int sessionCount = recs.Count;
-            double avgSessionDuration = recs.Count > 0 ? recs.Average(r => (double)r.SessionDurationMinutes) : 0.0;
+            double avgSessionDuration = 0.0;
             double progressNotedRate = sessionCount > 0 ? recs.Count(r => r.ProgressNoted == true) / (double)sessionCount : 0.0;
             double concernsFlaggedRate = sessionCount > 0 ? recs.Count(r => r.ConcernsFlagged == true) / (double)sessionCount : 0.0;
             double referralRate = sessionCount > 0 ? recs.Count(r => r.ReferralMade == true) / (double)sessionCount : 0.0;

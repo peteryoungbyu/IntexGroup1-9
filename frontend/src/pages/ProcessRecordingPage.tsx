@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useMemo, Fragment } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import type { ProcessRecording, ResidentListItem } from '../types/ResidentDetail';
 import {
   getResidents,
@@ -47,7 +47,6 @@ const EMPTY_FORM = {
   sessionDate: '',
   socialWorker: '',
   sessionType: '',
-  sessionDurationMinutes: '',
   emotionalStateObserved: '',
   emotionalStateEnd: '',
   sessionNarrative: '',
@@ -59,6 +58,7 @@ const EMPTY_FORM = {
 };
 
 export default function ProcessRecordingPage() {
+  const location = useLocation();
   const [recordings, setRecordings] = useState<FlatRecording[]>([]);
   const [residents, setResidents] = useState<ResidentListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +121,15 @@ export default function ProcessRecordingPage() {
   }, [showModal]);
 
   useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    const rid = new URLSearchParams(location.search).get('residentId');
+    if (rid) {
+      setForm({ ...EMPTY_FORM, residentId: rid });
+      setFormError('');
+      setShowModal(true);
+    }
+  }, []);
 
   // Metrics (current calendar month)
   const now = new Date();
@@ -199,7 +208,6 @@ export default function ProcessRecordingPage() {
         sessionDate: form.sessionDate,
         socialWorker: form.socialWorker,
         sessionType: form.sessionType,
-        sessionDurationMinutes: form.sessionDurationMinutes ? Number(form.sessionDurationMinutes) : 0,
         emotionalStateObserved: form.emotionalStateObserved || null,
         emotionalStateEnd: form.emotionalStateEnd || null,
         sessionNarrative: form.sessionNarrative || null,
@@ -364,7 +372,7 @@ export default function ProcessRecordingPage() {
                   <th style={{ whiteSpace: 'nowrap' }}>Date</th>
                   <th>Resident</th>
                   <th>Type</th>
-                  <th>Social Worker</th> {/* KEEP visible */}
+                  <th>Social Worker</th>
                   <th className="d-none d-md-table-cell" style={{ whiteSpace: 'nowrap' }}>Duration</th>
                   <th className="d-none d-md-table-cell" style={{ whiteSpace: 'nowrap' }}>State (Start)</th>
                   <th className="d-none d-lg-table-cell" style={{ whiteSpace: 'nowrap' }}>State (End)</th>
@@ -394,8 +402,8 @@ export default function ProcessRecordingPage() {
                     const isExpanded = expandedRows.has(r.recordingId);
                     const hasDetail = r.sessionNarrative || r.interventionsApplied || r.followUpActions;
                     return (
-                      <>
-                        <tr key={r.recordingId}>
+                      <Fragment key={r.recordingId}>
+                        <tr>
                           {/* Date */}
                           <td style={{ whiteSpace: 'nowrap' }}>
                             {formatDate(r.sessionDate)}
@@ -530,7 +538,7 @@ export default function ProcessRecordingPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -604,6 +612,7 @@ export default function ProcessRecordingPage() {
                   className="modal-body"
                   style={{
                     overflowY: 'auto',
+                    maxHeight: '75vh',
                     WebkitOverflowScrolling: 'touch',
                   }}
                 >
@@ -662,19 +671,6 @@ export default function ProcessRecordingPage() {
                         <option value="">Select…</option>
                         {SESSION_TYPES.map((t) => <option key={t}>{t}</option>)}
                       </select>
-                    </div>
-
-                    {/* Duration */}
-                    <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">Duration (minutes)</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min={0}
-                        placeholder="e.g. 60"
-                        value={form.sessionDurationMinutes}
-                        onChange={(e) => setForm({ ...form, sessionDurationMinutes: e.target.value })}
-                      />
                     </div>
 
                     {/* Emotional State Observed */}
@@ -782,7 +778,12 @@ export default function ProcessRecordingPage() {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-warning fw-semibold" disabled={saving}>
-                    {saving ? 'Saving…' : 'Save Session'}
+                    {saving ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                        Saving…
+                      </>
+                    ) : 'Save Session'}
                   </button>
                 </div>
               </form>

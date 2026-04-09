@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import type {
   ResidentDetail,
   ProcessRecording,
@@ -81,6 +81,7 @@ type EditableResident = Omit<Resident, 'residentId' | 'createdAt'>;
 export default function ResidentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const residentId = Number(id);
+  const navigate = useNavigate();
 
   const [detail, setDetail] = useState<ResidentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -922,10 +923,7 @@ export default function ResidentDetailPage() {
                 <span>Process Recordings ({recordings.length})</span>
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() => {
-                    setFormError(null);
-                    setShowAddRecording(true);
-                  }}
+                  onClick={() => navigate('/admin/process-recording?residentId=' + residentId)}
                 >
                   + Add Recording
                 </button>
@@ -1281,10 +1279,7 @@ export default function ResidentDetailPage() {
                 <span>Home Visitations ({visitations.length})</span>
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() => {
-                    setFormError(null);
-                    setShowAddVisitation(true);
-                  }}
+                  onClick={() => navigate('/admin/home-visitation?residentId=' + residentId)}
                 >
                   + Add Visitation
                 </button>

@@ -249,7 +249,7 @@ public class ResidentRiskService : IResidentRiskService
 
             // Sessions
             int sessionCount = recs.Count;
-            double avgSessionDuration = recs.Count > 0 ? recs.Average(s => (double)s.SessionDurationMinutes) : 0;
+            double avgSessionDuration = 0;
             double progressNotedRate = sessionCount > 0 ? recs.Count(s => s.ProgressNoted == true) / (double)sessionCount : 0;
             double concernsFlaggedRate = sessionCount > 0 ? recs.Count(s => s.ConcernsFlagged == true) / (double)sessionCount : 0;
             double referralRate = sessionCount > 0 ? recs.Count(s => s.ReferralMade == true) / (double)sessionCount : 0;
