@@ -694,3 +694,32 @@ body {
     padding: 0.3em 0.5em;
   }
 }
+/* Timeline — PublicDashboardPage */
+.timeline-wrapper {
+  position: relative;
+  padding-left: 24px;
+}
+.timeline-wrapper::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e5e7eb;
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+.timeline-dot {
+  position: absolute;
+  left: -21px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--brand-accent);
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px var(--brand-accent);
+}
