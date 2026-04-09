@@ -114,7 +114,7 @@ export default function ReportsPage() {
   async function fetchResults(job: InferenceJob) {
     setLoadingResults((prev) => ({ ...prev, [job.jobKey]: true }));
     try {
-      const table = await getInferenceResults(job.jobKey, 100);
+      const table = await getInferenceResults(job.jobKey, 0);
       setInferenceTables((prev) => ({ ...prev, [job.jobKey]: table }));
     } finally {
       setLoadingResults((prev) => ({ ...prev, [job.jobKey]: false }));
@@ -239,6 +239,34 @@ export default function ReportsPage() {
       default:
         return String(value);
     }
+  }
+
+  function formatPredictionLabel(value: string | number | null | undefined): string {
+    const text = String(value ?? '').trim();
+    if (!text) return '—';
+
+    const knownLabels: Record<string, string> = {
+      NotReady: 'Not Ready',
+      NotEffective: 'Not Effective',
+      WillUpgrade: 'Will Upgrade',
+      WillNotUpgrade: 'Will Not Upgrade',
+      WillGenerateDonation: 'Will Generate Donation',
+      WillNotGenerateDonation: 'Will Not Generate Donation',
+      HighRisk: 'High Risk',
+      LowRisk: 'Low Risk',
+    };
+
+    if (knownLabels[text]) return knownLabels[text];
+
+    return text
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function getReadyPredictionCount(rows: ReportInferenceRow[]): number {
+    return rows.filter((row) => String(row.prediction ?? '').trim().toLowerCase() === 'ready')
+      .length;
   }
 
   function getBadgeClass(value: string | number | null | undefined): string {
@@ -467,6 +495,10 @@ export default function ReportsPage() {
                 const table = inferenceTables[job.jobKey];
                 const rows = table?.rows ?? [];
                 const loadingRes = loadingResults[job.jobKey];
+                const readyCount =
+                  job.jobKey === 'reintegration-readiness'
+                    ? getReadyPredictionCount(rows)
+                    : 0;
                 return (
                   <div key={job.jobKey} className="border rounded p-3">
                     <div className="d-flex align-items-center gap-2 mb-2">
@@ -510,6 +542,18 @@ export default function ReportsPage() {
                       <p className="text-muted small mb-2">{table.note}</p>
                     )}
 
+                    {job.jobKey === 'reintegration-readiness' && rows.length > 0 && (
+                      <div className="mb-3 p-3 rounded border bg-light">
+                        <p className="text-muted text-uppercase small fw-semibold mb-1">
+                          OKR: Reintegration Readiness
+                        </p>
+                        <h4 className="mb-1">{readyCount.toLocaleString()} Ready</h4>
+                        <p className="text-muted small mb-0">
+                          Total residents predicted as Ready ({rows.length.toLocaleString()} latest predictions)
+                        </p>
+                      </div>
+                    )}
+
                     {rows.length > 0 && (
                       <div className="table-responsive" style={{ maxHeight: 320, overflowY: 'auto' }}>
                         <table className="table table-sm table-bordered table-hover mb-0">
@@ -529,7 +573,9 @@ export default function ReportsPage() {
                                     <td key={column.key}>
                                       {column.format === 'badge' ? (
                                         <span className={getBadgeClass(value)}>
-                                          {formatCellValue(value, column.format)}
+                                          {column.key === 'prediction' || column.key === 'riskBand'
+                                            ? formatPredictionLabel(value)
+                                            : formatCellValue(value, column.format)}
                                         </span>
                                       ) : (
                                         <span

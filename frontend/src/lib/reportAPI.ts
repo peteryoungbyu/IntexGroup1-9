@@ -136,7 +136,7 @@ export interface ReportInferenceTable {
 
 export async function getInferenceResults(
   jobKey: string,
-  limit = 100
+  limit = 0
 ): Promise<ReportInferenceTable> {
   const res = await apiFetch(
     `/api/reports/inference-results/${encodeURIComponent(jobKey)}?limit=${limit}`
