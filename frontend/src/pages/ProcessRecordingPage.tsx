@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import type { ProcessRecording, ResidentListItem, ProcessRecordingFormOptions } from '../types/ResidentDetail';
+import { Fragment, useEffect, useState, useMemo } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import type { ProcessRecording, ProcessRecordingFormOptions } from '../types/ResidentDetail';
 import {
   getResidents,
   getResidentRecordings,
@@ -64,6 +64,7 @@ const EMPTY_FORM: NewSessionForm = {
   sessionDate: '',
   socialWorker: '',
   sessionType: '',
+  sessionDurationMinutes: '',
   emotionalStateObserved: '',
   emotionalStateEnd: '',
   interventionsApplied: [],
@@ -76,7 +77,6 @@ const EMPTY_FORM: NewSessionForm = {
 export default function ProcessRecordingPage() {
   const location = useLocation();
   const [recordings, setRecordings] = useState<FlatRecording[]>([]);
-  const [residents, setResidents] = useState<ResidentListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -116,7 +116,6 @@ export default function ProcessRecordingPage() {
         getResidents(1, 500),
         getProcessRecordingFormOptions(),
       ]);
-      setResidents(paged.items);
       setRecordingFormOptions(formOptions);
       const perResident = await Promise.all(
         paged.items.map((r) =>
@@ -708,7 +707,7 @@ export default function ProcessRecordingPage() {
                       <select
                         className="form-select"
                         value={form.sessionType}
-                        onChange={(e) => setForm({ ...form, sessionType: e.target.value })}
+                        onChange={(e) => setForm({ ...form, sessionType: e.target.value as NewSessionForm['sessionType'] })}
                         required
                       >
                         <option value="">Select…</option>
