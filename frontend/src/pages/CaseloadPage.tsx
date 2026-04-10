@@ -23,11 +23,6 @@ const RISK_COLORS: Record<string, string> = {
   Critical: 'dark',
 };
 
-interface PendingDelete {
-  id: number;
-  label: string;
-}
-
 interface ResidentFilters {
   search: string;
   status: string;
@@ -56,9 +51,7 @@ export default function CaseloadPage() {
   >([]);
   const [loading, setLoading] = useState(true);
 
-  const [pending, setPending] = useState<PendingDelete | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | undefined>();
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   const [showAdd, setShowAdd] = useState(false);
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
@@ -123,30 +116,26 @@ export default function CaseloadPage() {
     }));
   };
 
-  const handleDeleteClick = (id: number, label: string) => {
-    setDeleteError(undefined);
-    setPending({ id, label });
-  };
-
-  const handleConfirm = async () => {
-    if (!pending) return;
-    setBusy(true);
-    setDeleteError(undefined);
+  const handleDelete = async (id: number, label: string) => {
+    const confirmed = window.confirm(
+      'WARNING: This will permanently delete this resident and ALL associated records including process recordings, home visitations, education records, health records, intervention plans, and incident reports. This action cannot be undone. Are you sure?'
+    );
+    if (!confirmed) return;
     try {
-      await deleteResident(pending.id);
-      setPending(null);
-      load();
+      await deleteResident(id);
+      setResult((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.filter((r) => r.residentId !== id),
+              totalCount: prev.totalCount - 1,
+            }
+          : prev
+      );
+      setDeleteSuccess(`Case ${label} has been successfully deleted.`);
     } catch {
-      setDeleteError('Failed to delete resident record. Please try again.');
-    } finally {
-      setBusy(false);
+      alert('Failed to delete resident record. Please try again.');
     }
-  };
-
-  const handleCancel = () => {
-    if (busy) return;
-    setPending(null);
-    setDeleteError(undefined);
   };
 
   const openAdd = () => {
@@ -201,6 +190,20 @@ export default function CaseloadPage() {
             type="button"
             className="btn-close"
             onClick={() => setAddSuccess(null)}
+          />
+        </div>
+      )}
+
+      {deleteSuccess && (
+        <div
+          className="alert alert-success alert-dismissible mx-4 mt-3 mb-0"
+          role="alert"
+        >
+          {deleteSuccess}
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setDeleteSuccess(null)}
           />
         </div>
       )}
@@ -358,7 +361,7 @@ export default function CaseloadPage() {
                             <button
                               className="btn btn-sm btn-outline-danger"
                               onClick={() =>
-                                handleDeleteClick(r.residentId, r.caseControlNo)
+                                handleDelete(r.residentId, r.caseControlNo)
                               }
                             >
                               Delete

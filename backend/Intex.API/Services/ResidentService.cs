@@ -217,6 +217,35 @@ public class ResidentService : IResidentService
     {
         var resident = await _db.Residents.FindAsync(id);
         if (resident is null) return false;
+
+        var processRecordings = await _db.ProcessRecordings
+            .Where(x => x.ResidentId == id).ToListAsync();
+        _db.ProcessRecordings.RemoveRange(processRecordings);
+
+        var homeVisitations = await _db.HomeVisitations
+            .Where(x => x.ResidentId == id).ToListAsync();
+        _db.HomeVisitations.RemoveRange(homeVisitations);
+
+        var educationRecords = await _db.EducationRecords
+            .Where(x => x.ResidentId == id).ToListAsync();
+        _db.EducationRecords.RemoveRange(educationRecords);
+
+        var healthRecords = await _db.HealthWellbeingRecords
+            .Where(x => x.ResidentId == id).ToListAsync();
+        _db.HealthWellbeingRecords.RemoveRange(healthRecords);
+
+        var interventionPlans = await _db.InterventionPlans
+            .Where(x => x.ResidentId == id).ToListAsync();
+        _db.InterventionPlans.RemoveRange(interventionPlans);
+
+        var incidentReports = await _db.IncidentReports
+            .Where(x => x.ResidentId == id).ToListAsync();
+        _db.IncidentReports.RemoveRange(incidentReports);
+
+        var caseConferences = await _db.CaseConferences
+            .Where(x => x.ResidentId == id).ToListAsync();
+        _db.CaseConferences.RemoveRange(caseConferences);
+
         _db.Residents.Remove(resident);
         await _db.SaveChangesAsync();
         return true;
