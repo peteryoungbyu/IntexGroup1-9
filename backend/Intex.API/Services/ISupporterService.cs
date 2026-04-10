@@ -19,6 +19,11 @@ public record SupporterDetail(
 public record DonorPledgeOptions(
     IReadOnlyList<string> ProgramAreas,
     IReadOnlyList<int> SafehouseIds);
+public record CreateSupporterDonationRequest(
+    decimal Amount,
+    bool IsRecurring,
+    string? ProgramArea,
+    int? SafehouseId);
 public record PagedResult<T>(IReadOnlyList<T> Items, int TotalCount, int Page, int PageSize);
 
 public interface ISupporterService
@@ -31,7 +36,7 @@ public interface ISupporterService
     Task<Supporter> CreateAsync(Supporter supporter);
     Task<Supporter?> UpdateAsync(int id, Supporter supporter);
     Task<bool> DeleteAsync(int id);
-    Task<Donation> AddDonationAsync(int supporterId, Donation donation);
+    Task<Donation> AddDonationAsync(int supporterId, CreateSupporterDonationRequest request);
     Task<DonorPledgeOptions> GetDonorPledgeOptionsAsync();
     Task<Donation> CreateDonorPledgeAsync(
         string userId,

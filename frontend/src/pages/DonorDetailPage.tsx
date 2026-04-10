@@ -1,31 +1,73 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type {
-  Supporter,
-  Donation,
-  SupporterDetail,
-} from '../types/SupporterDetail';
+import type { SupporterDetail } from '../types/SupporterDetail';
 import {
   getSupporterById,
+  getSupporterFormOptions,
   updateSupporter,
   addDonation,
   deleteDonation,
+  getDonorPledgeOptions,
+  type AdminDonationRequest,
+  type DonorPledgeOptions,
+  type SupporterFormOptions,
+  type UpdateSupporterRequest,
 } from '../lib/supporterAPI';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
-const EMPTY_DONATION: Omit<Donation, 'donationId'> = {
-  supporterId: 0,
-  donationType: 'Monetary',
-  donationDate: '',
-  channelSource: null,
-  currencyCode: 'PHP',
-  amount: null,
-  estimatedValue: null,
-  impactUnit: null,
+const EMPTY_DONATION: AdminDonationRequest = {
+  amount: 1000,
   isRecurring: false,
-  campaignName: null,
-  notes: null,
+  programArea: null,
+  safehouseId: null,
 };
+
+const EMPTY_OPTIONS: SupporterFormOptions = {
+  supporterTypes: [],
+  relationshipTypes: [],
+  regions: [],
+  countries: [],
+  acquisitionChannels: [],
+  statuses: ['Active', 'Inactive'],
+};
+
+const EMPTY_PLEDGE_OPTIONS: DonorPledgeOptions = {
+  programAreas: [],
+  safehouseIds: [],
+};
+
+function hasRequiredOptions(options: SupporterFormOptions) {
+  return (
+    options.supporterTypes.length > 0 &&
+    options.relationshipTypes.length > 0 &&
+    options.regions.length > 0 &&
+    options.countries.length > 0 &&
+    options.acquisitionChannels.length > 0 &&
+    options.statuses.length > 0
+  );
+}
+
+function toEditRequest(
+  detail: SupporterDetail['supporter']
+): UpdateSupporterRequest {
+  return {
+    supporterType: detail.supporterType ?? '',
+    organizationName: detail.organizationName ?? null,
+    firstName: detail.firstName ?? '',
+    lastName: detail.lastName ?? '',
+    relationshipType: detail.relationshipType ?? '',
+    region: detail.region ?? '',
+    country: detail.country ?? '',
+    email: detail.email ?? '',
+    phone: detail.phone ?? '',
+    status: detail.status ?? 'Active',
+    firstDonationDate: detail.firstDonationDate ?? '',
+    acquisitionChannel: detail.acquisitionChannel ?? '',
+    displayName: detail.displayName,
+    churnProbability: detail.churnProbability ?? null,
+    likelyChurn: detail.likelyChurn ?? null,
+  };
+}
 
 export default function DonorDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,18 +78,19 @@ export default function DonorDetailPage() {
 
   // Edit supporter
   const [showEdit, setShowEdit] = useState(false);
-  const [editForm, setEditForm] = useState<Omit<
-    Supporter,
-    'supporterId' | 'createdAt'
-  > | null>(null);
+  const [editForm, setEditForm] = useState<UpdateSupporterRequest | null>(null);
+  const [formOptions, setFormOptions] =
+    useState<SupporterFormOptions>(EMPTY_OPTIONS);
+  const [optionsLoading, setOptionsLoading] = useState(true);
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
   // Add donation
   const [showAddDonation, setShowAddDonation] = useState(false);
-  const [donationForm, setDonationForm] = useState<
-    Omit<Donation, 'donationId'>
-  >({ ...EMPTY_DONATION, supporterId });
+  const [donationForm, setDonationForm] =
+    useState<AdminDonationRequest>({ ...EMPTY_DONATION });
+  const [pledgeOptions, setPledgeOptions] =
+    useState<DonorPledgeOptions>(EMPTY_PLEDGE_OPTIONS);
   const [donationBusy, setDonationBusy] = useState(false);
   const [donationError, setDonationError] = useState<string | null>(null);
 
@@ -63,6 +106,16 @@ export default function DonorDetailPage() {
       .then(setDetail)
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    getSupporterFormOptions()
+      .then(setFormOptions)
+      .finally(() => setOptionsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    getDonorPledgeOptions().then(setPledgeOptions);
+  }, []);
 
   if (loading)
     return (
@@ -83,12 +136,7 @@ export default function DonorDetailPage() {
   const { supporter, donations } = detail;
 
   function openEdit() {
-    const {
-      supporterId: _id,
-      createdAt: _ca,
-      ...fields
-    } = supporter as Supporter;
-    setEditForm(fields);
+    setEditForm(toEditRequest(supporter));
     setEditError(null);
     setShowEdit(true);
   }
@@ -103,6 +151,12 @@ export default function DonorDetailPage() {
   async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!editForm) return;
+    if (!hasRequiredOptions(formOptions)) {
+      setEditError(
+        'Supporter form options are incomplete. Make sure existing supporter data includes region, country, and the other dropdown values.'
+      );
+      return;
+    }
     setEditBusy(true);
     setEditError(null);
     try {
@@ -117,7 +171,7 @@ export default function DonorDetailPage() {
   }
 
   function openAddDonation() {
-    setDonationForm({ ...EMPTY_DONATION, supporterId });
+    setDonationForm({ ...EMPTY_DONATION });
     setDonationError(null);
     setShowAddDonation(true);
   }
@@ -131,6 +185,7 @@ export default function DonorDetailPage() {
 
   async function handleAddDonation(e: React.FormEvent) {
     e.preventDefault();
+    if (!donationForm.amount || donationForm.amount <= 0) return;
     setDonationBusy(true);
     setDonationError(null);
     try {
@@ -205,17 +260,29 @@ export default function DonorDetailPage() {
                   {editError && (
                     <div className="alert alert-danger">{editError}</div>
                   )}
+                  {!optionsLoading && !hasRequiredOptions(formOptions) && (
+                    <div className="alert alert-warning">
+                      One or more required dropdown lists are empty. This edit
+                      form reads its choices from existing supporter data.
+                    </div>
+                  )}
                   <div className="row g-3">
                     <div className="col-md-6">
-                      <label className="form-label">
-                        Display Name <span className="text-danger">*</span>
-                      </label>
+                      <label className="form-label">First Name</label>
                       <input
                         type="text"
                         className="form-control"
-                        required
-                        value={editForm.displayName}
-                        onChange={(e) => setEdit('displayName', e.target.value)}
+                        value={editForm.firstName}
+                        onChange={(e) => setEdit('firstName', e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Last Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editForm.lastName}
+                        onChange={(e) => setEdit('lastName', e.target.value)}
                       />
                     </div>
                     <div className="col-md-6">
@@ -229,40 +296,20 @@ export default function DonorDetailPage() {
                         onChange={(e) =>
                           setEdit('supporterType', e.target.value)
                         }
+                        disabled={optionsLoading || editBusy}
                       >
-                        <option>Monetary Donor</option>
-                        <option>Volunteer</option>
-                        <option>Skills Contributor</option>
-                        <option>In-Kind Donor</option>
-                        <option>Social Media Advocate</option>
-                        <option>Corporate Partner</option>
-                        <option>Foundation</option>
+                        {formOptions.supporterTypes.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">First Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={editForm.firstName ?? ''}
-                        onChange={(e) =>
-                          setEdit('firstName', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Last Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={editForm.lastName ?? ''}
-                        onChange={(e) =>
-                          setEdit('lastName', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Organization Name</label>
+                      <label className="form-label">
+                        Organization Name{' '}
+                        <span className="text-muted">(optional)</span>
+                      </label>
                       <input
                         type="text"
                         className="form-control"
@@ -273,14 +320,35 @@ export default function DonorDetailPage() {
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Email</label>
+                      <label className="form-label">
+                        Relationship Type <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={editForm.relationshipType}
+                        onChange={(e) =>
+                          setEdit('relationshipType', e.target.value)
+                        }
+                        disabled={optionsLoading || editBusy}
+                      >
+                        {formOptions.relationshipTypes.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">
+                        Email <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="email"
                         className="form-control"
-                        value={editForm.email ?? ''}
-                        onChange={(e) =>
-                          setEdit('email', e.target.value || null)
-                        }
+                        required
+                        value={editForm.email}
+                        onChange={(e) => setEdit('email', e.target.value)}
                       />
                     </div>
                     <div className="col-md-6">
@@ -288,10 +356,9 @@ export default function DonorDetailPage() {
                       <input
                         type="text"
                         className="form-control"
-                        value={editForm.phone ?? ''}
-                        onChange={(e) =>
-                          setEdit('phone', e.target.value || null)
-                        }
+                        placeholder="+1 (347) 358-4878"
+                        value={editForm.phone}
+                        onChange={(e) => setEdit('phone', e.target.value)}
                       />
                     </div>
                     <div className="col-md-6">
@@ -303,52 +370,84 @@ export default function DonorDetailPage() {
                         required
                         value={editForm.status}
                         onChange={(e) => setEdit('status', e.target.value)}
+                        disabled={editBusy}
                       >
-                        <option>Active</option>
-                        <option>Inactive</option>
+                        {formOptions.statuses.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Region</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={editForm.region ?? ''}
-                        onChange={(e) =>
-                          setEdit('region', e.target.value || null)
-                        }
-                      />
+                      <label className="form-label">
+                        Region <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={editForm.region}
+                        onChange={(e) => setEdit('region', e.target.value)}
+                        disabled={optionsLoading || editBusy}
+                      >
+                        {formOptions.regions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Country</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={editForm.country ?? ''}
-                        onChange={(e) =>
-                          setEdit('country', e.target.value || null)
-                        }
-                      />
+                      <label className="form-label">
+                        Country <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={editForm.country}
+                        onChange={(e) => setEdit('country', e.target.value)}
+                        disabled={optionsLoading || editBusy}
+                      >
+                        {formOptions.countries.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Acquisition Channel</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={editForm.acquisitionChannel ?? ''}
+                      <label className="form-label">
+                        Acquisition Channel{' '}
+                        <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={editForm.acquisitionChannel}
                         onChange={(e) =>
-                          setEdit('acquisitionChannel', e.target.value || null)
+                          setEdit('acquisitionChannel', e.target.value)
                         }
-                      />
+                        disabled={optionsLoading || editBusy}
+                      >
+                        {formOptions.acquisitionChannels.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">First Donation Date</label>
+                      <label className="form-label">
+                        First Donation Date{' '}
+                        <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="date"
                         className="form-control"
-                        value={editForm.firstDonationDate ?? ''}
+                        required
+                        value={editForm.firstDonationDate}
                         onChange={(e) =>
-                          setEdit('firstDonationDate', e.target.value || null)
+                          setEdit('firstDonationDate', e.target.value)
                         }
                       />
                     </div>
@@ -398,7 +497,7 @@ export default function DonorDetailPage() {
             <form onSubmit={handleAddDonation}>
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Record Donation</h5>
+                  <h5 className="modal-title">Record Contribution</h5>
                   <button
                     type="button"
                     className="btn-close"
@@ -411,141 +510,98 @@ export default function DonorDetailPage() {
                     <div className="alert alert-danger">{donationError}</div>
                   )}
                   <div className="row g-3">
-                    <div className="col-md-6">
+                    <div className="col-12">
                       <label className="form-label">
-                        Donation Type <span className="text-danger">*</span>
+                        Amount <span className="text-danger">*</span>
                       </label>
+                      <div className="input-group">
+                        <span className="input-group-text fw-bold">₱</span>
+                        <input
+                          type="number"
+                          className="form-control"
+                          placeholder="e.g. 1500"
+                          min="1"
+                          step="1"
+                          required
+                          value={donationForm.amount}
+                          onChange={(e) =>
+                            setDon(
+                              'amount',
+                              e.target.value ? Number(e.target.value) : 0
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Program Area</label>
                       <select
                         className="form-select"
-                        required
-                        value={donationForm.donationType}
-                        onChange={(e) => setDon('donationType', e.target.value)}
+                        value={donationForm.programArea ?? 'Any'}
+                        onChange={(e) =>
+                          setDon(
+                            'programArea',
+                            e.target.value === 'Any' ? null : e.target.value
+                          )
+                        }
                       >
-                        <option>Monetary</option>
-                        <option>In-Kind</option>
-                        <option>Time</option>
-                        <option>Skills</option>
-                        <option>Social Media</option>
+                        <option value="Any">Any</option>
+                        {pledgeOptions.programAreas.map((area) => (
+                          <option key={area} value={area}>
+                            {area}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">
-                        Donation Date <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        required
-                        value={donationForm.donationDate}
-                        onChange={(e) => setDon('donationDate', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">Currency</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={donationForm.currencyCode ?? ''}
-                        onChange={(e) =>
-                          setDon('currencyCode', e.target.value || null)
+                      <label className="form-label">Safehouse</label>
+                      <select
+                        className="form-select"
+                        value={
+                          donationForm.safehouseId == null
+                            ? 'Any'
+                            : String(donationForm.safehouseId)
                         }
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">Amount</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min={0}
-                        step="0.01"
-                        value={donationForm.amount ?? ''}
                         onChange={(e) =>
                           setDon(
-                            'amount',
-                            e.target.value ? Number(e.target.value) : null
+                            'safehouseId',
+                            e.target.value === 'Any'
+                              ? null
+                              : Number(e.target.value)
                           )
                         }
-                      />
+                      >
+                        <option value="Any">Any</option>
+                        {pledgeOptions.safehouseIds.map((safehouseId) => (
+                          <option key={safehouseId} value={String(safehouseId)}>
+                            {safehouseId}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    <div className="col-md-4">
-                      <label className="form-label">Estimated Value</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min={0}
-                        step="0.01"
-                        value={donationForm.estimatedValue ?? ''}
-                        onChange={(e) =>
-                          setDon(
-                            'estimatedValue',
-                            e.target.value ? Number(e.target.value) : null
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Channel Source</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={donationForm.channelSource ?? ''}
-                        onChange={(e) =>
-                          setDon('channelSource', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Campaign Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={donationForm.campaignName ?? ''}
-                        onChange={(e) =>
-                          setDon('campaignName', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Impact Unit</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="e.g. hours, meals"
-                        value={donationForm.impactUnit ?? ''}
-                        onChange={(e) =>
-                          setDon('impactUnit', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-6 d-flex align-items-end">
-                      <div className="form-check mb-1">
+                    <div className="col-12">
+                      <div className="form-check form-switch">
                         <input
-                          type="checkbox"
                           className="form-check-input"
-                          id="isRecurring"
+                          type="checkbox"
+                          role="switch"
+                          id="admin-recurring-toggle"
                           checked={donationForm.isRecurring}
                           onChange={(e) =>
                             setDon('isRecurring', e.target.checked)
                           }
                         />
                         <label
-                          className="form-check-label"
-                          htmlFor="isRecurring"
+                          className="form-check-label fw-semibold"
+                          htmlFor="admin-recurring-toggle"
                         >
-                          Recurring Donation
+                          Make this a monthly gift
                         </label>
                       </div>
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label">Notes</label>
-                      <textarea
-                        className="form-control"
-                        rows={2}
-                        value={donationForm.notes ?? ''}
-                        onChange={(e) =>
-                          setDon('notes', e.target.value || null)
-                        }
-                      />
+                      <p className="text-muted small mt-1 mb-0">
+                        Monthly donors provide reliable, year-round support that
+                        helps us plan programs with confidence.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -561,7 +617,11 @@ export default function DonorDetailPage() {
                   <button
                     type="submit"
                     className="btn btn-primary"
-                    disabled={donationBusy}
+                    disabled={
+                      donationBusy ||
+                      !donationForm.amount ||
+                      donationForm.amount <= 0
+                    }
                   >
                     {donationBusy ? (
                       <>
@@ -569,7 +629,7 @@ export default function DonorDetailPage() {
                         Saving…
                       </>
                     ) : (
-                      'Record Donation'
+                      `Pledge ₱${donationForm.amount.toLocaleString()}${donationForm.isRecurring ? '/month' : ''}`
                     )}
                   </button>
                 </div>
@@ -619,6 +679,10 @@ export default function DonorDetailPage() {
                 <dl className="row mb-0">
                   <dt className="col-sm-5">Type</dt>
                   <dd className="col-sm-7">{supporter.supporterType}</dd>
+                  <dt className="col-sm-5">Relationship</dt>
+                  <dd className="col-sm-7">
+                    {supporter.relationshipType ?? '—'}
+                  </dd>
                   {supporter.firstName && (
                     <>
                       <dt className="col-sm-5">Name</dt>
