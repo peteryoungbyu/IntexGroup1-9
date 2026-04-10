@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import Pagination from '../components/Pagination';
-import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
@@ -12,11 +11,6 @@ async function apiFetch(path: string, init?: RequestInit) {
   });
 }
 
-interface PendingDelete {
-  id: number;
-  name: string;
-}
-
 export default function PartnersPage() {
   const [result, setResult] = useState<{ items: any[]; total: number } | null>(
     null
@@ -25,10 +19,6 @@ export default function PartnersPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
-
-  const [pending, setPending] = useState<PendingDelete | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | undefined>();
 
   const load = () => {
     setLoading(true);
@@ -51,50 +41,30 @@ export default function PartnersPage() {
     load();
   };
 
-  const handleDeleteClick = (id: number, name: string) => {
-    setDeleteError(undefined);
-    setPending({ id, name });
-  };
-
-  const handleConfirm = async () => {
-    if (!pending) return;
-    setBusy(true);
-    setDeleteError(undefined);
+  const handleDelete = async (id: number) => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this partner? This will also remove all their safehouse assignments. This action cannot be undone.'
+    );
+    if (!confirmed) return;
     try {
-      await apiFetch(`/api/partners/${pending.id}`, { method: 'DELETE' });
-      setPending(null);
-      load();
+      const res = await apiFetch(`/api/partners/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      setResult((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.filter((p) => p.partnerId !== id),
+              total: prev.total - 1,
+            }
+          : prev
+      );
     } catch {
-      setDeleteError('Failed to delete partner. Please try again.');
-    } finally {
-      setBusy(false);
+      alert('Failed to delete partner. Please try again.');
     }
-  };
-
-  const handleCancel = () => {
-    if (busy) return;
-    setPending(null);
-    setDeleteError(undefined);
   };
 
   return (
     <div>
-      <DeleteConfirmModal
-        open={pending !== null}
-        title="Delete Partner"
-        message={
-          <>
-            Are you sure you want to delete <strong>{pending?.name}</strong>?
-            This action cannot be undone.
-          </>
-        }
-        confirmLabel="Delete Partner"
-        busy={busy}
-        error={deleteError}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-      />
-
       <div className="page-header">
         <div className="container-fluid px-4">
           <p className="section-label">Admin</p>
@@ -179,9 +149,7 @@ export default function PartnersPage() {
                         <td>
                           <button
                             className="btn btn-sm btn-outline-danger"
-                            onClick={() =>
-                              handleDeleteClick(p.partnerId, p.partnerName)
-                            }
+                            onClick={() => handleDelete(p.partnerId)}
                           >
                             Delete
                           </button>

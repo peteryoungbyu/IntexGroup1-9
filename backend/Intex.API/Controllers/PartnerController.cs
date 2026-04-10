@@ -76,10 +76,22 @@ public class PartnerController : ControllerBase
     [Authorize(Policy = AuthPolicies.AdminManage)]
     public async Task<IActionResult> Delete(int id)
     {
-        var partner = await _db.Partners.FindAsync(id);
-        if (partner is null) return NotFound();
-        _db.Partners.Remove(partner);
-        await _db.SaveChangesAsync();
-        return NoContent();
+        try
+        {
+            var partner = await _db.Partners.FindAsync(id);
+            if (partner is null) return NotFound();
+
+            var assignments = await _db.PartnerAssignments
+                .Where(a => a.PartnerId == id).ToListAsync();
+            _db.PartnerAssignments.RemoveRange(assignments);
+
+            _db.Partners.Remove(partner);
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 }

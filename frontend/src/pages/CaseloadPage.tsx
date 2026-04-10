@@ -9,12 +9,12 @@ import type {
 import {
   getResidents,
   deleteResident,
-  createResident,
   getResidentSafehouseOptions,
 } from '../lib/residentAPI';
 import { RESIDENT_CASE_CATEGORIES } from '../lib/residentOptions';
 import Pagination from '../components/Pagination';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import ResidentCreateModal from '../components/ResidentCreateModal';
 
 const RISK_COLORS: Record<string, string> = {
   Low: 'success',
@@ -22,11 +22,6 @@ const RISK_COLORS: Record<string, string> = {
   High: 'danger',
   Critical: 'dark',
 };
-
-interface PendingDelete {
-  id: number;
-  label: string;
-}
 
 interface ResidentFilters {
   search: string;
@@ -40,56 +35,6 @@ const EMPTY_FILTERS: ResidentFilters = {
   status: '',
   safehouseId: '',
   caseCategory: '',
-};
-
-const EMPTY_RESIDENT: Omit<Resident, 'residentId' | 'createdAt'> = {
-  caseControlNo: '',
-  internalCode: '',
-  safehouseId: 1,
-  caseStatus: 'Active',
-  sex: 'F',
-  dateOfBirth: '',
-  birthStatus: null,
-  placeOfBirth: null,
-  religion: null,
-  caseCategory: 'Child in Need of Special Protection',
-  subCatOrphaned: false,
-  subCatTrafficked: false,
-  subCatChildLabor: false,
-  subCatPhysicalAbuse: false,
-  subCatSexualAbuse: false,
-  subCatOsaec: false,
-  subCatCicl: false,
-  subCatAtRisk: false,
-  subCatStreetChild: false,
-  subCatChildWithHiv: false,
-  isPwd: false,
-  pwdType: null,
-  hasSpecialNeeds: false,
-  specialNeedsDiagnosis: null,
-  familyIs4Ps: false,
-  familySoloParent: false,
-  familyIndigenous: false,
-  familyParentPwd: false,
-  familyInformalSettler: false,
-  dateOfAdmission: '',
-  ageUponAdmission: null,
-  presentAge: null,
-  lengthOfStay: null,
-  referralSource: null,
-  referringAgencyPerson: null,
-  dateColbRegistered: null,
-  dateColbObtained: null,
-  assignedSocialWorker: null,
-  initialCaseAssessment: null,
-  dateCaseStudyPrepared: null,
-  reintegrationType: null,
-  reintegrationStatus: null,
-  initialRiskLevel: null,
-  currentRiskLevel: null,
-  dateEnrolled: null,
-  dateClosed: null,
-  notesRestricted: null,
 };
 
 export default function CaseloadPage() {
@@ -106,16 +51,9 @@ export default function CaseloadPage() {
   >([]);
   const [loading, setLoading] = useState(true);
 
-  const [pending, setPending] = useState<PendingDelete | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | undefined>();
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState<
-    Omit<Resident, 'residentId' | 'createdAt'>
-  >({ ...EMPTY_RESIDENT });
-  const [addBusy, setAddBusy] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
 
   const load = (nextPage = page, nextFilters = filters) => {
@@ -178,67 +116,44 @@ export default function CaseloadPage() {
     }));
   };
 
-  const handleDeleteClick = (id: number, label: string) => {
-    setDeleteError(undefined);
-    setPending({ id, label });
-  };
-
-  const handleConfirm = async () => {
-    if (!pending) return;
-    setBusy(true);
-    setDeleteError(undefined);
+  const handleDelete = async (id: number, label: string) => {
+    const confirmed = window.confirm(
+      'WARNING: This will permanently delete this resident and ALL associated records including process recordings, home visitations, education records, health records, intervention plans, and incident reports. This action cannot be undone. Are you sure?'
+    );
+    if (!confirmed) return;
     try {
-      await deleteResident(pending.id);
-      setPending(null);
-      load();
+      await deleteResident(id);
+      setResult((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.filter((r) => r.residentId !== id),
+              totalCount: prev.totalCount - 1,
+            }
+          : prev
+      );
+      setDeleteSuccess(`Case ${label} has been successfully deleted.`);
     } catch {
-      setDeleteError('Failed to delete resident record. Please try again.');
-    } finally {
-      setBusy(false);
+      alert('Failed to delete resident record. Please try again.');
     }
   };
 
-  const handleCancel = () => {
-    if (busy) return;
-    setPending(null);
-    setDeleteError(undefined);
-  };
-
   const openAdd = () => {
-    setAddForm({ ...EMPTY_RESIDENT });
-    setAddError(null);
     setAddSuccess(null);
     setShowAdd(true);
   };
 
   const closeAdd = () => {
-    if (addBusy) return;
     setShowAdd(false);
-    setAddError(null);
   };
 
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAddBusy(true);
-    setAddError(null);
-    try {
-      await createResident({
-        ...addForm,
-        sex: 'F',
-        dateEnrolled: addForm.dateEnrolled ?? addForm.dateOfAdmission,
-      });
-      setShowAdd(false);
-      setAddSuccess('Resident record created successfully.');
-      load();
-    } catch {
-      setAddError('Failed to create resident record. Please try again.');
-    } finally {
-      setAddBusy(false);
-    }
+  const handleResidentCreated = (resident: Resident) => {
+    setShowAdd(false);
+    setAddSuccess(`Resident record ${resident.caseControlNo} created successfully.`);
+    load();
   };
 
-  const set = (field: keyof typeof addForm, value: unknown) =>
-    setAddForm((f) => ({ ...f, [field]: value }));
+
 
   return (
     <div>
@@ -258,541 +173,12 @@ export default function CaseloadPage() {
         onCancel={handleCancel}
       />
 
-      {/* Add Resident Modal */}
-      {showAdd && (
-        <div
-          className="modal d-block"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-          onClick={closeAdd}
-        >
-          <div
-            className="modal-dialog modal-xl modal-dialog-scrollable"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <form onSubmit={handleAddSubmit}>
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Add New Resident</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={closeAdd}
-                    disabled={addBusy}
-                  />
-                </div>
-                <div
-                  className="modal-body"
-                  style={{ overflowY: 'auto', maxHeight: '80vh' }}
-                >
-                  {addError && (
-                    <div className="alert alert-danger">{addError}</div>
-                  )}
+      <ResidentCreateModal
+        open={showAdd}
+        onClose={closeAdd}
+        onCreated={handleResidentCreated}
+      />
 
-                  {/* Basic Info */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
-                    Basic Information
-                  </h6>
-                  <div className="row g-3 mb-4">
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Case Control No. <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        required
-                        value={addForm.caseControlNo}
-                        onChange={(e) => set('caseControlNo', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Internal Code <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        required
-                        value={addForm.internalCode}
-                        onChange={(e) => set('internalCode', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Safehouse <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        required
-                        value={addForm.safehouseId}
-                        onChange={(e) =>
-                          set('safehouseId', Number(e.target.value))
-                        }
-                      >
-                        {safehouseOptions.map((sh) => (
-                          <option key={sh.safehouseId} value={sh.safehouseId}>
-                            {sh.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Date of Birth <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        required
-                        value={addForm.dateOfBirth}
-                        onChange={(e) => set('dateOfBirth', e.target.value)}
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Place of Birth <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        required
-                        value={addForm.placeOfBirth ?? ''}
-                        onChange={(e) =>
-                          set('placeOfBirth', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Birth Status <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        required
-                        value={addForm.birthStatus ?? ''}
-                        onChange={(e) =>
-                          set('birthStatus', e.target.value || null)
-                        }
-                      >
-                        <option value="">— Select —</option>
-                        <option value="Marital">Marital</option>
-                        <option value="Non-Marital">Non-Marital</option>
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Religion <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        required
-                        value={addForm.religion ?? ''}
-                        onChange={(e) =>
-                          set('religion', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Case Status <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        required
-                        value={addForm.caseStatus}
-                        onChange={(e) => set('caseStatus', e.target.value)}
-                      >
-                        <option>Active</option>
-                        <option>Closed</option>
-                        <option>Transferred</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Case Category */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
-                    Case Category &amp; Sub-categories
-                  </h6>
-                  <div className="row g-3 mb-4">
-                    <div className="col-md-6">
-                      <label className="form-label">
-                        Case Category <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        required
-                        value={addForm.caseCategory}
-                        onChange={(e) => set('caseCategory', e.target.value)}
-                      >
-                        {RESIDENT_CASE_CATEGORIES.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label d-block">
-                        Sub-categories
-                      </label>
-                      <div className="row g-2">
-                        {(
-                          [
-                            ['subCatOrphaned', 'Orphaned'],
-                            ['subCatTrafficked', 'Trafficked'],
-                            ['subCatChildLabor', 'Child Labor'],
-                            ['subCatPhysicalAbuse', 'Physical Abuse'],
-                            ['subCatSexualAbuse', 'Sexual Abuse'],
-                            ['subCatOsaec', 'OSAEC'],
-                            ['subCatCicl', 'CICL'],
-                            ['subCatAtRisk', 'At Risk'],
-                            ['subCatStreetChild', 'Street Child'],
-                            ['subCatChildWithHiv', 'Child with HIV'],
-                          ] as const
-                        ).map(([field, label]) => (
-                          <div key={field} className="col-6">
-                            <div className="form-check">
-                              <input
-                                type="checkbox"
-                                className="form-check-input"
-                                id={`add-${field}`}
-                                checked={addForm[field] as boolean}
-                                onChange={(e) => set(field, e.target.checked)}
-                              />
-                              <label
-                                className="form-check-label"
-                                htmlFor={`add-${field}`}
-                              >
-                                {label}
-                              </label>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Disability */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
-                    Disability Information
-                  </h6>
-                  <div className="row g-3 mb-4">
-                    <div className="col-md-3">
-                      <div className="form-check mt-2">
-                        <input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="add-isPwd"
-                          checked={addForm.isPwd}
-                          onChange={(e) => set('isPwd', e.target.checked)}
-                        />
-                        <label className="form-check-label" htmlFor="add-isPwd">
-                          Person with Disability (PWD)
-                        </label>
-                      </div>
-                    </div>
-                    {addForm.isPwd && (
-                      <div className="col-md-4">
-                        <label className="form-label">PWD Type</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={addForm.pwdType ?? ''}
-                          onChange={(e) =>
-                            set('pwdType', e.target.value || null)
-                          }
-                        />
-                      </div>
-                    )}
-                    <div className="col-md-3">
-                      <div className="form-check mt-2">
-                        <input
-                          type="checkbox"
-                          className="form-check-input"
-                          id="add-hasSpecialNeeds"
-                          checked={addForm.hasSpecialNeeds}
-                          onChange={(e) =>
-                            set('hasSpecialNeeds', e.target.checked)
-                          }
-                        />
-                        <label
-                          className="form-check-label"
-                          htmlFor="add-hasSpecialNeeds"
-                        >
-                          Has Special Needs
-                        </label>
-                      </div>
-                    </div>
-                    {addForm.hasSpecialNeeds && (
-                      <div className="col-md-4">
-                        <label className="form-label">Diagnosis</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={addForm.specialNeedsDiagnosis ?? ''}
-                          onChange={(e) =>
-                            set('specialNeedsDiagnosis', e.target.value || null)
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Family Socio-demographic */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
-                    Family Socio-demographic Profile
-                  </h6>
-                  <div className="row g-2 mb-4">
-                    {(
-                      [
-                        ['familyIs4Ps', '4Ps Beneficiary'],
-                        ['familySoloParent', 'Solo Parent'],
-                        ['familyIndigenous', 'Indigenous Group'],
-                        ['familyParentPwd', 'Parent with Disability'],
-                        ['familyInformalSettler', 'Informal Settler'],
-                      ] as const
-                    ).map(([field, label]) => (
-                      <div key={field} className="col-md-4">
-                        <div className="form-check">
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            id={`add-${field}`}
-                            checked={addForm[field] as boolean}
-                            onChange={(e) => set(field, e.target.checked)}
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor={`add-${field}`}
-                          >
-                            {label}
-                          </label>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Admission Details */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
-                    Admission &amp; Referral
-                  </h6>
-                  <div className="row g-3 mb-4">
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Date of Admission <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        required
-                        value={addForm.dateOfAdmission}
-                        onChange={(e) => {
-                          set('dateOfAdmission', e.target.value);
-                          set('dateEnrolled', e.target.value || null);
-                        }}
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Assigned Social Worker{' '}
-                        <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        required
-                        value={addForm.assignedSocialWorker ?? ''}
-                        onChange={(e) =>
-                          set('assignedSocialWorker', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Referral Source <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        required
-                        value={addForm.referralSource ?? ''}
-                        onChange={(e) =>
-                          set('referralSource', e.target.value || null)
-                        }
-                      >
-                        <option value="">— Select —</option>
-                        <option value="Government Agency">
-                          Government Agency
-                        </option>
-                        <option value="NGO">NGO</option>
-                        <option value="Police">Police</option>
-                        <option value="Self-Referral">Self-Referral</option>
-                        <option value="Community">Community</option>
-                        <option value="Court Order">Court Order</option>
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Referring Agency / Person
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={addForm.referringAgencyPerson ?? ''}
-                        onChange={(e) =>
-                          set('referringAgencyPerson', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Initial Risk Level{' '}
-                        <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        required
-                        value={addForm.initialRiskLevel ?? ''}
-                        onChange={(e) =>
-                          set('initialRiskLevel', e.target.value || null)
-                        }
-                      >
-                        <option value="">— Select —</option>
-                        <option>Low</option>
-                        <option>Medium</option>
-                        <option>High</option>
-                        <option>Critical</option>
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Current Risk Level{' '}
-                        <span className="text-danger">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        required
-                        value={addForm.currentRiskLevel ?? ''}
-                        onChange={(e) =>
-                          set('currentRiskLevel', e.target.value || null)
-                        }
-                      >
-                        <option value="">— Select —</option>
-                        <option>Low</option>
-                        <option>Medium</option>
-                        <option>High</option>
-                        <option>Critical</option>
-                      </select>
-                    </div>
-                    <div className="col-12">
-                      <label className="form-label">
-                        Initial Case Assessment{' '}
-                        <span className="text-danger">*</span>
-                      </label>
-                      <textarea
-                        className="form-control"
-                        rows={2}
-                        required
-                        value={addForm.initialCaseAssessment ?? ''}
-                        onChange={(e) =>
-                          set('initialCaseAssessment', e.target.value || null)
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  {/* Reintegration */}
-                  <h6 className="fw-semibold border-bottom pb-1 mb-3">
-                    Reintegration
-                  </h6>
-                  <div className="row g-3">
-                    <div className="col-md-4">
-                      <label className="form-label">Reintegration Type</label>
-                      <select
-                        className="form-select"
-                        value={addForm.reintegrationType ?? ''}
-                        onChange={(e) =>
-                          set('reintegrationType', e.target.value || null)
-                        }
-                      >
-                        <option value="">— None —</option>
-                        <option value="Family Reunification">
-                          Family Reunification
-                        </option>
-                        <option value="Foster Care">Foster Care</option>
-                        <option value="Adoption (Domestic)">
-                          Adoption (Domestic)
-                        </option>
-                        <option value="Adoption (Inter-Country)">
-                          Adoption (Inter-Country)
-                        </option>
-                        <option value="Independent Living">
-                          Independent Living
-                        </option>
-                        <option value="None">None</option>
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">Reintegration Status</label>
-                      <select
-                        className="form-select"
-                        value={addForm.reintegrationStatus ?? ''}
-                        onChange={(e) =>
-                          set('reintegrationStatus', e.target.value || null)
-                        }
-                      >
-                        <option value="">— None —</option>
-                        <option value="Not Started">Not Started</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                        <option value="On Hold">On Hold</option>
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label">
-                        Date Enrolled <span className="text-danger">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        className="form-control"
-                        required
-                        value={addForm.dateEnrolled ?? ''}
-                        onChange={(e) =>
-                          set('dateEnrolled', e.target.value || null)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={closeAdd}
-                    disabled={addBusy}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={addBusy}
-                  >
-                    {addBusy ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" />
-                        Saving…
-                      </>
-                    ) : (
-                      'Add Resident'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {addSuccess && (
         <div
@@ -804,6 +190,20 @@ export default function CaseloadPage() {
             type="button"
             className="btn-close"
             onClick={() => setAddSuccess(null)}
+          />
+        </div>
+      )}
+
+      {deleteSuccess && (
+        <div
+          className="alert alert-success alert-dismissible mx-4 mt-3 mb-0"
+          role="alert"
+        >
+          {deleteSuccess}
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setDeleteSuccess(null)}
           />
         </div>
       )}
@@ -880,9 +280,6 @@ export default function CaseloadPage() {
               </select>
             </div>
             <div className="col-lg-2 col-md-12 d-flex gap-2">
-              <button type="submit" className="btn btn-primary flex-fill">
-                Search
-              </button>
               <button
                 type="button"
                 className="btn btn-outline-secondary"
@@ -964,7 +361,7 @@ export default function CaseloadPage() {
                             <button
                               className="btn btn-sm btn-outline-danger"
                               onClick={() =>
-                                handleDeleteClick(r.residentId, r.caseControlNo)
+                                handleDelete(r.residentId, r.caseControlNo)
                               }
                             >
                               Delete
@@ -998,3 +395,4 @@ export default function CaseloadPage() {
     </div>
   );
 }
+
