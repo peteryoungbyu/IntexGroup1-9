@@ -76,9 +76,17 @@ public class SupporterController : ControllerBase
 
     [HttpPost("{id:int}/donations")]
     [Authorize(Policy = AuthPolicies.AdminManage)]
-    public async Task<IActionResult> AddDonation(int id, [FromBody] Donation donation)
+    public async Task<IActionResult> AddDonation(int id, [FromBody] CreateAdminDonationRequest request)
     {
-        var created = await _service.AddDonationAsync(id, donation);
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+        var created = await _service.AddDonationAsync(
+            id,
+            new CreateSupporterDonationRequest(
+                request.Amount,
+                request.IsRecurring,
+                request.ProgramArea,
+                request.SafehouseId));
         return Ok(created);
     }
 
@@ -264,6 +272,18 @@ public class DonorSelfController : ControllerBase
 }
 
 public sealed class CreateDonorPledgeRequest
+{
+    [Range(0.01, 1_000_000_000)]
+    public decimal Amount { get; set; }
+
+    public bool IsRecurring { get; set; }
+
+    public string? ProgramArea { get; set; }
+
+    public int? SafehouseId { get; set; }
+}
+
+public sealed class CreateAdminDonationRequest
 {
     [Range(0.01, 1_000_000_000)]
     public decimal Amount { get; set; }

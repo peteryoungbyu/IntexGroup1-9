@@ -30,6 +30,13 @@ export interface DonorPledgeOptions {
   safehouseIds: number[];
 }
 
+export interface AdminDonationRequest {
+  amount: number;
+  isRecurring: boolean;
+  programArea: string | null;
+  safehouseId: number | null;
+}
+
 export interface SupporterFormOptions {
   supporterTypes: string[];
   relationshipTypes: string[];
@@ -52,6 +59,12 @@ export interface CreateSupporterRequest {
   status: string;
   firstDonationDate: string;
   acquisitionChannel: string;
+}
+
+export interface UpdateSupporterRequest extends CreateSupporterRequest {
+  displayName?: string;
+  churnProbability?: number | null;
+  likelyChurn?: boolean | null;
 }
 
 function extractErrorMessage(status: number): string {
@@ -129,7 +142,7 @@ export async function createSupporter(
 
 export async function updateSupporter(
   id: number,
-  data: Omit<Supporter, 'supporterId' | 'createdAt'>
+  data: UpdateSupporterRequest
 ): Promise<Supporter> {
   const res = await apiFetch(`/api/supporters/${id}`, {
     method: 'PUT',
@@ -140,7 +153,7 @@ export async function updateSupporter(
 
 export async function addDonation(
   supporterId: number,
-  data: Omit<Donation, 'donationId'>
+  data: AdminDonationRequest
 ): Promise<Donation> {
   const res = await apiFetch(`/api/supporters/${supporterId}/donations`, {
     method: 'POST',
