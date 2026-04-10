@@ -17,6 +17,22 @@ public class ResidentController : ControllerBase
     private static readonly string[] AllowedSessionTypes = ["Individual", "Group"];
     private static readonly string[] AllowedEmotionalStates = ["Calm", "Anxious", "Sad", "Angry", "Hopeful", "Withdrawn", "Happy", "Distressed"];
     private static readonly string[] AllowedInterventions = ["Legal Services", "Healing", "Teaching", "Caring"];
+    private static readonly string[] AllowedVisitTypes = ["Initial Assessment", "Routine Follow-Up", "Reintegration Assessment", "Post-Placement Monitoring", "Emergency"];
+    private static readonly string[] AllowedFamilyCooperationLevels = ["Highly Cooperative", "Cooperative", "Neutral", "Uncooperative"];
+    private static readonly string[] AllowedVisitOutcomes = ["Favorable", "Needs Improvement", "Unfavorable", "Inconclusive"];
+    private static readonly IReadOnlyDictionary<string, string> FamilyCooperationAliases =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["High"] = "Highly Cooperative",
+            ["Moderate"] = "Cooperative",
+            ["Low"] = "Neutral",
+            ["None"] = "Uncooperative",
+        };
+    private static readonly IReadOnlyDictionary<string, string> VisitOutcomeAliases =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Neutral"] = "Needs Improvement",
+        };
 
     private readonly IResidentService _service;
     private readonly AppDbContext _db;
@@ -280,6 +296,44 @@ public class ResidentController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{id:int}/recordings/{recordingId:int}")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> UpdateRecording(int id, int recordingId, [FromBody] UpdateProcessRecordingRequest request)
+    {
+        try
+        {
+            var recording = await _db.ProcessRecordings
+                .FirstOrDefaultAsync(r => r.RecordingId == recordingId && r.ResidentId == id);
+
+            if (recording is null)
+                return NotFound();
+
+            ValidateRequiredDate(request.SessionDate, nameof(request.SessionDate));
+
+            recording.SessionDate = request.SessionDate;
+            recording.SocialWorker = NormalizeRequiredText(request.SocialWorker, nameof(request.SocialWorker));
+            recording.SessionType = NormalizeRequiredOption(request.SessionType, AllowedSessionTypes, nameof(request.SessionType));
+            recording.SessionDurationMinutes = request.SessionDurationMinutes > 0
+                ? request.SessionDurationMinutes
+                : throw new ValidationException("SessionDurationMinutes must be greater than 0.");
+            recording.EmotionalStateObserved = NormalizeOptionalText(request.EmotionalStateObserved);
+            recording.EmotionalStateEnd = NormalizeOptionalText(request.EmotionalStateEnd);
+            recording.SessionNarrative = NormalizeOptionalText(request.SessionNarrative);
+            recording.InterventionsApplied = NormalizeOptionalText(request.InterventionsApplied);
+            recording.FollowUpActions = NormalizeOptionalText(request.FollowUpActions);
+            recording.ProgressNoted = request.ProgressNoted;
+            recording.ConcernsFlagged = request.ConcernsFlagged;
+            recording.ReferralMade = request.ReferralMade;
+
+            await _db.SaveChangesAsync();
+            return Ok(recording);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     // Home Visitations
     [HttpGet("{id:int}/visitations")]
     public async Task<IActionResult> GetVisitations(int id)
@@ -317,6 +371,58 @@ public class ResidentController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{id:int}/visitations/{visitationId:int}")]
+    [Authorize(Policy = AuthPolicies.AdminManage)]
+    public async Task<IActionResult> UpdateVisitation(int id, int visitationId, [FromBody] UpdateHomeVisitationRequest request)
+    {
+        try
+        {
+            var visitation = await _db.HomeVisitations
+                .FirstOrDefaultAsync(v => v.VisitationId == visitationId && v.ResidentId == id);
+
+            if (visitation is null)
+                return NotFound();
+
+            ValidateRequiredDate(request.VisitDate, nameof(request.VisitDate));
+
+            visitation.VisitDate = request.VisitDate;
+            visitation.SocialWorker = NormalizeRequiredText(request.SocialWorker, nameof(request.SocialWorker));
+            visitation.VisitType = NormalizeRequiredOption(request.VisitType, AllowedVisitTypes, nameof(request.VisitType));
+            visitation.LocationVisited = NormalizeRequiredText(request.LocationVisited, nameof(request.LocationVisited));
+            visitation.FamilyMembersPresent = NormalizeOptionalText(request.FamilyMembersPresent);
+            visitation.Purpose = NormalizeOptionalText(request.Purpose);
+            visitation.Observations = NormalizeOptionalText(request.Observations);
+            visitation.FamilyCooperationLevel = NormalizeRequiredOption(
+                request.FamilyCooperationLevel,
+                AllowedFamilyCooperationLevels,
+                nameof(request.FamilyCooperationLevel),
+                FamilyCooperationAliases);
+            visitation.SafetyConcernsNoted = request.SafetyConcernsNoted;
+            visitation.FollowUpNeeded = request.FollowUpNeeded;
+            visitation.FollowUpNotes = NormalizeOptionalText(request.FollowUpNotes);
+            visitation.VisitOutcome = NormalizeRequiredOption(
+                request.VisitOutcome,
+                AllowedVisitOutcomes,
+                nameof(request.VisitOutcome),
+                VisitOutcomeAliases);
+
+            await _db.SaveChangesAsync();
+            return Ok(visitation);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (DbUpdateException ex)
+        {
+            return BadRequest(new
+            {
+                error = ex.InnerException?.Message
+                    ?? "Failed to update visitation because one or more values were rejected by the database."
+            });
+        }
+    }
+
     public sealed record RecordingFormResidentOption(int ResidentId, string CaseControlNo);
 
     public sealed record ProcessRecordingFormOptionsResponse(
@@ -339,5 +445,48 @@ public class ResidentController : ControllerBase
         public required bool ProgressNoted { get; set; }
         public required bool ConcernsFlagged { get; set; }
         public required bool ReferralMade { get; set; }
+    }
+
+    private static void ValidateRequiredDate(DateOnly value, string fieldName)
+    {
+        if (value == default)
+            throw new ValidationException($"{fieldName} is required.");
+    }
+
+    private static string NormalizeRequiredText(string? value, string fieldName)
+    {
+        var trimmed = value?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+            throw new ValidationException($"{fieldName} is required.");
+
+        return trimmed;
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        var trimmed = value?.Trim();
+        return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+    }
+
+    private static string NormalizeRequiredOption(
+        string? value,
+        IReadOnlyCollection<string> allowedOptions,
+        string fieldName,
+        IReadOnlyDictionary<string, string>? aliases = null)
+    {
+        var trimmed = NormalizeOptionalText(value);
+        if (trimmed is null)
+            throw new ValidationException($"{fieldName} is required.");
+
+        if (aliases is not null && aliases.TryGetValue(trimmed, out var aliasedValue))
+            trimmed = aliasedValue;
+
+        var normalized = allowedOptions.FirstOrDefault(option =>
+            string.Equals(option, trimmed, StringComparison.OrdinalIgnoreCase));
+
+        if (normalized is null)
+            throw new ValidationException($"{fieldName} has an invalid value.");
+
+        return normalized;
     }
 }

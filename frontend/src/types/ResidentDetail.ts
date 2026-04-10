@@ -178,6 +178,23 @@ export interface ProcessRecording {
   notesRestricted?: string | null;
 }
 
+export interface ProcessRecordingFormData {
+  sessionDate: string;
+  socialWorker: string;
+  sessionType: string;
+  sessionDurationMinutes: number;
+  emotionalStateObserved: string | null;
+  emotionalStateEnd: string | null;
+  sessionNarrative: string | null;
+  interventionsApplied: string | null;
+  followUpActions: string | null;
+  progressNoted: boolean;
+  concernsFlagged: boolean;
+  referralMade: boolean;
+}
+
+export interface UpdateProcessRecordingRequest extends ProcessRecordingFormData {}
+
 export interface ProcessRecordingFormResidentOption {
   residentId: number;
   caseControlNo: string;
@@ -221,6 +238,23 @@ export interface HomeVisitation {
   followUpNotes: string | null;
   visitOutcome: string | null;
 }
+
+export interface HomeVisitationFormData {
+  visitDate: string;
+  socialWorker: string;
+  visitType: string;
+  locationVisited: string | null;
+  familyMembersPresent: string | null;
+  purpose: string | null;
+  observations: string | null;
+  familyCooperationLevel: string | null;
+  safetyConcernsNoted: boolean;
+  followUpNeeded: boolean;
+  followUpNotes: string | null;
+  visitOutcome: string | null;
+}
+
+export interface UpdateHomeVisitationRequest extends HomeVisitationFormData {}
 
 export interface CaseConference {
   conferenceId: number;
