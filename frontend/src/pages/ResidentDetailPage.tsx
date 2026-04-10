@@ -1773,42 +1773,251 @@ export default function ResidentDetailPage() {
 
         {/* Overview */}
         {activeTab === 'overview' && (
-          <div className="row g-3">
-            <div className="col-md-6">
-              <div className="card">
-                <div className="card-header d-flex justify-content-between align-items-center">
-                  <span>Case Information</span>
-                  <button
-                    className="btn btn-sm btn-outline-primary"
-                    onClick={openEdit}
+          <div className="card">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <span>Case Information</span>
+              <button
+                className="btn btn-sm btn-outline-primary"
+                onClick={openEdit}
+              >
+                Edit
+              </button>
+            </div>
+            <div className="card-body">
+              {/* Basic Information */}
+              <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                Basic Information
+              </h6>
+              <dl className="row mb-4">
+                <dt className="col-sm-4">Case Control No</dt>
+                <dd className="col-sm-8">{resident.caseControlNo}</dd>
+                <dt className="col-sm-4">Internal Code</dt>
+                <dd className="col-sm-8">{resident.internalCode}</dd>
+                <dt className="col-sm-4">Safehouse ID</dt>
+                <dd className="col-sm-8">{resident.safehouseId}</dd>
+                <dt className="col-sm-4">Case Status</dt>
+                <dd className="col-sm-8">{resident.caseStatus}</dd>
+                <dt className="col-sm-4">Sex</dt>
+                <dd className="col-sm-8">{resident.sex || '—'}</dd>
+                <dt className="col-sm-4">Date of Birth</dt>
+                <dd className="col-sm-8">{resident.dateOfBirth || '—'}</dd>
+                <dt className="col-sm-4">Place of Birth</dt>
+                <dd className="col-sm-8">{resident.placeOfBirth ?? '—'}</dd>
+                <dt className="col-sm-4">Birth Status</dt>
+                <dd className="col-sm-8">{resident.birthStatus ?? '—'}</dd>
+                <dt className="col-sm-4">Religion</dt>
+                <dd className="col-sm-8">{resident.religion ?? '—'}</dd>
+              </dl>
+
+              {/* Case Category & Sub-categories */}
+              <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                Case Category &amp; Sub-categories
+              </h6>
+              <dl className="row mb-4">
+                <dt className="col-sm-4">Case Category</dt>
+                <dd className="col-sm-8">{resident.caseCategory}</dd>
+                <dt className="col-sm-4">Orphaned</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatOrphaned ? 'bg-success' : 'bg-secondary'}`}
                   >
-                    Edit
-                  </button>
-                </div>
-                <div className="card-body">
-                  <dl className="row mb-0">
-                    <dt className="col-sm-5">Category</dt>
-                    <dd className="col-sm-7">{resident.caseCategory}</dd>
-                    <dt className="col-sm-5">Admitted</dt>
-                    <dd className="col-sm-7">{resident.dateOfAdmission}</dd>
-                    <dt className="col-sm-5">Social Worker</dt>
-                    <dd className="col-sm-7">
-                      {resident.assignedSocialWorker ?? '—'}
-                    </dd>
-                    <dt className="col-sm-5">Reintegration</dt>
-                    <dd className="col-sm-7">
-                      {resident.reintegrationStatus ?? '—'}{' '}
-                      {resident.reintegrationType
-                        ? `(${resident.reintegrationType})`
-                        : ''}
-                    </dd>
-                    <dt className="col-sm-5">Referral Source</dt>
-                    <dd className="col-sm-7">
-                      {resident.referralSource ?? '—'}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
+                    {resident.subCatOrphaned ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Trafficked</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatTrafficked ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatTrafficked ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Child Labor</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatChildLabor ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatChildLabor ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Physical Abuse</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatPhysicalAbuse ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatPhysicalAbuse ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Sexual Abuse</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatSexualAbuse ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatSexualAbuse ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">OSAEC</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatOsaec ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatOsaec ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">CICL</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatCicl ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatCicl ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">At Risk</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatAtRisk ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatAtRisk ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Street Child</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatStreetChild ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatStreetChild ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Child with HIV</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.subCatChildWithHiv ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.subCatChildWithHiv ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+              </dl>
+
+              {/* Disability */}
+              <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                Disability
+              </h6>
+              <dl className="row mb-4">
+                <dt className="col-sm-4">Person with Disability</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.isPwd ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.isPwd ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">PWD Type</dt>
+                <dd className="col-sm-8">{resident.pwdType ?? '—'}</dd>
+                <dt className="col-sm-4">Has Special Needs</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.hasSpecialNeeds ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.hasSpecialNeeds ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Special Needs Diagnosis</dt>
+                <dd className="col-sm-8">
+                  {resident.specialNeedsDiagnosis ?? '—'}
+                </dd>
+              </dl>
+
+              {/* Family Profile */}
+              <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                Family Profile
+              </h6>
+              <dl className="row mb-4">
+                <dt className="col-sm-4">4Ps Beneficiary</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.familyIs4Ps ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.familyIs4Ps ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Solo Parent</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.familySoloParent ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.familySoloParent ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Indigenous</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.familyIndigenous ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.familyIndigenous ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Parent with Disability</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.familyParentPwd ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.familyParentPwd ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+                <dt className="col-sm-4">Informal Settler</dt>
+                <dd className="col-sm-8">
+                  <span
+                    className={`badge ${resident.familyInformalSettler ? 'bg-success' : 'bg-secondary'}`}
+                  >
+                    {resident.familyInformalSettler ? 'Yes' : 'No'}
+                  </span>
+                </dd>
+              </dl>
+
+              {/* Admission & Referral */}
+              <h6 className="fw-semibold border-bottom pb-1 mb-3">
+                Admission &amp; Referral
+              </h6>
+              <dl className="row mb-0">
+                <dt className="col-sm-4">Date of Admission</dt>
+                <dd className="col-sm-8">{resident.dateOfAdmission || '—'}</dd>
+                <dt className="col-sm-4">Age upon Admission</dt>
+                <dd className="col-sm-8">{resident.ageUponAdmission ?? '—'}</dd>
+                <dt className="col-sm-4">Present Age</dt>
+                <dd className="col-sm-8">{resident.presentAge ?? '—'}</dd>
+                <dt className="col-sm-4">Length of Stay</dt>
+                <dd className="col-sm-8">{resident.lengthOfStay ?? '—'}</dd>
+                <dt className="col-sm-4">Referral Source</dt>
+                <dd className="col-sm-8">{resident.referralSource ?? '—'}</dd>
+                <dt className="col-sm-4">Referring Agency/Person</dt>
+                <dd className="col-sm-8">
+                  {resident.referringAgencyPerson ?? '—'}
+                </dd>
+                <dt className="col-sm-4">Assigned Social Worker</dt>
+                <dd className="col-sm-8">
+                  {resident.assignedSocialWorker ?? '—'}
+                </dd>
+                <dt className="col-sm-4">Initial Case Assessment</dt>
+                <dd className="col-sm-8">
+                  {resident.initialCaseAssessment ?? '—'}
+                </dd>
+                <dt className="col-sm-4">Reintegration Type</dt>
+                <dd className="col-sm-8">
+                  {resident.reintegrationType ?? '—'}
+                </dd>
+                <dt className="col-sm-4">Reintegration Status</dt>
+                <dd className="col-sm-8">
+                  {resident.reintegrationStatus ?? '—'}
+                </dd>
+                <dt className="col-sm-4">Initial Risk Level</dt>
+                <dd className="col-sm-8">{resident.initialRiskLevel ?? '—'}</dd>
+                <dt className="col-sm-4">Current Risk Level</dt>
+                <dd className="col-sm-8">{resident.currentRiskLevel ?? '—'}</dd>
+                <dt className="col-sm-4">Date Enrolled</dt>
+                <dd className="col-sm-8">{resident.dateEnrolled ?? '—'}</dd>
+                <dt className="col-sm-4">Date Closed</dt>
+                <dd className="col-sm-8">{resident.dateClosed ?? '—'}</dd>
+              </dl>
             </div>
           </div>
         )}
