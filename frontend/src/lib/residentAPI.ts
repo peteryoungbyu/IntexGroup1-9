@@ -8,9 +8,13 @@ import type {
   UpdateResidentRequest,
   PagedResult,
   ProcessRecording,
+  ProcessRecordingFormData,
   HomeVisitation,
+  HomeVisitationFormData,
   ProcessRecordingFormOptions,
   SessionEntryRecordingRequest,
+  UpdateHomeVisitationRequest,
+  UpdateProcessRecordingRequest,
 } from '../types/ResidentDetail';
 import { API_BASE_URL } from './apiBase';
 
@@ -127,10 +131,21 @@ export async function getResidentRecordings(residentId: number): Promise<Process
 
 export async function addRecording(
   residentId: number,
-  data: Omit<ProcessRecording, 'recordingId'>
+  data: ProcessRecordingFormData
 ): Promise<void> {
   await apiFetch(`/api/residents/${residentId}/recordings`, {
     method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateRecording(
+  residentId: number,
+  recordingId: number,
+  data: UpdateProcessRecordingRequest
+): Promise<void> {
+  await apiFetch(`/api/residents/${residentId}/recordings/${recordingId}`, {
+    method: 'PUT',
     body: JSON.stringify(data),
   });
 }
@@ -166,10 +181,21 @@ export async function getResidentVisitations(residentId: number): Promise<HomeVi
 
 export async function addVisitation(
   residentId: number,
-  data: Omit<HomeVisitation, 'visitationId'>
+  data: HomeVisitationFormData
 ): Promise<void> {
   await apiFetch(`/api/residents/${residentId}/visitations`, {
     method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateVisitation(
+  residentId: number,
+  visitationId: number,
+  data: UpdateHomeVisitationRequest
+): Promise<void> {
+  await apiFetch(`/api/residents/${residentId}/visitations/${visitationId}`, {
+    method: 'PUT',
     body: JSON.stringify(data),
   });
 }

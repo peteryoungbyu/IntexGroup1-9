@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import type {
   ResidentDetail,
   ProcessRecording,
+  ProcessRecordingFormData,
   HomeVisitation,
+  HomeVisitationFormData,
   CaseConference,
+  UpdateHomeVisitationRequest,
+  UpdateProcessRecordingRequest,
   UpdateResidentRequest,
 } from '../types/ResidentDetail';
 import {
   getResidentById,
   addRecording,
+  updateRecording,
   deleteRecording,
   addVisitation,
+  updateVisitation,
   deleteVisitation,
   updateResident,
 } from '../lib/residentAPI';
@@ -41,8 +47,28 @@ const RISK_COLORS: Record<string, string> = {
   Critical: 'dark',
 };
 
-const EMPTY_RECORDING: Omit<ProcessRecording, 'recordingId'> = {
-  residentId: 0,
+const RECORDING_SESSION_TYPES = ['Individual', 'Group'] as const;
+const VISITATION_TYPES = [
+  'Initial Assessment',
+  'Routine Follow-Up',
+  'Reintegration Assessment',
+  'Post-Placement Monitoring',
+  'Emergency',
+] as const;
+const FAMILY_COOPERATION_LEVELS = [
+  'Highly Cooperative',
+  'Cooperative',
+  'Neutral',
+  'Uncooperative',
+] as const;
+const VISIT_OUTCOMES = [
+  'Favorable',
+  'Needs Improvement',
+  'Unfavorable',
+  'Inconclusive',
+] as const;
+
+const EMPTY_RECORDING_FORM: ProcessRecordingFormData = {
   sessionDate: '',
   socialWorker: '',
   sessionType: 'Individual',
@@ -57,8 +83,7 @@ const EMPTY_RECORDING: Omit<ProcessRecording, 'recordingId'> = {
   referralMade: false,
 };
 
-const EMPTY_VISITATION: Omit<HomeVisitation, 'visitationId'> = {
-  residentId: 0,
+const EMPTY_VISITATION_FORM: HomeVisitationFormData = {
   visitDate: '',
   socialWorker: '',
   visitType: 'Routine Follow-Up',
@@ -66,11 +91,11 @@ const EMPTY_VISITATION: Omit<HomeVisitation, 'visitationId'> = {
   familyMembersPresent: '',
   purpose: '',
   observations: '',
-  familyCooperationLevel: 'Moderate',
+  familyCooperationLevel: 'Cooperative',
   safetyConcernsNoted: false,
   followUpNeeded: false,
   followUpNotes: '',
-  visitOutcome: 'Neutral',
+  visitOutcome: 'Needs Improvement',
 };
 
 const EMPTY_CONFERENCE: Omit<CaseConference, 'conferenceId'> = {
@@ -90,11 +115,439 @@ type DeleteTarget =
   | { type: 'conference'; id: number };
 
 type EditableResident = UpdateResidentRequest;
+type RecordingFormState = ProcessRecordingFormData;
+type VisitationFormState = HomeVisitationFormData;
+
+type RecordingFormFieldsProps = {
+  form: RecordingFormState;
+  onChange: <K extends keyof RecordingFormState>(
+    field: K,
+    value: RecordingFormState[K]
+  ) => void;
+  idPrefix: string;
+};
+
+type VisitationFormFieldsProps = {
+  form: VisitationFormState;
+  onChange: <K extends keyof VisitationFormState>(
+    field: K,
+    value: VisitationFormState[K]
+  ) => void;
+  idPrefix: string;
+};
+
+function normalizeText(value: string | null | undefined): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeOption<T extends readonly string[]>(
+  value: string | null | undefined,
+  allowedOptions: T,
+  fallback: T[number]
+): T[number] {
+  const trimmed = normalizeText(value);
+  const matched = allowedOptions.find((option) => option === trimmed);
+  return matched ?? fallback;
+}
+
+function normalizeCooperationLevel(
+  value: string | null | undefined
+): (typeof FAMILY_COOPERATION_LEVELS)[number] {
+  const aliases: Record<string, (typeof FAMILY_COOPERATION_LEVELS)[number]> = {
+    High: 'Highly Cooperative',
+    Moderate: 'Cooperative',
+    Low: 'Neutral',
+    None: 'Uncooperative',
+  };
+
+  const trimmed = normalizeText(value);
+  return normalizeOption(
+    aliases[trimmed] ?? trimmed,
+    FAMILY_COOPERATION_LEVELS,
+    'Cooperative'
+  );
+}
+
+function normalizeVisitOutcome(
+  value: string | null | undefined
+): (typeof VISIT_OUTCOMES)[number] {
+  const trimmed = normalizeText(value);
+  const normalized = trimmed === 'Neutral' ? 'Needs Improvement' : trimmed;
+  return normalizeOption(normalized, VISIT_OUTCOMES, 'Needs Improvement');
+}
+
+function toRecordingForm(recording: ProcessRecording): UpdateProcessRecordingRequest {
+  return {
+    sessionDate: recording.sessionDate,
+    socialWorker: normalizeText(recording.socialWorker),
+    sessionType: normalizeOption(
+      recording.sessionType,
+      RECORDING_SESSION_TYPES,
+      'Individual'
+    ),
+    sessionDurationMinutes: recording.sessionDurationMinutes,
+    emotionalStateObserved: normalizeText(recording.emotionalStateObserved),
+    emotionalStateEnd: normalizeText(recording.emotionalStateEnd),
+    sessionNarrative: normalizeText(recording.sessionNarrative),
+    interventionsApplied: normalizeText(recording.interventionsApplied),
+    followUpActions: normalizeText(recording.followUpActions),
+    progressNoted: recording.progressNoted,
+    concernsFlagged: recording.concernsFlagged,
+    referralMade: recording.referralMade,
+  };
+}
+
+function toVisitationForm(visitation: HomeVisitation): UpdateHomeVisitationRequest {
+  return {
+    visitDate: visitation.visitDate,
+    socialWorker: normalizeText(visitation.socialWorker),
+    visitType: normalizeOption(
+      visitation.visitType,
+      VISITATION_TYPES,
+      'Routine Follow-Up'
+    ),
+    locationVisited: normalizeText(visitation.locationVisited),
+    familyMembersPresent: normalizeText(visitation.familyMembersPresent),
+    purpose: normalizeText(visitation.purpose),
+    observations: normalizeText(visitation.observations),
+    familyCooperationLevel: normalizeCooperationLevel(
+      visitation.familyCooperationLevel
+    ),
+    safetyConcernsNoted: visitation.safetyConcernsNoted,
+    followUpNeeded: visitation.followUpNeeded,
+    followUpNotes: normalizeText(visitation.followUpNotes),
+    visitOutcome: normalizeVisitOutcome(visitation.visitOutcome),
+  };
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function RecordingFormFields({
+  form,
+  onChange,
+  idPrefix,
+}: RecordingFormFieldsProps) {
+  return (
+    <div className="row g-3">
+      <div className="col-md-4">
+        <label className="form-label">
+          Session Date <span className="text-danger">*</span>
+        </label>
+        <input
+          type="date"
+          className="form-control"
+          required
+          value={form.sessionDate}
+          onChange={(e) => onChange('sessionDate', e.target.value)}
+        />
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">
+          Social Worker <span className="text-danger">*</span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          required
+          value={form.socialWorker}
+          onChange={(e) => onChange('socialWorker', e.target.value)}
+        />
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">
+          Session Type <span className="text-danger">*</span>
+        </label>
+        <select
+          className="form-select"
+          required
+          value={form.sessionType}
+          onChange={(e) => onChange('sessionType', e.target.value)}
+        >
+          {RECORDING_SESSION_TYPES.map((sessionType) => (
+            <option key={sessionType} value={sessionType}>
+              {sessionType}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">
+          Duration (minutes) <span className="text-danger">*</span>
+        </label>
+        <input
+          type="number"
+          className="form-control"
+          min={1}
+          required
+          value={form.sessionDurationMinutes}
+          onChange={(e) =>
+            onChange('sessionDurationMinutes', Number(e.target.value))
+          }
+        />
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">Emotional State (Start)</label>
+        <input
+          type="text"
+          className="form-control"
+          value={form.emotionalStateObserved ?? ''}
+          onChange={(e) => onChange('emotionalStateObserved', e.target.value)}
+        />
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">Emotional State (End)</label>
+        <input
+          type="text"
+          className="form-control"
+          value={form.emotionalStateEnd ?? ''}
+          onChange={(e) => onChange('emotionalStateEnd', e.target.value)}
+        />
+      </div>
+      <div className="col-12">
+        <label className="form-label">Session Narrative</label>
+        <textarea
+          className="form-control"
+          rows={3}
+          value={form.sessionNarrative ?? ''}
+          onChange={(e) => onChange('sessionNarrative', e.target.value)}
+        />
+      </div>
+      <div className="col-12">
+        <label className="form-label">Interventions Applied</label>
+        <textarea
+          className="form-control"
+          rows={2}
+          value={form.interventionsApplied ?? ''}
+          onChange={(e) => onChange('interventionsApplied', e.target.value)}
+        />
+      </div>
+      <div className="col-12">
+        <label className="form-label">Follow-Up Actions</label>
+        <textarea
+          className="form-control"
+          rows={2}
+          value={form.followUpActions ?? ''}
+          onChange={(e) => onChange('followUpActions', e.target.value)}
+        />
+      </div>
+      <div className="col-12 d-flex gap-4">
+        <div className="form-check">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            id={`${idPrefix}-progressNoted`}
+            checked={form.progressNoted}
+            onChange={(e) => onChange('progressNoted', e.target.checked)}
+          />
+          <label
+            className="form-check-label"
+            htmlFor={`${idPrefix}-progressNoted`}
+          >
+            Progress Noted
+          </label>
+        </div>
+        <div className="form-check">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            id={`${idPrefix}-concernsFlagged`}
+            checked={form.concernsFlagged}
+            onChange={(e) => onChange('concernsFlagged', e.target.checked)}
+          />
+          <label
+            className="form-check-label"
+            htmlFor={`${idPrefix}-concernsFlagged`}
+          >
+            Concerns Flagged
+          </label>
+        </div>
+        <div className="form-check">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            id={`${idPrefix}-referralMade`}
+            checked={form.referralMade}
+            onChange={(e) => onChange('referralMade', e.target.checked)}
+          />
+          <label
+            className="form-check-label"
+            htmlFor={`${idPrefix}-referralMade`}
+          >
+            Referral Made
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VisitationFormFields({
+  form,
+  onChange,
+  idPrefix,
+}: VisitationFormFieldsProps) {
+  return (
+    <div className="row g-3">
+      <div className="col-md-4">
+        <label className="form-label">
+          Visit Date <span className="text-danger">*</span>
+        </label>
+        <input
+          type="date"
+          className="form-control"
+          required
+          value={form.visitDate}
+          onChange={(e) => onChange('visitDate', e.target.value)}
+        />
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">
+          Social Worker <span className="text-danger">*</span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          required
+          value={form.socialWorker}
+          onChange={(e) => onChange('socialWorker', e.target.value)}
+        />
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">
+          Visit Type <span className="text-danger">*</span>
+        </label>
+        <select
+          className="form-select"
+          required
+          value={form.visitType}
+          onChange={(e) => onChange('visitType', e.target.value)}
+        >
+          {VISITATION_TYPES.map((visitType) => (
+            <option key={visitType} value={visitType}>
+              {visitType}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="col-md-6">
+        <label className="form-label">
+          Location Visited <span className="text-danger">*</span>
+        </label>
+        <input
+          type="text"
+          className="form-control"
+          required
+          value={form.locationVisited ?? ''}
+          onChange={(e) => onChange('locationVisited', e.target.value)}
+        />
+      </div>
+      <div className="col-md-6">
+        <label className="form-label">Family Members Present</label>
+        <input
+          type="text"
+          className="form-control"
+          value={form.familyMembersPresent ?? ''}
+          onChange={(e) => onChange('familyMembersPresent', e.target.value)}
+        />
+      </div>
+      <div className="col-12">
+        <label className="form-label">Purpose</label>
+        <input
+          type="text"
+          className="form-control"
+          value={form.purpose ?? ''}
+          onChange={(e) => onChange('purpose', e.target.value)}
+        />
+      </div>
+      <div className="col-12">
+        <label className="form-label">Observations</label>
+        <textarea
+          className="form-control"
+          rows={3}
+          value={form.observations ?? ''}
+          onChange={(e) => onChange('observations', e.target.value)}
+        />
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">Family Cooperation Level</label>
+        <select
+          className="form-select"
+          value={form.familyCooperationLevel ?? 'Cooperative'}
+          onChange={(e) =>
+            onChange('familyCooperationLevel', e.target.value)
+          }
+        >
+          {FAMILY_COOPERATION_LEVELS.map((level) => (
+            <option key={level} value={level}>
+              {level}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="col-md-4">
+        <label className="form-label">Visit Outcome</label>
+        <select
+          className="form-select"
+          value={form.visitOutcome ?? 'Needs Improvement'}
+          onChange={(e) => onChange('visitOutcome', e.target.value)}
+        >
+          {VISIT_OUTCOMES.map((outcome) => (
+            <option key={outcome} value={outcome}>
+              {outcome}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="col-12">
+        <label className="form-label">Follow-Up Notes</label>
+        <textarea
+          className="form-control"
+          rows={2}
+          value={form.followUpNotes ?? ''}
+          onChange={(e) => onChange('followUpNotes', e.target.value)}
+        />
+      </div>
+      <div className="col-12 d-flex gap-4">
+        <div className="form-check">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            id={`${idPrefix}-safetyConcerns`}
+            checked={form.safetyConcernsNoted}
+            onChange={(e) => onChange('safetyConcernsNoted', e.target.checked)}
+          />
+          <label
+            className="form-check-label"
+            htmlFor={`${idPrefix}-safetyConcerns`}
+          >
+            Safety Concerns Noted
+          </label>
+        </div>
+        <div className="form-check">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            id={`${idPrefix}-followUpNeeded`}
+            checked={form.followUpNeeded}
+            onChange={(e) => onChange('followUpNeeded', e.target.checked)}
+          />
+          <label
+            className="form-check-label"
+            htmlFor={`${idPrefix}-followUpNeeded`}
+          >
+            Follow-Up Needed
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ResidentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const residentId = Number(id);
-  const navigate = useNavigate();
   const location = useLocation();
 
   const [detail, setDetail] = useState<ResidentDetail | null>(null);
@@ -115,24 +568,49 @@ export default function ResidentDetailPage() {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [showAddRecording, setShowAddRecording] = useState(false);
+  const [showEditRecording, setShowEditRecording] = useState(false);
   const [showAddVisitation, setShowAddVisitation] = useState(false);
+  const [showEditVisitation, setShowEditVisitation] = useState(false);
   const [showAddConference, setShowAddConference] = useState(false);
 
-  const [recordingForm, setRecordingForm] = useState({
-    ...EMPTY_RECORDING,
-    residentId,
+  const [recordingForm, setRecordingForm] = useState<RecordingFormState>({
+    ...EMPTY_RECORDING_FORM,
   });
-  const [visitationForm, setVisitationForm] = useState({
-    ...EMPTY_VISITATION,
-    residentId,
+  const [editRecordingId, setEditRecordingId] = useState<number | null>(null);
+  const [editRecordingForm, setEditRecordingForm] = useState<RecordingFormState>({
+    ...EMPTY_RECORDING_FORM,
   });
+  const [visitationForm, setVisitationForm] = useState<VisitationFormState>({
+    ...EMPTY_VISITATION_FORM,
+  });
+  const [editVisitationId, setEditVisitationId] = useState<number | null>(null);
+  const [editVisitationForm, setEditVisitationForm] =
+    useState<VisitationFormState>({
+      ...EMPTY_VISITATION_FORM,
+    });
   const [conferenceForm, setConferenceForm] = useState({
     ...EMPTY_CONFERENCE,
     residentId,
   });
 
-  const [formBusy, setFormBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [addRecordingBusy, setAddRecordingBusy] = useState(false);
+  const [addRecordingError, setAddRecordingError] = useState<string | null>(
+    null
+  );
+  const [editRecordingBusy, setEditRecordingBusy] = useState(false);
+  const [editRecordingError, setEditRecordingError] = useState<string | null>(
+    null
+  );
+  const [addVisitationBusy, setAddVisitationBusy] = useState(false);
+  const [addVisitationError, setAddVisitationError] = useState<string | null>(
+    null
+  );
+  const [editVisitationBusy, setEditVisitationBusy] = useState(false);
+  const [editVisitationError, setEditVisitationError] = useState<string | null>(
+    null
+  );
+  const [conferenceBusy, setConferenceBusy] = useState(false);
+  const [conferenceError, setConferenceError] = useState<string | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -148,8 +626,12 @@ export default function ResidentDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    setRecordingForm((f) => ({ ...f, residentId }));
-    setVisitationForm((f) => ({ ...f, residentId }));
+    setRecordingForm({ ...EMPTY_RECORDING_FORM });
+    setEditRecordingForm({ ...EMPTY_RECORDING_FORM });
+    setEditRecordingId(null);
+    setVisitationForm({ ...EMPTY_VISITATION_FORM });
+    setEditVisitationForm({ ...EMPTY_VISITATION_FORM });
+    setEditVisitationId(null);
     setConferenceForm((f) => ({ ...f, residentId }));
   }, [residentId]);
 
@@ -229,51 +711,111 @@ export default function ResidentDetailPage() {
   const { resident, recordings, visitations, plans, conferences, predictions } =
     detail;
 
+  const setRecordingField = <K extends keyof RecordingFormState>(
+    field: K,
+    value: RecordingFormState[K]
+  ) => setRecordingForm((f) => ({ ...f, [field]: value }));
+
+  const setEditRecordingField = <K extends keyof RecordingFormState>(
+    field: K,
+    value: RecordingFormState[K]
+  ) => setEditRecordingForm((f) => ({ ...f, [field]: value }));
+
+  const setVisitationField = <K extends keyof VisitationFormState>(
+    field: K,
+    value: VisitationFormState[K]
+  ) => setVisitationForm((f) => ({ ...f, [field]: value }));
+
+  const setEditVisitationField = <K extends keyof VisitationFormState>(
+    field: K,
+    value: VisitationFormState[K]
+  ) => setEditVisitationForm((f) => ({ ...f, [field]: value }));
+
   async function handleAddRecording(e: React.FormEvent) {
     e.preventDefault();
-    setFormBusy(true);
-    setFormError(null);
+    setAddRecordingBusy(true);
+    setAddRecordingError(null);
     try {
       await addRecording(residentId, recordingForm);
       await refresh();
-      setShowAddRecording(false);
-      setRecordingForm({ ...EMPTY_RECORDING, residentId });
-    } catch {
-      setFormError('Failed to save recording. Please try again.');
+      closeAddRecording();
+    } catch (error) {
+      setAddRecordingError(
+        getErrorMessage(error, 'Failed to save recording. Please try again.')
+      );
     } finally {
-      setFormBusy(false);
+      setAddRecordingBusy(false);
     }
   }
 
   async function handleAddVisitation(e: React.FormEvent) {
     e.preventDefault();
-    setFormBusy(true);
-    setFormError(null);
+    setAddVisitationBusy(true);
+    setAddVisitationError(null);
     try {
       await addVisitation(residentId, visitationForm);
       await refresh();
-      setShowAddVisitation(false);
-      setVisitationForm({ ...EMPTY_VISITATION, residentId });
-    } catch {
-      setFormError('Failed to save visitation. Please try again.');
+      closeAddVisitation();
+    } catch (error) {
+      setAddVisitationError(
+        getErrorMessage(error, 'Failed to save visitation. Please try again.')
+      );
     } finally {
-      setFormBusy(false);
+      setAddVisitationBusy(false);
     }
   }
 
   async function handleAddConference(e: React.FormEvent) {
     e.preventDefault();
-    setFormBusy(true);
-    setFormError(null);
+    setConferenceBusy(true);
+    setConferenceError(null);
     try {
       await addCaseConference(conferenceForm);
       await refresh();
-      setShowAddConference(false);
-      setConferenceForm({ ...EMPTY_CONFERENCE, residentId });
+      closeAddConference();
     } catch {
-      setFormError('Failed to save conference. Please try again.');
+      setConferenceError('Failed to save conference. Please try again.');
     } finally {
-      setFormBusy(false);
+      setConferenceBusy(false);
+    }
+  }
+
+  async function handleEditRecording(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editRecordingId) return;
+    setEditRecordingBusy(true);
+    setEditRecordingError(null);
+    try {
+      await updateRecording(residentId, editRecordingId, editRecordingForm);
+      await refresh();
+      closeEditRecording();
+    } catch (error) {
+      setEditRecordingError(
+        getErrorMessage(error, 'Failed to update recording. Please try again.')
+      );
+    } finally {
+      setEditRecordingBusy(false);
+    }
+  }
+
+  async function handleEditVisitation(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editVisitationId) return;
+    setEditVisitationBusy(true);
+    setEditVisitationError(null);
+    try {
+      await updateVisitation(residentId, editVisitationId, editVisitationForm);
+      await refresh();
+      closeEditVisitation();
+    } catch (error) {
+      setEditVisitationError(
+        getErrorMessage(
+          error,
+          'Failed to update visitation. Please try again.'
+        )
+      );
+    } finally {
+      setEditVisitationBusy(false);
     }
   }
 
@@ -370,19 +912,58 @@ export default function ResidentDetailPage() {
     value: EditableResident[K]
   ) => setEditForm((f) => (f ? { ...f, [field]: value } : f));
 
+  function openAddRecording() {
+    setRecordingForm({ ...EMPTY_RECORDING_FORM });
+    setAddRecordingError(null);
+    setShowAddRecording(true);
+  }
   function closeAddRecording() {
+    if (addRecordingBusy) return;
     setShowAddRecording(false);
-    setFormError(null);
-    setRecordingForm({ ...EMPTY_RECORDING, residentId });
+    setAddRecordingError(null);
+    setRecordingForm({ ...EMPTY_RECORDING_FORM });
+  }
+  function openEditRecording(recording: ProcessRecording) {
+    setEditRecordingId(recording.recordingId);
+    setEditRecordingForm(toRecordingForm(recording));
+    setEditRecordingError(null);
+    setShowEditRecording(true);
+  }
+  function closeEditRecording() {
+    if (editRecordingBusy) return;
+    setShowEditRecording(false);
+    setEditRecordingId(null);
+    setEditRecordingError(null);
+    setEditRecordingForm({ ...EMPTY_RECORDING_FORM });
+  }
+  function openAddVisitation() {
+    setVisitationForm({ ...EMPTY_VISITATION_FORM });
+    setAddVisitationError(null);
+    setShowAddVisitation(true);
   }
   function closeAddVisitation() {
+    if (addVisitationBusy) return;
     setShowAddVisitation(false);
-    setFormError(null);
-    setVisitationForm({ ...EMPTY_VISITATION, residentId });
+    setAddVisitationError(null);
+    setVisitationForm({ ...EMPTY_VISITATION_FORM });
+  }
+  function openEditVisitation(visitation: HomeVisitation) {
+    setEditVisitationId(visitation.visitationId);
+    setEditVisitationForm(toVisitationForm(visitation));
+    setEditVisitationError(null);
+    setShowEditVisitation(true);
+  }
+  function closeEditVisitation() {
+    if (editVisitationBusy) return;
+    setShowEditVisitation(false);
+    setEditVisitationId(null);
+    setEditVisitationError(null);
+    setEditVisitationForm({ ...EMPTY_VISITATION_FORM });
   }
   function closeAddConference() {
+    if (conferenceBusy) return;
     setShowAddConference(false);
-    setFormError(null);
+    setConferenceError(null);
     setConferenceForm({ ...EMPTY_CONFERENCE, residentId });
   }
 
@@ -1081,11 +1662,7 @@ export default function ResidentDetailPage() {
                 <span>Process Recordings ({recordings.length})</span>
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() =>
-                    navigate(
-                      '/admin/process-recording?residentId=' + residentId
-                    )
-                  }
+                  onClick={openAddRecording}
                 >
                   + Add Recording
                 </button>
@@ -1169,18 +1746,26 @@ export default function ResidentDetailPage() {
                                   )}
                                 </div>
                               </div>
-                              <button
-                                className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                                onClick={() => {
-                                  setDeleteError(null);
-                                  setDeleteTarget({
-                                    type: 'recording',
-                                    id: r.recordingId,
-                                  });
-                                }}
-                              >
-                                Delete
-                              </button>
+                              <div className="d-flex gap-2 ms-3 flex-shrink-0">
+                                <button
+                                  className="btn btn-sm btn-outline-primary"
+                                  onClick={() => openEditRecording(r)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-outline-danger"
+                                  onClick={() => {
+                                    setDeleteError(null);
+                                    setDeleteTarget({
+                                      type: 'recording',
+                                      id: r.recordingId,
+                                    });
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1216,253 +1801,98 @@ export default function ResidentDetailPage() {
                           type="button"
                           className="btn-close"
                           onClick={closeAddRecording}
-                          disabled={formBusy}
+                          disabled={addRecordingBusy}
                         />
                       </div>
                       <div className="modal-body">
-                        {formError && (
-                          <div className="alert alert-danger">{formError}</div>
+                        {addRecordingError && (
+                          <div className="alert alert-danger">
+                            {addRecordingError}
+                          </div>
                         )}
-                        <div className="row g-3">
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Session Date{' '}
-                              <span className="text-danger">*</span>
-                            </label>
-                            <input
-                              type="date"
-                              className="form-control"
-                              required
-                              value={recordingForm.sessionDate}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  sessionDate: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Social Worker{' '}
-                              <span className="text-danger">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              required
-                              value={recordingForm.socialWorker}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  socialWorker: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Session Type{' '}
-                              <span className="text-danger">*</span>
-                            </label>
-                            <select
-                              className="form-select"
-                              required
-                              value={recordingForm.sessionType}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  sessionType: e.target.value,
-                                }))
-                              }
-                            >
-                              <option>Individual</option>
-                              <option>Group</option>
-                            </select>
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Duration (minutes){' '}
-                              <span className="text-danger">*</span>
-                            </label>
-                            <input
-                              type="number"
-                              className="form-control"
-                              min={1}
-                              required
-                              value={recordingForm.sessionDurationMinutes}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  sessionDurationMinutes: Number(
-                                    e.target.value
-                                  ),
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Emotional State (Start)
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={recordingForm.emotionalStateObserved ?? ''}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  emotionalStateObserved: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Emotional State (End)
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={recordingForm.emotionalStateEnd ?? ''}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  emotionalStateEnd: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-12">
-                            <label className="form-label">
-                              Session Narrative
-                            </label>
-                            <textarea
-                              className="form-control"
-                              rows={3}
-                              value={recordingForm.sessionNarrative ?? ''}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  sessionNarrative: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-12">
-                            <label className="form-label">
-                              Interventions Applied
-                            </label>
-                            <textarea
-                              className="form-control"
-                              rows={2}
-                              value={recordingForm.interventionsApplied ?? ''}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  interventionsApplied: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-12">
-                            <label className="form-label">
-                              Follow-Up Actions
-                            </label>
-                            <textarea
-                              className="form-control"
-                              rows={2}
-                              value={recordingForm.followUpActions ?? ''}
-                              onChange={(e) =>
-                                setRecordingForm((f) => ({
-                                  ...f,
-                                  followUpActions: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-12 d-flex gap-4">
-                            <div className="form-check">
-                              <input
-                                type="checkbox"
-                                className="form-check-input"
-                                id="progressNoted"
-                                checked={recordingForm.progressNoted}
-                                onChange={(e) =>
-                                  setRecordingForm((f) => ({
-                                    ...f,
-                                    progressNoted: e.target.checked,
-                                  }))
-                                }
-                              />
-                              <label
-                                className="form-check-label"
-                                htmlFor="progressNoted"
-                              >
-                                Progress Noted
-                              </label>
-                            </div>
-                            <div className="form-check">
-                              <input
-                                type="checkbox"
-                                className="form-check-input"
-                                id="concernsFlagged"
-                                checked={recordingForm.concernsFlagged}
-                                onChange={(e) =>
-                                  setRecordingForm((f) => ({
-                                    ...f,
-                                    concernsFlagged: e.target.checked,
-                                  }))
-                                }
-                              />
-                              <label
-                                className="form-check-label"
-                                htmlFor="concernsFlagged"
-                              >
-                                Concerns Flagged
-                              </label>
-                            </div>
-                            <div className="form-check">
-                              <input
-                                type="checkbox"
-                                className="form-check-input"
-                                id="referralMade"
-                                checked={recordingForm.referralMade}
-                                onChange={(e) =>
-                                  setRecordingForm((f) => ({
-                                    ...f,
-                                    referralMade: e.target.checked,
-                                  }))
-                                }
-                              />
-                              <label
-                                className="form-check-label"
-                                htmlFor="referralMade"
-                              >
-                                Referral Made
-                              </label>
-                            </div>
-                          </div>
-                        </div>
+                        <RecordingFormFields
+                          form={recordingForm}
+                          onChange={setRecordingField}
+                          idPrefix="add-recording"
+                        />
                       </div>
                       <div className="modal-footer">
                         <button
                           type="button"
                           className="btn btn-secondary"
                           onClick={closeAddRecording}
-                          disabled={formBusy}
+                          disabled={addRecordingBusy}
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
                           className="btn btn-primary"
-                          disabled={formBusy}
+                          disabled={addRecordingBusy}
                         >
-                          {formBusy ? (
+                          {addRecordingBusy ? (
                             <span className="spinner-border spinner-border-sm me-1" />
                           ) : null}
                           Save Recording
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {showEditRecording && (
+              <div
+                className="modal d-block"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                onClick={closeEditRecording}
+              >
+                <div
+                  className="modal-dialog modal-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <form onSubmit={handleEditRecording}>
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <h5 className="modal-title">Edit Process Recording</h5>
+                        <button
+                          type="button"
+                          className="btn-close"
+                          onClick={closeEditRecording}
+                          disabled={editRecordingBusy}
+                        />
+                      </div>
+                      <div className="modal-body">
+                        {editRecordingError && (
+                          <div className="alert alert-danger">
+                            {editRecordingError}
+                          </div>
+                        )}
+                        <RecordingFormFields
+                          form={editRecordingForm}
+                          onChange={setEditRecordingField}
+                          idPrefix="edit-recording"
+                        />
+                      </div>
+                      <div className="modal-footer">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={closeEditRecording}
+                          disabled={editRecordingBusy}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={editRecordingBusy}
+                        >
+                          {editRecordingBusy ? (
+                            <span className="spinner-border spinner-border-sm me-1" />
+                          ) : null}
+                          Save Changes
                         </button>
                       </div>
                     </div>
@@ -1481,9 +1911,7 @@ export default function ResidentDetailPage() {
                 <span>Home Visitations ({visitations.length})</span>
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() =>
-                    navigate('/admin/home-visitation?residentId=' + residentId)
-                  }
+                  onClick={openAddVisitation}
                 >
                   + Add Visitation
                 </button>
@@ -1566,18 +1994,26 @@ export default function ResidentDetailPage() {
                                   )}
                                 </div>
                               </div>
-                              <button
-                                className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                                onClick={() => {
-                                  setDeleteError(null);
-                                  setDeleteTarget({
-                                    type: 'visitation',
-                                    id: v.visitationId,
-                                  });
-                                }}
-                              >
-                                Delete
-                              </button>
+                              <div className="d-flex gap-2 ms-3 flex-shrink-0">
+                                <button
+                                  className="btn btn-sm btn-outline-primary"
+                                  onClick={() => openEditVisitation(v)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-outline-danger"
+                                  onClick={() => {
+                                    setDeleteError(null);
+                                    setDeleteTarget({
+                                      type: 'visitation',
+                                      id: v.visitationId,
+                                    });
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1613,250 +2049,98 @@ export default function ResidentDetailPage() {
                           type="button"
                           className="btn-close"
                           onClick={closeAddVisitation}
-                          disabled={formBusy}
+                          disabled={addVisitationBusy}
                         />
                       </div>
                       <div className="modal-body">
-                        {formError && (
-                          <div className="alert alert-danger">{formError}</div>
+                        {addVisitationError && (
+                          <div className="alert alert-danger">
+                            {addVisitationError}
+                          </div>
                         )}
-                        <div className="row g-3">
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Visit Date <span className="text-danger">*</span>
-                            </label>
-                            <input
-                              type="date"
-                              className="form-control"
-                              required
-                              value={visitationForm.visitDate}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  visitDate: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Social Worker{' '}
-                              <span className="text-danger">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              required
-                              value={visitationForm.socialWorker}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  socialWorker: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Visit Type <span className="text-danger">*</span>
-                            </label>
-                            <select
-                              className="form-select"
-                              required
-                              value={visitationForm.visitType}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  visitType: e.target.value,
-                                }))
-                              }
-                            >
-                              <option>Initial Assessment</option>
-                              <option>Routine Follow-Up</option>
-                              <option>Reintegration Assessment</option>
-                              <option>Post-Placement Monitoring</option>
-                              <option>Emergency</option>
-                            </select>
-                          </div>
-                          <div className="col-md-6">
-                            <label className="form-label">
-                              Location Visited
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={visitationForm.locationVisited ?? ''}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  locationVisited: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-md-6">
-                            <label className="form-label">
-                              Family Members Present
-                            </label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={visitationForm.familyMembersPresent ?? ''}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  familyMembersPresent: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-12">
-                            <label className="form-label">Purpose</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={visitationForm.purpose ?? ''}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  purpose: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-12">
-                            <label className="form-label">Observations</label>
-                            <textarea
-                              className="form-control"
-                              rows={3}
-                              value={visitationForm.observations ?? ''}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  observations: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">
-                              Family Cooperation Level
-                            </label>
-                            <select
-                              className="form-select"
-                              value={
-                                visitationForm.familyCooperationLevel ??
-                                'Moderate'
-                              }
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  familyCooperationLevel: e.target.value,
-                                }))
-                              }
-                            >
-                              <option>High</option>
-                              <option>Moderate</option>
-                              <option>Low</option>
-                              <option>None</option>
-                            </select>
-                          </div>
-                          <div className="col-md-4">
-                            <label className="form-label">Visit Outcome</label>
-                            <select
-                              className="form-select"
-                              value={visitationForm.visitOutcome ?? 'Neutral'}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  visitOutcome: e.target.value,
-                                }))
-                              }
-                            >
-                              <option>Favorable</option>
-                              <option>Neutral</option>
-                              <option>Unfavorable</option>
-                              <option>Inconclusive</option>
-                            </select>
-                          </div>
-                          <div className="col-12">
-                            <label className="form-label">
-                              Follow-Up Notes
-                            </label>
-                            <textarea
-                              className="form-control"
-                              rows={2}
-                              value={visitationForm.followUpNotes ?? ''}
-                              onChange={(e) =>
-                                setVisitationForm((f) => ({
-                                  ...f,
-                                  followUpNotes: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                          <div className="col-12 d-flex gap-4">
-                            <div className="form-check">
-                              <input
-                                type="checkbox"
-                                className="form-check-input"
-                                id="safetyConcerns"
-                                checked={visitationForm.safetyConcernsNoted}
-                                onChange={(e) =>
-                                  setVisitationForm((f) => ({
-                                    ...f,
-                                    safetyConcernsNoted: e.target.checked,
-                                  }))
-                                }
-                              />
-                              <label
-                                className="form-check-label"
-                                htmlFor="safetyConcerns"
-                              >
-                                Safety Concerns Noted
-                              </label>
-                            </div>
-                            <div className="form-check">
-                              <input
-                                type="checkbox"
-                                className="form-check-input"
-                                id="followUpNeeded"
-                                checked={visitationForm.followUpNeeded}
-                                onChange={(e) =>
-                                  setVisitationForm((f) => ({
-                                    ...f,
-                                    followUpNeeded: e.target.checked,
-                                  }))
-                                }
-                              />
-                              <label
-                                className="form-check-label"
-                                htmlFor="followUpNeeded"
-                              >
-                                Follow-Up Needed
-                              </label>
-                            </div>
-                          </div>
-                        </div>
+                        <VisitationFormFields
+                          form={visitationForm}
+                          onChange={setVisitationField}
+                          idPrefix="add-visitation"
+                        />
                       </div>
                       <div className="modal-footer">
                         <button
                           type="button"
                           className="btn btn-secondary"
                           onClick={closeAddVisitation}
-                          disabled={formBusy}
+                          disabled={addVisitationBusy}
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
                           className="btn btn-primary"
-                          disabled={formBusy}
+                          disabled={addVisitationBusy}
                         >
-                          {formBusy ? (
+                          {addVisitationBusy ? (
                             <span className="spinner-border spinner-border-sm me-1" />
                           ) : null}
                           Save Visitation
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {showEditVisitation && (
+              <div
+                className="modal d-block"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                onClick={closeEditVisitation}
+              >
+                <div
+                  className="modal-dialog modal-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <form onSubmit={handleEditVisitation}>
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <h5 className="modal-title">Edit Home Visitation</h5>
+                        <button
+                          type="button"
+                          className="btn-close"
+                          onClick={closeEditVisitation}
+                          disabled={editVisitationBusy}
+                        />
+                      </div>
+                      <div className="modal-body">
+                        {editVisitationError && (
+                          <div className="alert alert-danger">
+                            {editVisitationError}
+                          </div>
+                        )}
+                        <VisitationFormFields
+                          form={editVisitationForm}
+                          onChange={setEditVisitationField}
+                          idPrefix="edit-visitation"
+                        />
+                      </div>
+                      <div className="modal-footer">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={closeEditVisitation}
+                          disabled={editVisitationBusy}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={editVisitationBusy}
+                        >
+                          {editVisitationBusy ? (
+                            <span className="spinner-border spinner-border-sm me-1" />
+                          ) : null}
+                          Save Changes
                         </button>
                       </div>
                     </div>
@@ -1906,7 +2190,7 @@ export default function ResidentDetailPage() {
                 <button
                   className="btn btn-sm btn-primary"
                   onClick={() => {
-                    setFormError(null);
+                    setConferenceError(null);
                     setShowAddConference(true);
                   }}
                 >
@@ -1988,12 +2272,14 @@ export default function ResidentDetailPage() {
                           type="button"
                           className="btn-close"
                           onClick={closeAddConference}
-                          disabled={formBusy}
+                          disabled={conferenceBusy}
                         />
                       </div>
                       <div className="modal-body">
-                        {formError && (
-                          <div className="alert alert-danger">{formError}</div>
+                        {conferenceError && (
+                          <div className="alert alert-danger">
+                            {conferenceError}
+                          </div>
                         )}
                         <div className="row g-3">
                           <div className="col-md-4">
@@ -2117,16 +2403,16 @@ export default function ResidentDetailPage() {
                           type="button"
                           className="btn btn-secondary"
                           onClick={closeAddConference}
-                          disabled={formBusy}
+                          disabled={conferenceBusy}
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
                           className="btn btn-primary"
-                          disabled={formBusy}
+                          disabled={conferenceBusy}
                         >
-                          {formBusy ? (
+                          {conferenceBusy ? (
                             <span className="spinner-border spinner-border-sm me-1" />
                           ) : null}
                           Save Conference
