@@ -270,6 +270,11 @@ public class ResidentController : ControllerBase
     [Authorize(Policy = AuthPolicies.AdminManage)]
     public async Task<IActionResult> AddVisitation(int id, [FromBody] HomeVisitation visitation)
     {
+        if (!await _db.Residents.AsNoTracking().AnyAsync(r => r.ResidentId == id))
+            return NotFound();
+
+        var nextVisitationId = (await _db.HomeVisitations.MaxAsync(v => (int?)v.VisitationId) ?? 0) + 1;
+        visitation.VisitationId = nextVisitationId;
         visitation.ResidentId = id;
         _db.HomeVisitations.Add(visitation);
         await _db.SaveChangesAsync();
