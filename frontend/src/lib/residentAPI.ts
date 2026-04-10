@@ -1,6 +1,8 @@
 import type {
+  CreateResidentRequest,
   Resident,
   ResidentDetail,
+  ResidentFormOptions,
   ResidentListItem,
   ResidentSafehouseOption,
   PagedResult,
@@ -19,7 +21,20 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     ...init,
   });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  if (!res.ok) {
+    let message = `Request failed: ${res.status}`;
+
+    try {
+      const errorBody = await res.json();
+      if (typeof errorBody?.error === 'string' && errorBody.error.length > 0) {
+        message = errorBody.error;
+      }
+    } catch {
+      // Ignore non-JSON error bodies and fall back to the status-based message.
+    }
+
+    throw new Error(message);
+  }
   return res;
 }
 
@@ -53,7 +68,12 @@ export async function getResidentById(id: number): Promise<ResidentDetail> {
   return res.json();
 }
 
-export async function createResident(data: Omit<Resident, 'residentId' | 'createdAt'>): Promise<Resident> {
+export async function getResidentFormOptions(): Promise<ResidentFormOptions> {
+  const res = await apiFetch('/api/residents/form-options');
+  return res.json();
+}
+
+export async function createResident(data: CreateResidentRequest): Promise<Resident> {
   const res = await apiFetch('/api/residents', {
     method: 'POST',
     body: JSON.stringify(data),

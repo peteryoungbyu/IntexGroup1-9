@@ -50,6 +50,10 @@ public class ResidentController : ControllerBase
         return Ok(safehouses);
     }
 
+    [HttpGet("form-options")]
+    public async Task<IActionResult> GetFormOptions()
+        => Ok(await _service.GetFormOptionsAsync());
+
     [HttpGet("recordings/form-options")]
     public async Task<IActionResult> GetRecordingFormOptions()
     {
@@ -117,10 +121,17 @@ public class ResidentController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = AuthPolicies.AdminManage)]
-    public async Task<IActionResult> Create([FromBody] Resident resident)
+    public async Task<IActionResult> Create([FromBody] CreateResidentRequest request)
     {
-        var created = await _service.CreateAsync(resident);
-        return CreatedAtAction(nameof(GetById), new { id = created.ResidentId }, created);
+        try
+        {
+            var created = await _service.CreateAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = created.ResidentId }, created);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id:int}")]

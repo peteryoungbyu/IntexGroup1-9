@@ -67,6 +67,9 @@ public class AppDbContext : DbContext
             e.Property(d => d.EstimatedValue).HasPrecision(14, 2);
         });
 
+        modelBuilder.Entity<Resident>(e =>
+            e.Property(r => r.ResidentId).ValueGeneratedNever());
+
         modelBuilder.Entity<InKindDonationItem>(e =>
             e.Property(i => i.EstimatedUnitValue).HasPrecision(14, 2));
 
