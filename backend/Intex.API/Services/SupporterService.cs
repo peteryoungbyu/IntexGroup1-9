@@ -226,8 +226,54 @@ ORDER BY
     {
         var supporter = await _db.Supporters.FindAsync(id);
         if (supporter is null) return false;
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var donations = await _db.Donations
+            .Where(d => d.SupporterId == id)
+            .Select(d => d.DonationId)
+            .ToListAsync();
+
+        if (donations.Count > 0)
+        {
+            var allocationRows = await _db.DonationAllocations
+                .Where(a => donations.Contains(a.DonationId))
+                .ToListAsync();
+
+            if (allocationRows.Count > 0)
+                _db.DonationAllocations.RemoveRange(allocationRows);
+
+            var itemRows = await _db.InKindDonationItems
+                .Where(i => donations.Contains(i.DonationId))
+                .ToListAsync();
+
+            if (itemRows.Count > 0)
+                _db.InKindDonationItems.RemoveRange(itemRows);
+
+            var donationRows = await _db.Donations
+                .Where(d => d.SupporterId == id)
+                .ToListAsync();
+
+            _db.Donations.RemoveRange(donationRows);
+        }
+
+        var userLinks = await _db.SupporterUserLinks
+            .Where(link => link.SupporterId == id)
+            .ToListAsync();
+
+        if (userLinks.Count > 0)
+            _db.SupporterUserLinks.RemoveRange(userLinks);
+
+        var predictions = await _db.PredictionResults
+            .Where(result => result.SupporterId == id)
+            .ToListAsync();
+
+        if (predictions.Count > 0)
+            _db.PredictionResults.RemoveRange(predictions);
+
         _db.Supporters.Remove(supporter);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return true;
     }
 
@@ -376,8 +422,26 @@ ORDER BY
         var donation = await _db.Donations
             .FirstOrDefaultAsync(d => d.DonationId == donationId && d.SupporterId == supporterId);
         if (donation is null) return false;
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var allocationRows = await _db.DonationAllocations
+            .Where(a => a.DonationId == donationId)
+            .ToListAsync();
+
+        if (allocationRows.Count > 0)
+            _db.DonationAllocations.RemoveRange(allocationRows);
+
+        var itemRows = await _db.InKindDonationItems
+            .Where(i => i.DonationId == donationId)
+            .ToListAsync();
+
+        if (itemRows.Count > 0)
+            _db.InKindDonationItems.RemoveRange(itemRows);
+
         _db.Donations.Remove(donation);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return true;
     }
 

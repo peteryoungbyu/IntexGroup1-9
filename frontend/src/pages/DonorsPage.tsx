@@ -558,7 +558,7 @@ export default function DonorsPage() {
                   Running Model...
                 </>
               ) : (
-                'Run Churn Inference'
+                'Run Churn Inference (ML Pipeline)'
               )}
             </button>
             <button
@@ -567,7 +567,7 @@ export default function DonorsPage() {
             >
               {showChurnCard
                 ? 'Hide Predicted Donor Churn'
-                : 'Predict Donor Churn'}
+                : 'Show Predicted Donor Churn'}
             </button>
             <button
               className="btn btn-primary"
