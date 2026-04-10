@@ -157,7 +157,13 @@ export default function HomeVisitationPage() {
         Array.from(new Set(flat.map((v) => v.socialWorker).filter(Boolean)))
       );
       setLocationOptions(
-        Array.from(new Set(flat.map((v) => v.locationVisited).filter(Boolean)))
+        Array.from(
+          new Set(
+            flat
+              .map((v) => v.locationVisited)
+              .filter((value): value is string => Boolean(value))
+          )
+        )
       );
     } catch {
       setError('Failed to load home visitations.');

@@ -13,7 +13,6 @@ import {
 } from '../lib/residentAPI';
 import { RESIDENT_CASE_CATEGORIES } from '../lib/residentOptions';
 import Pagination from '../components/Pagination';
-import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import ResidentCreateModal from '../components/ResidentCreateModal';
 
 const RISK_COLORS: Record<string, string> = {
@@ -157,22 +156,6 @@ export default function CaseloadPage() {
 
   return (
     <div>
-      <DeleteConfirmModal
-        open={pending !== null}
-        title="Delete Resident Record"
-        message={
-          <>
-            Are you sure you want to delete case{' '}
-            <strong>{pending?.label}</strong>? This action cannot be undone.
-          </>
-        }
-        confirmLabel="Delete Record"
-        busy={busy}
-        error={deleteError}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-      />
-
       <ResidentCreateModal
         open={showAdd}
         onClose={closeAdd}
