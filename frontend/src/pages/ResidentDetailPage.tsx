@@ -375,7 +375,6 @@ export default function ResidentDetailPage() {
             'recordings',
             'visitations',
             'plans',
-            'conferences',
             'predictions',
           ].map((t) => (
             <li key={t} className="nav-item">
