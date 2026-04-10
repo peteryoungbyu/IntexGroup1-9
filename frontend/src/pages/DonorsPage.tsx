@@ -1,40 +1,61 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type {
-  Supporter,
-  SupporterListItem,
-  PagedResult,
-} from '../types/SupporterDetail';
+import type { SupporterListItem, PagedResult } from '../types/SupporterDetail';
 import {
   getSupporters,
   deleteSupporter,
   createSupporter,
+  getSupporterFormOptions,
   runDonorChurnInference,
   getSupporterChurnPredictions,
+  type CreateSupporterRequest,
   type DonorChurnRunResult,
+  type SupporterFormOptions,
   type SupporterChurnItem,
 } from '../lib/supporterAPI';
 import Pagination from '../components/Pagination';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
-const EMPTY_SUPPORTER: Omit<Supporter, 'supporterId' | 'createdAt'> = {
-  displayName: '',
-  supporterType: 'Monetary Donor',
+const EMPTY_SUPPORTER: CreateSupporterRequest = {
+  supporterType: '',
   organizationName: null,
-  firstName: null,
-  lastName: null,
-  email: null,
-  phone: null,
+  firstName: '',
+  lastName: '',
+  relationshipType: '',
+  region: '',
+  country: '',
+  email: '',
+  phone: '',
   status: 'Active',
-  region: null,
-  country: null,
-  firstDonationDate: null,
-  acquisitionChannel: null,
+  firstDonationDate: '',
+  acquisitionChannel: '',
 };
 
 interface PendingDelete {
   id: number;
   name: string;
+}
+
+const EMPTY_OPTIONS: SupporterFormOptions = {
+  supporterTypes: [],
+  relationshipTypes: [],
+  regions: [],
+  countries: [],
+  acquisitionChannels: [],
+  statuses: ['Active', 'Inactive'],
+};
+
+const PHONE_PATTERN = String.raw`^\+\d{1,3} \(\d{3}\) \d{3}-\d{4}$`;
+
+function hasRequiredOptions(options: SupporterFormOptions) {
+  return (
+    options.supporterTypes.length > 0 &&
+    options.relationshipTypes.length > 0 &&
+    options.regions.length > 0 &&
+    options.countries.length > 0 &&
+    options.acquisitionChannels.length > 0 &&
+    options.statuses.length > 0
+  );
 }
 
 export default function DonorsPage() {
@@ -53,9 +74,12 @@ export default function DonorsPage() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [showChurnCard, setShowChurnCard] = useState(false);
-  const [addForm, setAddForm] = useState<
-    Omit<Supporter, 'supporterId' | 'createdAt'>
-  >({ ...EMPTY_SUPPORTER });
+  const [addForm, setAddForm] = useState<CreateSupporterRequest>({
+    ...EMPTY_SUPPORTER,
+  });
+  const [formOptions, setFormOptions] =
+    useState<SupporterFormOptions>(EMPTY_OPTIONS);
+  const [optionsLoading, setOptionsLoading] = useState(true);
   const [addBusy, setAddBusy] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [runBusy, setRunBusy] = useState(false);
@@ -88,6 +112,26 @@ export default function DonorsPage() {
   useEffect(() => {
     load();
   }, [page, status]);
+
+  useEffect(() => {
+    getSupporterFormOptions()
+      .then((options) => {
+        setFormOptions(options);
+        setAddForm((current) => ({
+          ...current,
+          supporterType:
+            current.supporterType || options.supporterTypes[0] || '',
+          relationshipType:
+            current.relationshipType || options.relationshipTypes[0] || '',
+          region: current.region || options.regions[0] || '',
+          country: current.country || options.countries[0] || '',
+          acquisitionChannel:
+            current.acquisitionChannel || options.acquisitionChannels[0] || '',
+          status: current.status || options.statuses[0] || 'Active',
+        }));
+      })
+      .finally(() => setOptionsLoading(false));
+  }, []);
 
   const handleSearch = (e: { preventDefault(): void }) => {
     e.preventDefault();
@@ -122,7 +166,15 @@ export default function DonorsPage() {
   };
 
   const openAdd = () => {
-    setAddForm({ ...EMPTY_SUPPORTER });
+    setAddForm({
+      ...EMPTY_SUPPORTER,
+      supporterType: formOptions.supporterTypes[0] || '',
+      relationshipType: formOptions.relationshipTypes[0] || '',
+      region: formOptions.regions[0] || '',
+      country: formOptions.countries[0] || '',
+      acquisitionChannel: formOptions.acquisitionChannels[0] || '',
+      status: formOptions.statuses[0] || 'Active',
+    });
     setAddError(null);
     setShowAdd(true);
   };
@@ -136,6 +188,12 @@ export default function DonorsPage() {
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasRequiredOptions(formOptions)) {
+      setAddError(
+        'Donor form options are incomplete. Make sure supporters already have values for region, country, and the other dropdown fields.'
+      );
+      return;
+    }
     setAddBusy(true);
     setAddError(null);
     try {
@@ -202,17 +260,37 @@ export default function DonorsPage() {
                   {addError && (
                     <div className="alert alert-danger">{addError}</div>
                   )}
+                  {!optionsLoading && !hasRequiredOptions(formOptions) && (
+                    <div className="alert alert-warning">
+                      One or more required dropdown lists are empty. This form
+                      reads its choices from existing supporter data, so region
+                      and country need at least one existing value in the
+                      database.
+                    </div>
+                  )}
                   <div className="row g-3">
                     <div className="col-md-6">
                       <label className="form-label">
-                        Display Name <span className="text-danger">*</span>
+                        First Name <span className="text-danger">*</span>
                       </label>
                       <input
                         type="text"
                         className="form-control"
                         required
-                        value={addForm.displayName}
-                        onChange={(e) => set('displayName', e.target.value)}
+                        value={addForm.firstName}
+                        onChange={(e) => set('firstName', e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">
+                        Last Name <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        required
+                        value={addForm.lastName}
+                        onChange={(e) => set('lastName', e.target.value)}
                       />
                     </div>
                     <div className="col-md-6">
@@ -224,40 +302,20 @@ export default function DonorsPage() {
                         required
                         value={addForm.supporterType}
                         onChange={(e) => set('supporterType', e.target.value)}
+                        disabled={optionsLoading || addBusy}
                       >
-                        <option>Monetary Donor</option>
-                        <option>Volunteer</option>
-                        <option>Skills Contributor</option>
-                        <option>In-Kind Donor</option>
-                        <option>Social Media Advocate</option>
-                        <option>Corporate Partner</option>
-                        <option>Foundation</option>
+                        {formOptions.supporterTypes.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">First Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={addForm.firstName ?? ''}
-                        onChange={(e) =>
-                          set('firstName', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Last Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={addForm.lastName ?? ''}
-                        onChange={(e) =>
-                          set('lastName', e.target.value || null)
-                        }
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Organization Name</label>
+                      <label className="form-label">
+                        Organization Name{' '}
+                        <span className="text-muted">(optional)</span>
+                      </label>
                       <input
                         type="text"
                         className="form-control"
@@ -268,21 +326,50 @@ export default function DonorsPage() {
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Email</label>
+                      <label className="form-label">
+                        Relationship Type <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={addForm.relationshipType}
+                        onChange={(e) =>
+                          set('relationshipType', e.target.value)
+                        }
+                        disabled={optionsLoading || addBusy}
+                      >
+                        {formOptions.relationshipTypes.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">
+                        Email <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="email"
                         className="form-control"
-                        value={addForm.email ?? ''}
-                        onChange={(e) => set('email', e.target.value || null)}
+                        required
+                        value={addForm.email}
+                        onChange={(e) => set('email', e.target.value)}
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Phone</label>
+                      <label className="form-label">
+                        Phone <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="text"
                         className="form-control"
-                        value={addForm.phone ?? ''}
-                        onChange={(e) => set('phone', e.target.value || null)}
+                        required
+                        placeholder="+1 (347) 358-4878"
+                        pattern={PHONE_PATTERN}
+                        title="Use the format +1 (347) 358-4878"
+                        value={addForm.phone}
+                        onChange={(e) => set('phone', e.target.value)}
                       />
                     </div>
                     <div className="col-md-6">
@@ -294,48 +381,84 @@ export default function DonorsPage() {
                         required
                         value={addForm.status}
                         onChange={(e) => set('status', e.target.value)}
+                        disabled={addBusy}
                       >
-                        <option>Active</option>
-                        <option>Inactive</option>
+                        {formOptions.statuses.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Region</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={addForm.region ?? ''}
-                        onChange={(e) => set('region', e.target.value || null)}
-                      />
+                      <label className="form-label">
+                        Region <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={addForm.region}
+                        onChange={(e) => set('region', e.target.value)}
+                        disabled={optionsLoading || addBusy}
+                      >
+                        {formOptions.regions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Country</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={addForm.country ?? ''}
-                        onChange={(e) => set('country', e.target.value || null)}
-                      />
+                      <label className="form-label">
+                        Country <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={addForm.country}
+                        onChange={(e) => set('country', e.target.value)}
+                        disabled={optionsLoading || addBusy}
+                      >
+                        {formOptions.countries.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Acquisition Channel</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={addForm.acquisitionChannel ?? ''}
+                      <label className="form-label">
+                        Acquisition Channel{' '}
+                        <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={addForm.acquisitionChannel}
                         onChange={(e) =>
-                          set('acquisitionChannel', e.target.value || null)
+                          set('acquisitionChannel', e.target.value)
                         }
-                      />
+                        disabled={optionsLoading || addBusy}
+                      >
+                        {formOptions.acquisitionChannels.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">First Donation Date</label>
+                      <label className="form-label">
+                        First Donation Date{' '}
+                        <span className="text-danger">*</span>
+                      </label>
                       <input
                         type="date"
                         className="form-control"
-                        value={addForm.firstDonationDate ?? ''}
+                        required
+                        value={addForm.firstDonationDate}
                         onChange={(e) =>
-                          set('firstDonationDate', e.target.value || null)
+                          set('firstDonationDate', e.target.value)
                         }
                       />
                     </div>
@@ -435,7 +558,7 @@ export default function DonorsPage() {
                   Running Model...
                 </>
               ) : (
-                'Run Churn Inference'
+                'Run Churn Inference (ML Pipeline)'
               )}
             </button>
             <button
@@ -444,9 +567,13 @@ export default function DonorsPage() {
             >
               {showChurnCard
                 ? 'Hide Predicted Donor Churn'
-                : 'Predict Donor Churn'}
+                : 'Show Predicted Donor Churn'}
             </button>
-            <button className="btn btn-primary" onClick={openAdd}>
+            <button
+              className="btn btn-primary"
+              onClick={openAdd}
+              disabled={optionsLoading}
+            >
               + Add Donor
             </button>
           </div>

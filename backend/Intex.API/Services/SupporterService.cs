@@ -7,6 +7,39 @@ namespace Intex.API.Services;
 
 public class SupporterService : ISupporterService
 {
+    private static readonly string[] DefaultSupporterTypes =
+    [
+        "MonetaryDonor",
+        "InKindDonor",
+        "Volunteer",
+        "SkillsContributor",
+        "SocialMediaAdvocate",
+        "PartnerOrganization",
+    ];
+
+    private static readonly string[] DefaultRelationshipTypes =
+    [
+        "Local",
+        "International",
+        "PartnerOrganization",
+    ];
+
+    private static readonly string[] DefaultAcquisitionChannels =
+    [
+        "Website",
+        "SocialMedia",
+        "Event",
+        "WordOfMouth",
+        "PartnerReferral",
+        "Church",
+    ];
+
+    private static readonly string[] DefaultStatuses =
+    [
+        "Active",
+        "Inactive",
+    ];
+
     private readonly AppDbContext _db;
 
     public SupporterService(AppDbContext db) => _db = db;
@@ -29,7 +62,9 @@ public class SupporterService : ISupporterService
             .Take(pageSize)
             .Select(s => new SupporterListItem(
                 s.SupporterId,
-                s.DisplayName,
+                s.DisplayName != null && s.DisplayName.Trim() != string.Empty
+                    ? s.DisplayName
+                    : (s.Email ?? "Unknown"),
                 s.SupporterType,
                 s.Status,
                 s.Donations.Where(d => d.Amount != null).Sum(d => d.Amount!.Value),
@@ -37,6 +72,37 @@ public class SupporterService : ISupporterService
             .ToListAsync();
 
         return new PagedResult<SupporterListItem>(items, total, page, pageSize);
+    }
+
+    public async Task<SupporterFormOptions> GetFormOptionsAsync()
+    {
+        var supporterTypes = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.SupporterType),
+            DefaultSupporterTypes);
+
+        var relationshipTypes = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.RelationshipType),
+            DefaultRelationshipTypes);
+
+        var regions = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.Region),
+            []);
+
+        var countries = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.Country),
+            []);
+
+        var acquisitionChannels = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.AcquisitionChannel),
+            DefaultAcquisitionChannels);
+
+        return new SupporterFormOptions(
+            supporterTypes,
+            relationshipTypes,
+            regions,
+            countries,
+            acquisitionChannels,
+            DefaultStatuses);
     }
 
     public async Task<IReadOnlyList<SupporterChurnItem>> GetChurnPredictionsAsync()
@@ -142,17 +208,22 @@ ORDER BY
         var existing = await _db.Supporters.FindAsync(id);
         if (existing is null) return null;
 
-        existing.DisplayName = updated.DisplayName;
-        existing.SupporterType = updated.SupporterType;
-        existing.OrganizationName = updated.OrganizationName;
-        existing.FirstName = updated.FirstName;
-        existing.LastName = updated.LastName;
-        existing.Email = updated.Email;
-        existing.Phone = updated.Phone;
-        existing.Status = updated.Status;
-        existing.Region = updated.Region;
-        existing.Country = updated.Country;
-        existing.AcquisitionChannel = updated.AcquisitionChannel;
+        var firstName = updated.FirstName?.Trim();
+        var lastName = updated.LastName?.Trim();
+
+        existing.DisplayName = $"{firstName} {lastName}".Trim();
+        existing.SupporterType = updated.SupporterType.Trim();
+        existing.OrganizationName = string.IsNullOrWhiteSpace(updated.OrganizationName) ? null : updated.OrganizationName.Trim();
+        existing.FirstName = string.IsNullOrWhiteSpace(firstName) ? null : firstName;
+        existing.LastName = string.IsNullOrWhiteSpace(lastName) ? null : lastName;
+        existing.RelationshipType = string.IsNullOrWhiteSpace(updated.RelationshipType) ? null : updated.RelationshipType.Trim();
+        existing.Email = string.IsNullOrWhiteSpace(updated.Email) ? null : updated.Email.Trim();
+        existing.Phone = string.IsNullOrWhiteSpace(updated.Phone) ? null : updated.Phone.Trim();
+        existing.Status = updated.Status.Trim();
+        existing.Region = string.IsNullOrWhiteSpace(updated.Region) ? null : updated.Region.Trim();
+        existing.Country = string.IsNullOrWhiteSpace(updated.Country) ? null : updated.Country.Trim();
+        existing.AcquisitionChannel = string.IsNullOrWhiteSpace(updated.AcquisitionChannel) ? null : updated.AcquisitionChannel.Trim();
+        existing.FirstDonationDate = updated.FirstDonationDate;
 
         await _db.SaveChangesAsync();
         return existing;
@@ -162,19 +233,117 @@ ORDER BY
     {
         var supporter = await _db.Supporters.FindAsync(id);
         if (supporter is null) return false;
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var donations = await _db.Donations
+            .Where(d => d.SupporterId == id)
+            .Select(d => d.DonationId)
+            .ToListAsync();
+
+        if (donations.Count > 0)
+        {
+            var allocationRows = await _db.DonationAllocations
+                .Where(a => donations.Contains(a.DonationId))
+                .ToListAsync();
+
+            if (allocationRows.Count > 0)
+                _db.DonationAllocations.RemoveRange(allocationRows);
+
+            var itemRows = await _db.InKindDonationItems
+                .Where(i => donations.Contains(i.DonationId))
+                .ToListAsync();
+
+            if (itemRows.Count > 0)
+                _db.InKindDonationItems.RemoveRange(itemRows);
+
+            var donationRows = await _db.Donations
+                .Where(d => d.SupporterId == id)
+                .ToListAsync();
+
+            _db.Donations.RemoveRange(donationRows);
+        }
+
+        var userLinks = await _db.SupporterUserLinks
+            .Where(link => link.SupporterId == id)
+            .ToListAsync();
+
+        if (userLinks.Count > 0)
+            _db.SupporterUserLinks.RemoveRange(userLinks);
+
+        var predictions = await _db.PredictionResults
+            .Where(result => result.SupporterId == id)
+            .ToListAsync();
+
+        if (predictions.Count > 0)
+            _db.PredictionResults.RemoveRange(predictions);
+
         _db.Supporters.Remove(supporter);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return true;
     }
 
-    public async Task<Donation> AddDonationAsync(int supporterId, Donation donation)
+    public async Task<Donation> AddDonationAsync(int supporterId, CreateSupporterDonationRequest request)
     {
-        donation.SupporterId = supporterId;
-        if (donation.DonationId <= 0)
-            donation.DonationId = await GetNextDonationIdAsync();
+        var supporter = await _db.Supporters.FindAsync(supporterId)
+            ?? throw new InvalidOperationException($"Supporter {supporterId} was not found.");
+
+        var pledgeOptions = await GetDonorPledgeOptionsAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var selectedProgram = !string.IsNullOrWhiteSpace(request.ProgramArea)
+            && !string.Equals(request.ProgramArea, "Any", StringComparison.OrdinalIgnoreCase)
+            && pledgeOptions.ProgramAreas.Contains(request.ProgramArea)
+                ? request.ProgramArea
+                : pledgeOptions.ProgramAreas[Random.Shared.Next(pledgeOptions.ProgramAreas.Count)];
+
+        var selectedSafehouse = request.SafehouseId.HasValue
+            && pledgeOptions.SafehouseIds.Contains(request.SafehouseId.Value)
+                ? request.SafehouseId.Value
+                : pledgeOptions.SafehouseIds[Random.Shared.Next(pledgeOptions.SafehouseIds.Count)];
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var donation = new Donation
+        {
+            DonationId = await GetNextDonationIdAsync(),
+            SupporterId = supporterId,
+            DonationType = "Monetary",
+            DonationDate = today,
+            IsRecurring = request.IsRecurring,
+            CampaignName = null,
+            ChannelSource = "Direct",
+            CurrencyCode = "PHP",
+            Amount = request.Amount,
+            EstimatedValue = request.Amount,
+            ImpactUnit = "pesos",
+            Notes = null,
+            CreatedByPartnerId = null,
+            ReferralPostId = null,
+        };
 
         _db.Donations.Add(donation);
         await _db.SaveChangesAsync();
+
+        var allocation = new DonationAllocation
+        {
+            AllocationId = await GetNextAllocationIdAsync(),
+            DonationId = donation.DonationId,
+            SafehouseId = selectedSafehouse,
+            ProgramArea = selectedProgram,
+            AmountAllocated = request.Amount,
+            AllocationDate = today,
+            AllocationNotes = null,
+        };
+
+        _db.DonationAllocations.Add(allocation);
+
+        if (!supporter.FirstDonationDate.HasValue)
+            supporter.FirstDonationDate = today;
+
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return donation;
     }
 
@@ -312,8 +481,26 @@ ORDER BY
         var donation = await _db.Donations
             .FirstOrDefaultAsync(d => d.DonationId == donationId && d.SupporterId == supporterId);
         if (donation is null) return false;
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        var allocationRows = await _db.DonationAllocations
+            .Where(a => a.DonationId == donationId)
+            .ToListAsync();
+
+        if (allocationRows.Count > 0)
+            _db.DonationAllocations.RemoveRange(allocationRows);
+
+        var itemRows = await _db.InKindDonationItems
+            .Where(i => i.DonationId == donationId)
+            .ToListAsync();
+
+        if (itemRows.Count > 0)
+            _db.InKindDonationItems.RemoveRange(itemRows);
+
         _db.Donations.Remove(donation);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         return true;
     }
 
@@ -357,5 +544,25 @@ ORDER BY
     {
         var maxId = await _db.DonationAllocations.MaxAsync(a => (int?)a.AllocationId) ?? 0;
         return maxId + 1;
+    }
+
+    private static async Task<IReadOnlyList<string>> GetDistinctOrderedValuesAsync(
+        IQueryable<string?> query,
+        IReadOnlyCollection<string> fallbacks)
+    {
+        var values = await query
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!.Trim())
+            .Distinct()
+            .OrderBy(value => value)
+            .ToListAsync();
+
+        if (values.Count > 0)
+            return values;
+
+        return fallbacks
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(value => value)
+            .ToList();
     }
 }
