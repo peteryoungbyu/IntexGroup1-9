@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  BarChart,
-  Bar,
   LineChart,
   Line,
   PieChart,
@@ -13,13 +11,14 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  BarChart,
+  Bar,
 } from 'recharts';
 import type { ReportSection } from '../types/ReportSection';
 import {
   getAnnualReport,
   getDonationTrends,
   getReintegrationOutcomes,
-  getSafehouseComparison,
   getInferenceResults,
   runReintegrationReadiness,
   runDonorUpsell,
@@ -62,10 +61,7 @@ export default function ReportsPage() {
   const year = new Date().getFullYear();
   const [annual, setAnnual] = useState<ReportSection[] | null>(null);
   const [trends, setTrends] = useState<ReportSection | null>(null);
-  const [reintegration, setReintegration] = useState<ReportSection | null>(
-    null
-  );
-  const [comparison, setComparison] = useState<ReportSection | null>(null);
+  const [reintegration, setReintegration] = useState<ReportSection | null>(null);
   const [loading, setLoading] = useState(true);
 
   type InferenceJob = {
@@ -133,6 +129,7 @@ export default function ReportsPage() {
       ...prev,
       [job.jobKey]: { running: true, result: null, error: null },
     }));
+
     try {
       const result = await job.run();
       setInferenceStatus((prev) => ({
@@ -143,7 +140,10 @@ export default function ReportsPage() {
           error: result.success ? null : result.error,
         },
       }));
-      if (result.success) await fetchResults(job);
+
+      if (result.success) {
+        await fetchResults(job);
+      }
     } catch (e: unknown) {
       setInferenceStatus((prev) => ({
         ...prev,
@@ -156,112 +156,11 @@ export default function ReportsPage() {
     }
   }
 
-  useEffect(() => {
-    Promise.all([
-      getAnnualReport(year),
-      getDonationTrends(12),
-      getReintegrationOutcomes(),
-      getSafehouseComparison(),
-    ])
-      .then(
-        ([
-          annualReport,
-          donationTrends,
-          reintegrationOutcomes,
-          safehouseComparison,
-        ]) => {
-          setAnnual(annualReport);
-          setTrends(donationTrends);
-          setReintegration(reintegrationOutcomes);
-          setComparison(safehouseComparison);
-        }
-      )
-      .finally(() => setLoading(false));
-  }, [year]);
-
-  if (loading) {
-    return (
-      <div className="container py-5 text-center">
-        <div
-          className="spinner-border"
-          style={{ color: 'var(--brand-primary)' }}
-        />
-      </div>
-    );
-  }
-
-  const trendRows: RowData[] = normalizeSectionRows(trends?.data);
-  const trendChartData = trendRows.map((r) => ({
-    label: `${MONTH_NAMES[Number(r.month ?? 1) - 1]} ${r.year ?? ''}`,
-    total: Number(r.total ?? 0),
-    count: Number(r.count ?? 0),
-  }));
-
-  const reintRows: RowData[] = normalizeSectionRows(reintegration?.data);
-  const reintChartData = reintRows.map((r) => ({
-    name: r.status ?? 'Unknown',
-    value: Number(r.count ?? 0),
-  }));
-
-  const compRows: RowData[] = normalizeSectionRows(comparison?.data);
-  const safehouseMap: Record<string, { residents: number; incidents: number }> =
-    {};
-  for (const r of compRows) {
-    const key = String(r.name ?? `Safehouse ${r.safehouseId}`);
-    if (!safehouseMap[key]) safehouseMap[key] = { residents: 0, incidents: 0 };
-    safehouseMap[key].residents += Number(r.activeResidents ?? 0);
-    safehouseMap[key].incidents += Number(r.incidentCount ?? 0);
-  }
-  const compChartData = Object.entries(safehouseMap).map(([name, v]) => ({
-    name,
-    ...v,
-  }));
-
-  // Annual report — find "Donation Summary" section for a bar chart
-  const donationSummarySection = annual?.find((s) =>
-    s.title.toLowerCase().includes('donation')
-  );
-  const donationSummaryRows: RowData[] = normalizeSectionRows(
-    donationSummarySection?.data
-  );
-  const donationSummaryBreakdownRows = donationSummaryRows.map((row) => ({
-    type: String(
-      row?.donationType ?? row?.type ?? row?.category ?? row?.label ?? 'Unknown'
-    ),
-    count: Number(row?.count ?? 0),
-    total: Number(row?.total ?? row?.amount ?? 0),
-  }));
-  const donationSummaryChartData = donationSummaryRows
-    .map((row) => {
-      const label =
-        row?.donationType ??
-        row?.type ??
-        row?.category ??
-        row?.label ??
-        'Unknown';
-      const value = Number(row?.total ?? row?.amount ?? row?.count ?? 0);
-      return { label: String(label), value };
-    })
-    .filter((row) => Number.isFinite(row.value));
-
-  // Annual services section (caring/healing/teaching counts)
-  const servicesSection = annual?.find((s) =>
-    s.title.toLowerCase().includes('service')
-  );
-  const servicesRows: RowData[] = normalizeSectionRows(servicesSection?.data);
-  const servicesChartData = servicesRows
-    .map((row) => ({
-      label: String(
-        row?.serviceType ?? row?.type ?? row?.category ?? 'Unknown'
-      ),
-      value: Number(row?.count ?? row?.total ?? 0),
-    }))
-    .filter((row) => Number.isFinite(row.value));
-
   function normalizeSectionRows(sectionData: unknown): RowData[] {
     if (Array.isArray(sectionData)) return sectionData;
-    if (sectionData && typeof sectionData === 'object')
+    if (sectionData && typeof sectionData === 'object') {
       return [sectionData as RowData];
+    }
     return [];
   }
 
@@ -271,10 +170,12 @@ export default function ReportsPage() {
 
   function formatSummaryValue(key: string, value: unknown): string {
     if (value == null) return '—';
+
     if (typeof value === 'number') {
       if (key.toLowerCase().includes('year')) return String(value);
       return value.toLocaleString();
     }
+
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
     return String(value);
   }
@@ -301,6 +202,7 @@ export default function ReportsPage() {
         return typeof value === 'number'
           ? `${(value * 100).toFixed(1)}%`
           : String(value);
+
       case 'currency':
         return typeof value === 'number'
           ? `PHP ${value.toLocaleString(undefined, {
@@ -308,8 +210,10 @@ export default function ReportsPage() {
               maximumFractionDigits: 2,
             })}`
           : String(value);
+
       case 'datetime':
         return new Date(String(value)).toLocaleString();
+
       default:
         return String(value);
     }
@@ -342,17 +246,12 @@ export default function ReportsPage() {
 
   function getReadyPredictionCount(rows: ReportInferenceRow[]): number {
     return rows.filter(
-      (row) =>
-        String(row.prediction ?? '')
-          .trim()
-          .toLowerCase() === 'ready'
+      (row) => String(row.prediction ?? '').trim().toLowerCase() === 'ready'
     ).length;
   }
 
   function getBadgeClass(value: string | number | null | undefined): string {
-    const normalized = String(value ?? '')
-      .trim()
-      .toLowerCase();
+    const normalized = String(value ?? '').trim().toLowerCase();
 
     if (
       normalized === 'high' ||
@@ -393,6 +292,86 @@ export default function ReportsPage() {
     return `${jobKey}-${entityId}-${index}`;
   }
 
+  useEffect(() => {
+    Promise.all([
+      getAnnualReport(year),
+      getDonationTrends(12),
+      getReintegrationOutcomes(),
+    ])
+      .then(([annualReport, donationTrends, reintegrationOutcomes]) => {
+        setAnnual(annualReport);
+        setTrends(donationTrends);
+        setReintegration(reintegrationOutcomes);
+      })
+      .finally(() => setLoading(false));
+  }, [year]);
+
+  if (loading) {
+    return (
+      <div className="container py-5 text-center">
+        <div
+          className="spinner-border"
+          style={{ color: 'var(--brand-primary)' }}
+        />
+      </div>
+    );
+  }
+
+  const trendRows: RowData[] = normalizeSectionRows(trends?.data);
+  const trendChartData = trendRows.map((r) => ({
+    label: `${MONTH_NAMES[Math.max(Number(r.month ?? 1) - 1, 0)] ?? 'Jan'} ${
+      r.year ?? ''
+    }`,
+    total: Number(r.total ?? 0),
+    count: Number(r.count ?? 0),
+  }));
+
+  const reintRows: RowData[] = normalizeSectionRows(reintegration?.data);
+  const reintChartData = reintRows.map((r) => ({
+    name: r.status ?? 'Unknown',
+    value: Number(r.count ?? 0),
+  }));
+
+  const donationSummarySection = annual?.find((s) =>
+    s.title.toLowerCase().includes('donation')
+  );
+  const donationSummaryRows: RowData[] = normalizeSectionRows(
+    donationSummarySection?.data
+  );
+  const donationSummaryBreakdownRows = donationSummaryRows.map((row) => ({
+    type: String(
+      row?.donationType ?? row?.type ?? row?.category ?? row?.label ?? 'Unknown'
+    ),
+    count: Number(row?.count ?? 0),
+    total: Number(row?.total ?? row?.amount ?? 0),
+  }));
+  const donationSummaryChartData = donationSummaryRows
+    .map((row) => {
+      const label =
+        row?.donationType ??
+        row?.type ??
+        row?.category ??
+        row?.label ??
+        'Unknown';
+
+      const value = Number(row?.total ?? row?.amount ?? row?.count ?? 0);
+      return { label: String(label), value };
+    })
+    .filter((row) => Number.isFinite(row.value));
+
+  const servicesSection = annual?.find((s) =>
+    s.title.toLowerCase().includes('service')
+  );
+  const servicesRows: RowData[] = normalizeSectionRows(servicesSection?.data);
+  const servicesChartData = servicesRows
+    .map((row) => ({
+      label: String(
+        row?.serviceType ?? row?.type ?? row?.category ?? 'Unknown'
+      ),
+      value: Number(row?.count ?? row?.total ?? 0),
+    }))
+    .filter((row) => Number.isFinite(row.value));
+
   return (
     <div>
       <div className="page-header">
@@ -404,7 +383,6 @@ export default function ReportsPage() {
       </div>
 
       <div className="container-fluid py-4">
-        {/* Donation Trends — Line Chart */}
         <div className="card mb-4">
           <div className="card-header fw-semibold">
             {trends?.title ?? 'Donation Trends'}
@@ -433,23 +411,7 @@ export default function ReportsPage() {
                     formatter={(value, name) => {
                       const numericValue = Number(value ?? 0);
                       return name === 'total'
-                        ? [`₱${numericValue.toLocaleString()}`, 'Total (PHP)']
-                        : [numericValue, 'Donations'];
-                    }}
-                  />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip
-                    formatter={(value, name) => {
-                      const numericValue = Number(value ?? 0);
-                      return name === 'total'
-                        ? [
-                            `PHP ${numericValue.toLocaleString()}`,
-                            'Total (PHP)',
-                          ]
+                        ? [`PHP ${numericValue.toLocaleString()}`, 'Total (PHP)']
                         : [numericValue.toLocaleString(), 'Donations'];
                     }}
                   />
@@ -481,7 +443,7 @@ export default function ReportsPage() {
         </div>
 
         <div className="row g-4 mb-4">
-          <div className="col-md-5">
+          <div className="col-md-12">
             <div className="card h-100">
               <div className="card-header fw-semibold">
                 {reintegration?.title ?? 'Reintegration Outcomes'}
@@ -521,52 +483,8 @@ export default function ReportsPage() {
               </div>
             </div>
           </div>
-
-          <div className="col-md-7">
-            <div className="card h-100">
-              <div className="card-header fw-semibold">
-                {comparison?.title ?? 'Safehouse Comparison'}
-              </div>
-              <div className="card-body">
-                <p className="text-muted small mb-3">
-                  {comparison?.description}
-                </p>
-                {compChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart
-                      data={compChartData}
-                      margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 12 }} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar
-                        dataKey="residents"
-                        fill="#2563eb"
-                        name="Residents"
-                        radius={[4, 4, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="incidents"
-                        fill="#dc2626"
-                        name="Incidents"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-muted">
-                    No safehouse comparison data available.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* ML Inference Panel */}
         <div className="card mb-4">
           <div className="card-header fw-semibold">
             ML Inference — Run Predictions
@@ -586,6 +504,7 @@ export default function ReportsPage() {
                   job.jobKey === 'reintegration-readiness'
                     ? getReadyPredictionCount(rows)
                     : 0;
+
                 return (
                   <div key={job.jobKey} className="border rounded p-3">
                     <div className="d-flex align-items-center gap-2 mb-2">
@@ -604,6 +523,7 @@ export default function ReportsPage() {
                           'Run'
                         )}
                       </button>
+
                       {rows.length === 0 && !status?.running && (
                         <button
                           className="btn btn-sm btn-outline-secondary"
@@ -617,11 +537,13 @@ export default function ReportsPage() {
                           )}
                         </button>
                       )}
+
                       {status?.result?.success && (
                         <span className="text-success small">
                           ✓ {status.result.updatedCount} records updated
                         </span>
                       )}
+
                       {status?.error && (
                         <span className="text-danger small">
                           ✗ {status.error}
@@ -723,65 +645,30 @@ export default function ReportsPage() {
                   {donationSummarySection?.description}
                 </p>
                 {donationSummaryChartData.length > 0 ? (
-                  <>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <BarChart
-                        data={donationSummaryChartData}
-                        layout="vertical"
-                        margin={{ left: 20, right: 20 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis
-                          type="number"
-                          tick={{ fontSize: 12 }}
-                          tickFormatter={(v) =>
-                            `₱${Number(v).toLocaleString()}`
-                          }
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="label"
-                          tick={{ fontSize: 12 }}
-                          width={140}
-                        />
-                        <Tooltip
-                          formatter={(v) => [
-                            `₱${Number(v ?? 0).toLocaleString()}`,
-                            'Total',
-                          ]}
-                        />
-                        <Bar
-                          dataKey="value"
-                          fill="#2563eb"
-                          radius={[0, 4, 4, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                    <div className="table-responsive mt-3">
-                      <table className="table table-sm table-bordered mb-0">
-                        <thead className="table-light">
-                          <tr>
-                            <th>Donation Type</th>
-                            <th className="text-end"># Donations</th>
-                            <th className="text-end">Total (PHP)</th>
+                  <div className="table-responsive mt-3">
+                    <table className="table table-sm table-bordered mb-0">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Donation Type</th>
+                          <th className="text-end"># Donations</th>
+                          <th className="text-end">Total (PHP)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {donationSummaryBreakdownRows.map((row, index) => (
+                          <tr key={`${row.type}-${index}`}>
+                            <td>{row.type}</td>
+                            <td className="text-end">
+                              {row.count.toLocaleString()}
+                            </td>
+                            <td className="text-end">
+                              ₱{row.total.toLocaleString()}
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {donationSummaryBreakdownRows.map((row, index) => (
-                            <tr key={`${row.type}-${index}`}>
-                              <td>{row.type}</td>
-                              <td className="text-end">
-                                {row.count.toLocaleString()}
-                              </td>
-                              <td className="text-end">
-                                ₱{row.total.toLocaleString()}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
                   <p className="text-muted small mb-0">
                     Donation data loaded but no chartable values were found.
@@ -821,7 +708,6 @@ export default function ReportsPage() {
               </div>
             )}
 
-            {/* Remaining sections as data tables */}
             {annual
               ?.filter(
                 (s) =>
@@ -833,6 +719,7 @@ export default function ReportsPage() {
                 const isSummarySection =
                   sectionRows.length === 1 &&
                   isSummaryObjectRow(sectionRows[0]);
+
                 return (
                   <div key={s.title} className="mb-4">
                     <h6
@@ -842,26 +729,25 @@ export default function ReportsPage() {
                       {s.title}
                     </h6>
                     <p className="text-muted small mb-2">{s.description}</p>
+
                     {sectionRows.length > 0 ? (
                       isSummarySection ? (
                         <div className="row g-3">
-                          {Object.entries(sectionRows[0]).map(
-                            ([key, value]) => (
-                              <div
-                                className="col-12 col-sm-6 col-lg-4"
-                                key={key}
-                              >
-                                <div className="border rounded p-3 h-100 bg-light-subtle">
-                                  <p className="text-muted text-uppercase small fw-semibold mb-1">
-                                    {toReadableLabel(key)}
-                                  </p>
-                                  <h4 className="mb-0">
-                                    {formatSummaryValue(key, value)}
-                                  </h4>
-                                </div>
+                          {Object.entries(sectionRows[0]).map(([key, value]) => (
+                            <div
+                              className="col-12 col-sm-6 col-lg-4"
+                              key={key}
+                            >
+                              <div className="border rounded p-3 h-100 bg-light-subtle">
+                                <p className="text-muted text-uppercase small fw-semibold mb-1">
+                                  {toReadableLabel(key)}
+                                </p>
+                                <h4 className="mb-0">
+                                  {formatSummaryValue(key, value)}
+                                </h4>
                               </div>
-                            )
-                          )}
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <div className="table-responsive">

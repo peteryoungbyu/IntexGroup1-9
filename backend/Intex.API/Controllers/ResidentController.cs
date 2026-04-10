@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Intex.API.Data;
 using Intex.API.Models;
 using Intex.API.Services;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,10 @@ public class ResidentController : ControllerBase
 
         return Ok(safehouses);
     }
+
+    [HttpGet("form-options")]
+    public async Task<IActionResult> GetFormOptions()
+        => Ok(await _service.GetFormOptionsAsync());
 
     [HttpGet("recordings/form-options")]
     public async Task<IActionResult> GetRecordingFormOptions()
@@ -117,26 +122,64 @@ public class ResidentController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = AuthPolicies.AdminManage)]
-    public async Task<IActionResult> Create([FromBody] Resident resident)
+    public async Task<IActionResult> Create([FromBody] CreateResidentRequest request)
     {
-        var created = await _service.CreateAsync(resident);
-        return CreatedAtAction(nameof(GetById), new { id = created.ResidentId }, created);
+        try
+        {
+            var created = await _service.CreateAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = created.ResidentId }, created);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id:int}")]
     [Authorize(Policy = AuthPolicies.AdminManage)]
-    public async Task<IActionResult> Update(int id, [FromBody] Resident resident)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateResidentRequest resident)
     {
-        var result = await _service.UpdateAsync(id, resident);
-        return result is null ? NotFound() : Ok(result);
+        try
+        {
+            var result = await _service.UpdateAsync(id, resident);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new
+            {
+                error = "Failed to update resident because one or more values conflict with existing data."
+            });
+        }
     }
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = AuthPolicies.AdminManage)]
     public async Task<IActionResult> Delete(int id)
     {
-        var deleted = await _service.DeleteAsync(id);
-        return deleted ? NoContent() : NotFound();
+        try
+        {
+            var deleted = await _service.DeleteAsync(id);
+            return deleted ? NoContent() : NotFound();
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new
+            {
+                error = "Failed to delete resident because related records still exist in another table."
+            });
+        }
+        catch (SqlException ex) when (ex.Number == 547)
+        {
+            return Conflict(new
+            {
+                error = "Failed to delete resident because related records still exist in another table."
+            });
+        }
     }
 
     // Process Recordings
@@ -252,6 +295,11 @@ public class ResidentController : ControllerBase
     [Authorize(Policy = AuthPolicies.AdminManage)]
     public async Task<IActionResult> AddVisitation(int id, [FromBody] HomeVisitation visitation)
     {
+        if (!await _db.Residents.AsNoTracking().AnyAsync(r => r.ResidentId == id))
+            return NotFound();
+
+        var nextVisitationId = (await _db.HomeVisitations.MaxAsync(v => (int?)v.VisitationId) ?? 0) + 1;
+        visitation.VisitationId = nextVisitationId;
         visitation.ResidentId = id;
         _db.HomeVisitations.Add(visitation);
         await _db.SaveChangesAsync();

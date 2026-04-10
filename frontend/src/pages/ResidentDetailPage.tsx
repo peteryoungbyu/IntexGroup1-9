@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import type {
   ResidentDetail,
   ProcessRecording,
   HomeVisitation,
   CaseConference,
+  UpdateResidentRequest,
 } from '../types/ResidentDetail';
 import {
   getResidentById,
@@ -14,12 +15,24 @@ import {
   deleteVisitation,
   updateResident,
 } from '../lib/residentAPI';
-import type { Resident } from '../types/ResidentDetail';
 import {
   addCaseConference,
   deleteCaseConference,
 } from '../lib/caseConferenceAPI';
+import {
+  RESIDENT_BIRTH_STATUSES,
+  RESIDENT_CASE_CATEGORIES,
+  RESIDENT_CASE_STATUSES,
+  RESIDENT_REFERRAL_SOURCES,
+  RESIDENT_RISK_LEVELS,
+  RESIDENT_REINTEGRATION_STATUSES,
+  RESIDENT_REINTEGRATION_TYPES,
+  RESIDENT_SAFEHOUSE_IDS,
+} from '../lib/residentOptions';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import Pagination from '../components/Pagination';
+
+const ITEMS_PER_PAGE = 10;
 
 const RISK_COLORS: Record<string, string> = {
   Low: 'success',
@@ -76,16 +89,25 @@ type DeleteTarget =
   | { type: 'visitation'; id: number }
   | { type: 'conference'; id: number };
 
-type EditableResident = Omit<Resident, 'residentId' | 'createdAt'>;
+type EditableResident = UpdateResidentRequest;
 
 export default function ResidentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const residentId = Number(id);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [detail, setDetail] = useState<ResidentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [highlightedRecordingId, setHighlightedRecordingId] = useState<
+    number | null
+  >(null);
+  const [currentRecordingPage, setCurrentRecordingPage] = useState(1);
+  const [highlightedVisitationId, setHighlightedVisitationId] = useState<
+    number | null
+  >(null);
+  const [currentVisitationPage, setCurrentVisitationPage] = useState(1);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<EditableResident | null>(null);
@@ -130,6 +152,63 @@ export default function ResidentDetailPage() {
     setVisitationForm((f) => ({ ...f, residentId }));
     setConferenceForm((f) => ({ ...f, residentId }));
   }, [residentId]);
+
+  // Read tab and highlightId from URL query params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    const highlightId = params.get('highlightId');
+    if (tab === 'recordings' || tab === 'visitations') setActiveTab(tab);
+    if (highlightId) {
+      if (tab === 'visitations') {
+        setHighlightedVisitationId(Number(highlightId));
+      } else {
+        setHighlightedRecordingId(Number(highlightId));
+      }
+    }
+  }, [location.search]);
+
+  // Scroll to, page to, and clear highlighted recording once data loads
+  useEffect(() => {
+    if (!highlightedRecordingId || !detail) return;
+    const recs = detail.recordings;
+    const idx = recs.findIndex((r) => r.recordingId === highlightedRecordingId);
+    if (idx >= 0) {
+      setCurrentRecordingPage(Math.floor(idx / ITEMS_PER_PAGE) + 1);
+    }
+    const scrollTimer = setTimeout(() => {
+      document
+        .getElementById('recording-' + highlightedRecordingId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    const clearTimer = setTimeout(() => setHighlightedRecordingId(null), 4000);
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [highlightedRecordingId, detail]);
+
+  // Scroll to, page to, and clear highlighted visitation once data loads
+  useEffect(() => {
+    if (!highlightedVisitationId || !detail) return;
+    const visits = detail.visitations;
+    const idx = visits.findIndex(
+      (v) => v.visitationId === highlightedVisitationId
+    );
+    if (idx >= 0) {
+      setCurrentVisitationPage(Math.floor(idx / ITEMS_PER_PAGE) + 1);
+    }
+    const scrollTimer = setTimeout(() => {
+      document
+        .getElementById('visitation-' + highlightedVisitationId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    const clearTimer = setTimeout(() => setHighlightedVisitationId(null), 4000);
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [highlightedVisitationId, detail]);
 
   if (loading)
     return (
@@ -218,8 +297,45 @@ export default function ResidentDetailPage() {
   }
 
   function openEdit() {
-    const { residentId: _id, createdAt: _ca, ...fields } = resident as Resident;
-    setEditForm(fields);
+    setEditForm({
+      safehouseId: resident.safehouseId,
+      caseStatus: resident.caseStatus,
+      sex: resident.sex,
+      dateOfBirth: resident.dateOfBirth,
+      birthStatus: resident.birthStatus,
+      placeOfBirth: resident.placeOfBirth,
+      religion: resident.religion,
+      caseCategory: resident.caseCategory,
+      subCatOrphaned: resident.subCatOrphaned,
+      subCatTrafficked: resident.subCatTrafficked,
+      subCatChildLabor: resident.subCatChildLabor,
+      subCatPhysicalAbuse: resident.subCatPhysicalAbuse,
+      subCatSexualAbuse: resident.subCatSexualAbuse,
+      subCatOsaec: resident.subCatOsaec,
+      subCatCicl: resident.subCatCicl,
+      subCatAtRisk: resident.subCatAtRisk,
+      subCatStreetChild: resident.subCatStreetChild,
+      subCatChildWithHiv: resident.subCatChildWithHiv,
+      isPwd: resident.isPwd,
+      pwdType: resident.pwdType,
+      hasSpecialNeeds: resident.hasSpecialNeeds,
+      specialNeedsDiagnosis: resident.specialNeedsDiagnosis,
+      familyIs4Ps: resident.familyIs4Ps,
+      familySoloParent: resident.familySoloParent,
+      familyIndigenous: resident.familyIndigenous,
+      familyParentPwd: resident.familyParentPwd,
+      familyInformalSettler: resident.familyInformalSettler,
+      dateOfAdmission: resident.dateOfAdmission,
+      referralSource: resident.referralSource,
+      referringAgencyPerson: resident.referringAgencyPerson,
+      assignedSocialWorker: resident.assignedSocialWorker,
+      initialCaseAssessment: resident.initialCaseAssessment,
+      reintegrationType: resident.reintegrationType,
+      reintegrationStatus: resident.reintegrationStatus,
+      initialRiskLevel: resident.initialRiskLevel,
+      currentRiskLevel: resident.currentRiskLevel,
+      dateClosed: resident.dateClosed,
+    });
     setEditError(null);
     setShowEdit(true);
   }
@@ -238,8 +354,12 @@ export default function ResidentDetailPage() {
       await updateResident(residentId, editForm);
       await refresh();
       setShowEdit(false);
-    } catch {
-      setEditError('Failed to save changes. Please try again.');
+    } catch (error) {
+      setEditError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to save changes. Please try again.'
+      );
     } finally {
       setEditBusy(false);
     }
@@ -306,7 +426,6 @@ export default function ResidentDetailPage() {
             'recordings',
             'visitations',
             'plans',
-            'conferences',
             'predictions',
           ].map((t) => (
             <li key={t} className="nav-item">
@@ -361,11 +480,8 @@ export default function ResidentDetailPage() {
                         <input
                           type="text"
                           className="form-control"
-                          required
-                          value={editForm.caseControlNo}
-                          onChange={(e) =>
-                            setEdit('caseControlNo', e.target.value)
-                          }
+                          readOnly
+                          value={resident.caseControlNo}
                         />
                       </div>
                       <div className="col-md-4">
@@ -375,27 +491,28 @@ export default function ResidentDetailPage() {
                         <input
                           type="text"
                           className="form-control"
-                          required
-                          value={editForm.internalCode}
-                          onChange={(e) =>
-                            setEdit('internalCode', e.target.value)
-                          }
+                          readOnly
+                          value={resident.internalCode}
                         />
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">
                           Safehouse ID <span className="text-danger">*</span>
                         </label>
-                        <input
-                          type="number"
-                          className="form-control"
+                        <select
+                          className="form-select"
                           required
-                          min={1}
                           value={editForm.safehouseId}
                           onChange={(e) =>
                             setEdit('safehouseId', Number(e.target.value))
                           }
-                        />
+                        >
+                          {RESIDENT_SAFEHOUSE_IDS.map((safehouseId) => (
+                            <option key={safehouseId} value={safehouseId}>
+                              {`Safehouse ${safehouseId}`}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">
@@ -407,8 +524,8 @@ export default function ResidentDetailPage() {
                           value={editForm.sex}
                           onChange={(e) => setEdit('sex', e.target.value)}
                         >
-                          <option>Female</option>
-                          <option>Male</option>
+                          <option value="F">F</option>
+                          <option value="M">M</option>
                         </select>
                       </div>
                       <div className="col-md-4">
@@ -426,10 +543,13 @@ export default function ResidentDetailPage() {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Place of Birth</label>
+                        <label className="form-label">
+                          Place of Birth <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="text"
                           className="form-control"
+                          required
                           value={editForm.placeOfBirth ?? ''}
                           onChange={(e) =>
                             setEdit('placeOfBirth', e.target.value || null)
@@ -437,21 +557,33 @@ export default function ResidentDetailPage() {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Birth Status</label>
-                        <input
-                          type="text"
-                          className="form-control"
+                        <label className="form-label">
+                          Birth Status <span className="text-danger">*</span>
+                        </label>
+                        <select
+                          className="form-select"
+                          required
                           value={editForm.birthStatus ?? ''}
                           onChange={(e) =>
                             setEdit('birthStatus', e.target.value || null)
                           }
-                        />
+                        >
+                          <option value="">None</option>
+                          {RESIDENT_BIRTH_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Religion</label>
+                        <label className="form-label">
+                          Religion <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="text"
                           className="form-control"
+                          required
                           value={editForm.religion ?? ''}
                           onChange={(e) =>
                             setEdit('religion', e.target.value || null)
@@ -470,9 +602,11 @@ export default function ResidentDetailPage() {
                             setEdit('caseStatus', e.target.value)
                           }
                         >
-                          <option>Active</option>
-                          <option>Closed</option>
-                          <option>Transferred</option>
+                          {RESIDENT_CASE_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -493,11 +627,11 @@ export default function ResidentDetailPage() {
                             setEdit('caseCategory', e.target.value)
                           }
                         >
-                          <option>Child in Need of Special Protection</option>
-                          <option>Child in Conflict with the Law</option>
-                          <option>Child at Risk</option>
-                          <option>Abandoned</option>
-                          <option>Neglected</option>
+                          {RESIDENT_CASE_CATEGORIES.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-6">
@@ -668,11 +802,13 @@ export default function ResidentDetailPage() {
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">
-                          Assigned Social Worker
+                          Assigned Social Worker{' '}
+                          <span className="text-danger">*</span>
                         </label>
                         <input
                           type="text"
                           className="form-control"
+                          required
                           value={editForm.assignedSocialWorker ?? ''}
                           onChange={(e) =>
                             setEdit(
@@ -683,15 +819,24 @@ export default function ResidentDetailPage() {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Referral Source</label>
-                        <input
-                          type="text"
-                          className="form-control"
+                        <label className="form-label">
+                          Referral Source <span className="text-danger">*</span>
+                        </label>
+                        <select
+                          className="form-select"
+                          required
                           value={editForm.referralSource ?? ''}
                           onChange={(e) =>
                             setEdit('referralSource', e.target.value || null)
                           }
-                        />
+                        >
+                          <option value="">None</option>
+                          {RESIDENT_REFERRAL_SOURCES.map((source) => (
+                            <option key={source} value={source}>
+                              {source}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">
@@ -710,44 +855,56 @@ export default function ResidentDetailPage() {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Initial Risk Level</label>
+                        <label className="form-label">
+                          Initial Risk Level{' '}
+                          <span className="text-danger">*</span>
+                        </label>
                         <select
                           className="form-select"
+                          required
                           value={editForm.initialRiskLevel ?? ''}
                           onChange={(e) =>
                             setEdit('initialRiskLevel', e.target.value || null)
                           }
                         >
                           <option value="">— None —</option>
-                          <option>Low</option>
-                          <option>Medium</option>
-                          <option>High</option>
-                          <option>Critical</option>
+                          {RESIDENT_RISK_LEVELS.map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Current Risk Level</label>
+                        <label className="form-label">
+                          Current Risk Level{' '}
+                          <span className="text-danger">*</span>
+                        </label>
                         <select
                           className="form-select"
+                          required
                           value={editForm.currentRiskLevel ?? ''}
                           onChange={(e) =>
                             setEdit('currentRiskLevel', e.target.value || null)
                           }
                         >
                           <option value="">— None —</option>
-                          <option>Low</option>
-                          <option>Medium</option>
-                          <option>High</option>
-                          <option>Critical</option>
+                          {RESIDENT_RISK_LEVELS.map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-12">
                         <label className="form-label">
-                          Initial Case Assessment
+                          Initial Case Assessment{' '}
+                          <span className="text-danger">*</span>
                         </label>
                         <textarea
                           className="form-control"
                           rows={2}
+                          required
                           value={editForm.initialCaseAssessment ?? ''}
                           onChange={(e) =>
                             setEdit(
@@ -773,11 +930,11 @@ export default function ResidentDetailPage() {
                           }
                         >
                           <option value="">— None —</option>
-                          <option>Family Reintegration</option>
-                          <option>Community Reintegration</option>
-                          <option>Independent Living</option>
-                          <option>Foster Care</option>
-                          <option>Adoption</option>
+                          {RESIDENT_REINTEGRATION_TYPES.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-4">
@@ -795,10 +952,11 @@ export default function ResidentDetailPage() {
                           }
                         >
                           <option value="">— None —</option>
-                          <option>Ongoing</option>
-                          <option>Completed</option>
-                          <option>Failed</option>
-                          <option>Pending</option>
+                          {RESIDENT_REINTEGRATION_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-4">
@@ -923,7 +1081,11 @@ export default function ResidentDetailPage() {
                 <span>Process Recordings ({recordings.length})</span>
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() => navigate('/admin/process-recording?residentId=' + residentId)}
+                  onClick={() =>
+                    navigate(
+                      '/admin/process-recording?residentId=' + residentId
+                    )
+                  }
                 >
                   + Add Recording
                 </button>
@@ -932,66 +1094,106 @@ export default function ResidentDetailPage() {
                 {recordings.length === 0 ? (
                   <p className="text-muted">No recordings yet.</p>
                 ) : (
-                  <div className="list-group list-group-flush">
-                    {recordings.map((r) => (
-                      <div key={r.recordingId} className="list-group-item px-0">
-                        <div className="d-flex justify-content-between align-items-start">
-                          <div>
-                            <div className="d-flex align-items-center gap-2 mb-1">
-                              <strong>{r.sessionDate}</strong>
-                              <span className="text-muted small">
-                                {r.sessionType} · {r.sessionDurationMinutes} min
-                                · {r.socialWorker}
-                              </span>
-                            </div>
-                            {r.sessionNarrative && (
-                              <p className="mb-1 small">{r.sessionNarrative}</p>
-                            )}
-                            {r.interventionsApplied && (
-                              <p className="mb-1 small text-muted">
-                                <strong>Interventions:</strong>{' '}
-                                {r.interventionsApplied}
-                              </p>
-                            )}
-                            {r.followUpActions && (
-                              <p className="mb-1 small text-muted">
-                                <strong>Follow-up:</strong> {r.followUpActions}
-                              </p>
-                            )}
-                            <div className="d-flex gap-2 mt-1">
-                              {r.progressNoted && (
-                                <span className="badge bg-success">
-                                  Progress
-                                </span>
-                              )}
-                              {r.concernsFlagged && (
-                                <span className="badge bg-warning text-dark">
-                                  Concerns Flagged
-                                </span>
-                              )}
-                              {r.referralMade && (
-                                <span className="badge bg-primary">
-                                  Referral Made
-                                </span>
-                              )}
+                  <>
+                    <p className="text-muted small mb-2">
+                      Showing {(currentRecordingPage - 1) * ITEMS_PER_PAGE + 1}–
+                      {Math.min(
+                        currentRecordingPage * ITEMS_PER_PAGE,
+                        recordings.length
+                      )}{' '}
+                      of {recordings.length} recordings
+                    </p>
+                    <div className="list-group list-group-flush">
+                      {recordings
+                        .slice(
+                          (currentRecordingPage - 1) * ITEMS_PER_PAGE,
+                          currentRecordingPage * ITEMS_PER_PAGE
+                        )
+                        .map((r) => (
+                          <div
+                            key={r.recordingId}
+                            id={'recording-' + r.recordingId}
+                            className="list-group-item px-0"
+                            style={
+                              r.recordingId === highlightedRecordingId
+                                ? {
+                                    backgroundColor: '#fff3cd',
+                                    borderLeft: '4px solid #e8a838',
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                  }
+                                : undefined
+                            }
+                          >
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div>
+                                <div className="d-flex align-items-center gap-2 mb-1">
+                                  <strong>{r.sessionDate}</strong>
+                                  <span className="text-muted small">
+                                    {r.sessionType} · {r.sessionDurationMinutes}{' '}
+                                    min · {r.socialWorker}
+                                  </span>
+                                </div>
+                                {r.sessionNarrative && (
+                                  <p className="mb-1 small">
+                                    {r.sessionNarrative}
+                                  </p>
+                                )}
+                                {r.interventionsApplied && (
+                                  <p className="mb-1 small text-muted">
+                                    <strong>Interventions:</strong>{' '}
+                                    {r.interventionsApplied}
+                                  </p>
+                                )}
+                                {r.followUpActions && (
+                                  <p className="mb-1 small text-muted">
+                                    <strong>Follow-up:</strong>{' '}
+                                    {r.followUpActions}
+                                  </p>
+                                )}
+                                <div className="d-flex gap-2 mt-1">
+                                  {r.progressNoted && (
+                                    <span className="badge bg-success">
+                                      Progress
+                                    </span>
+                                  )}
+                                  {r.concernsFlagged && (
+                                    <span className="badge bg-warning text-dark">
+                                      Concerns Flagged
+                                    </span>
+                                  )}
+                                  {r.referralMade && (
+                                    <span className="badge bg-primary">
+                                      Referral Made
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
+                                onClick={() => {
+                                  setDeleteError(null);
+                                  setDeleteTarget({
+                                    type: 'recording',
+                                    id: r.recordingId,
+                                  });
+                                }}
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
-                          <button
-                            className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                            onClick={() => {
-                              setDeleteError(null);
-                              setDeleteTarget({
-                                type: 'recording',
-                                id: r.recordingId,
-                              });
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        ))}
+                    </div>
+                    <div className="mt-3">
+                      <Pagination
+                        page={currentRecordingPage}
+                        totalCount={recordings.length}
+                        pageSize={ITEMS_PER_PAGE}
+                        onPageChange={setCurrentRecordingPage}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -1279,7 +1481,9 @@ export default function ResidentDetailPage() {
                 <span>Home Visitations ({visitations.length})</span>
                 <button
                   className="btn btn-sm btn-primary"
-                  onClick={() => navigate('/admin/home-visitation?residentId=' + residentId)}
+                  onClick={() =>
+                    navigate('/admin/home-visitation?residentId=' + residentId)
+                  }
                 >
                   + Add Visitation
                 </button>
@@ -1288,67 +1492,105 @@ export default function ResidentDetailPage() {
                 {visitations.length === 0 ? (
                   <p className="text-muted">No visitations yet.</p>
                 ) : (
-                  <div className="list-group list-group-flush">
-                    {visitations.map((v) => (
-                      <div
-                        key={v.visitationId}
-                        className="list-group-item px-0"
-                      >
-                        <div className="d-flex justify-content-between align-items-start">
-                          <div>
-                            <div className="d-flex align-items-center gap-2 mb-1">
-                              <strong>{v.visitDate}</strong>
-                              <span className="text-muted small">
-                                {v.visitType} · {v.socialWorker}
-                              </span>
-                            </div>
-                            {v.locationVisited && (
-                              <p className="mb-1 small">{v.locationVisited}</p>
-                            )}
-                            {v.observations && (
-                              <p className="mb-1 small text-muted">
-                                {v.observations}
-                              </p>
-                            )}
-                            {v.followUpNotes && (
-                              <p className="mb-1 small text-muted">
-                                <strong>Follow-up:</strong> {v.followUpNotes}
-                              </p>
-                            )}
-                            <div className="d-flex gap-2">
-                              <span
-                                className={`badge bg-${v.visitOutcome === 'Favorable' ? 'success' : v.visitOutcome === 'Unfavorable' ? 'danger' : 'secondary'}`}
+                  <>
+                    <p className="text-muted small mb-2">
+                      Showing {(currentVisitationPage - 1) * ITEMS_PER_PAGE + 1}
+                      –
+                      {Math.min(
+                        currentVisitationPage * ITEMS_PER_PAGE,
+                        visitations.length
+                      )}{' '}
+                      of {visitations.length} visitations
+                    </p>
+                    <div className="list-group list-group-flush">
+                      {visitations
+                        .slice(
+                          (currentVisitationPage - 1) * ITEMS_PER_PAGE,
+                          currentVisitationPage * ITEMS_PER_PAGE
+                        )
+                        .map((v) => (
+                          <div
+                            key={v.visitationId}
+                            id={'visitation-' + v.visitationId}
+                            className="list-group-item px-0"
+                            style={
+                              v.visitationId === highlightedVisitationId
+                                ? {
+                                    backgroundColor: '#fff3cd',
+                                    borderLeft: '4px solid #e8a838',
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                  }
+                                : undefined
+                            }
+                          >
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div>
+                                <div className="d-flex align-items-center gap-2 mb-1">
+                                  <strong>{v.visitDate}</strong>
+                                  <span className="text-muted small">
+                                    {v.visitType} · {v.socialWorker}
+                                  </span>
+                                </div>
+                                {v.locationVisited && (
+                                  <p className="mb-1 small">
+                                    {v.locationVisited}
+                                  </p>
+                                )}
+                                {v.observations && (
+                                  <p className="mb-1 small text-muted">
+                                    {v.observations}
+                                  </p>
+                                )}
+                                {v.followUpNotes && (
+                                  <p className="mb-1 small text-muted">
+                                    <strong>Follow-up:</strong>{' '}
+                                    {v.followUpNotes}
+                                  </p>
+                                )}
+                                <div className="d-flex gap-2">
+                                  <span
+                                    className={`badge bg-${v.visitOutcome === 'Favorable' ? 'success' : v.visitOutcome === 'Unfavorable' ? 'danger' : 'secondary'}`}
+                                  >
+                                    {v.visitOutcome}
+                                  </span>
+                                  {v.safetyConcernsNoted && (
+                                    <span className="badge bg-danger">
+                                      Safety Concerns
+                                    </span>
+                                  )}
+                                  {v.followUpNeeded && (
+                                    <span className="badge bg-warning text-dark">
+                                      Follow-Up Needed
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
+                                onClick={() => {
+                                  setDeleteError(null);
+                                  setDeleteTarget({
+                                    type: 'visitation',
+                                    id: v.visitationId,
+                                  });
+                                }}
                               >
-                                {v.visitOutcome}
-                              </span>
-                              {v.safetyConcernsNoted && (
-                                <span className="badge bg-danger">
-                                  Safety Concerns
-                                </span>
-                              )}
-                              {v.followUpNeeded && (
-                                <span className="badge bg-warning text-dark">
-                                  Follow-Up Needed
-                                </span>
-                              )}
+                                Delete
+                              </button>
                             </div>
                           </div>
-                          <button
-                            className="btn btn-sm btn-outline-danger ms-3 flex-shrink-0"
-                            onClick={() => {
-                              setDeleteError(null);
-                              setDeleteTarget({
-                                type: 'visitation',
-                                id: v.visitationId,
-                              });
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        ))}
+                    </div>
+                    <div className="mt-3">
+                      <Pagination
+                        page={currentVisitationPage}
+                        totalCount={visitations.length}
+                        pageSize={ITEMS_PER_PAGE}
+                        onPageChange={setCurrentVisitationPage}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </div>

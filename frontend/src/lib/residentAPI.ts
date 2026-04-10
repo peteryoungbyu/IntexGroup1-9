@@ -1,8 +1,11 @@
 import type {
+  CreateResidentRequest,
   Resident,
   ResidentDetail,
+  ResidentFormOptions,
   ResidentListItem,
   ResidentSafehouseOption,
+  UpdateResidentRequest,
   PagedResult,
   ProcessRecording,
   HomeVisitation,
@@ -13,13 +16,52 @@ import { API_BASE_URL } from './apiBase';
 
 const BASE = API_BASE_URL;
 
+export class ApiError extends Error {
+  status: number;
+  body: string;
+
+  constructor(status: number, body: string) {
+    super(`Request failed: ${status}`);
+    this.name = 'ApiError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     ...init,
   });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text();
+    let message = `Request failed: ${res.status}`;
+
+    try {
+      const errorBody = JSON.parse(body);
+      if (typeof errorBody?.error === 'string' && errorBody.error.length > 0) {
+        message = errorBody.error;
+      } else if (typeof errorBody?.title === 'string' && errorBody.title.length > 0) {
+        const validationMessages = errorBody?.errors && typeof errorBody.errors === 'object'
+          ? Object.values(errorBody.errors)
+              .flatMap(value => Array.isArray(value) ? value : [])
+              .filter((value): value is string => typeof value === 'string' && value.length > 0)
+          : [];
+
+        message = validationMessages.length > 0
+          ? `${errorBody.title}: ${validationMessages.join(' ')}`
+          : errorBody.title;
+      }
+    } catch {
+      if (body.length > 0) {
+        message = body;
+      }
+    }
+
+    throw new ApiError(res.status, message);
+
+  }
   return res;
 }
 
@@ -53,7 +95,12 @@ export async function getResidentById(id: number): Promise<ResidentDetail> {
   return res.json();
 }
 
-export async function createResident(data: Omit<Resident, 'residentId' | 'createdAt'>): Promise<Resident> {
+export async function getResidentFormOptions(): Promise<ResidentFormOptions> {
+  const res = await apiFetch('/api/residents/form-options');
+  return res.json();
+}
+
+export async function createResident(data: CreateResidentRequest): Promise<Resident> {
   const res = await apiFetch('/api/residents', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -61,7 +108,7 @@ export async function createResident(data: Omit<Resident, 'residentId' | 'create
   return res.json();
 }
 
-export async function updateResident(id: number, data: Omit<Resident, 'residentId' | 'createdAt'>): Promise<Resident> {
+export async function updateResident(id: number, data: UpdateResidentRequest): Promise<Resident> {
   const res = await apiFetch(`/api/residents/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
