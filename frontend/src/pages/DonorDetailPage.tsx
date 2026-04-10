@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { Supporter, Donation, SupporterDetail } from '../types/SupporterDetail';
+import type {
+  Supporter,
+  Donation,
+  SupporterDetail,
+} from '../types/SupporterDetail';
 import {
   getSupporterById,
   updateSupporter,
@@ -32,13 +36,18 @@ export default function DonorDetailPage() {
 
   // Edit supporter
   const [showEdit, setShowEdit] = useState(false);
-  const [editForm, setEditForm] = useState<Omit<Supporter, 'supporterId' | 'createdAt'> | null>(null);
+  const [editForm, setEditForm] = useState<Omit<
+    Supporter,
+    'supporterId' | 'createdAt'
+  > | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
   // Add donation
   const [showAddDonation, setShowAddDonation] = useState(false);
-  const [donationForm, setDonationForm] = useState<Omit<Donation, 'donationId'>>({ ...EMPTY_DONATION, supporterId });
+  const [donationForm, setDonationForm] = useState<
+    Omit<Donation, 'donationId'>
+  >({ ...EMPTY_DONATION, supporterId });
   const [donationBusy, setDonationBusy] = useState(false);
   const [donationError, setDonationError] = useState<string | null>(null);
 
@@ -55,20 +64,41 @@ export default function DonorDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="container py-5 text-center"><div className="spinner-border" style={{ color: 'var(--brand-primary)' }} /></div>;
-  if (!detail) return <div className="container py-5"><div className="alert alert-danger">Donor not found.</div></div>;
+  if (loading)
+    return (
+      <div className="container py-5 text-center">
+        <div
+          className="spinner-border"
+          style={{ color: 'var(--brand-primary)' }}
+        />
+      </div>
+    );
+  if (!detail)
+    return (
+      <div className="container py-5">
+        <div className="alert alert-danger">Donor not found.</div>
+      </div>
+    );
 
   const { supporter, donations } = detail;
 
   function openEdit() {
-    const { supporterId: _id, createdAt: _ca, ...fields } = supporter as Supporter;
+    const {
+      supporterId: _id,
+      createdAt: _ca,
+      ...fields
+    } = supporter as Supporter;
     setEditForm(fields);
     setEditError(null);
     setShowEdit(true);
   }
-  function closeEdit() { if (editBusy) return; setShowEdit(false); setEditError(null); }
+  function closeEdit() {
+    if (editBusy) return;
+    setShowEdit(false);
+    setEditError(null);
+  }
   const setEdit = (field: string, value: unknown) =>
-    setEditForm(f => f ? { ...f, [field]: value } : f);
+    setEditForm((f) => (f ? { ...f, [field]: value } : f));
 
   async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,9 +121,13 @@ export default function DonorDetailPage() {
     setDonationError(null);
     setShowAddDonation(true);
   }
-  function closeAddDonation() { if (donationBusy) return; setShowAddDonation(false); setDonationError(null); }
+  function closeAddDonation() {
+    if (donationBusy) return;
+    setShowAddDonation(false);
+    setDonationError(null);
+  }
   const setDon = (field: string, value: unknown) =>
-    setDonationForm(f => ({ ...f, [field]: value }));
+    setDonationForm((f) => ({ ...f, [field]: value }));
 
   async function handleAddDonation(e: React.FormEvent) {
     e.preventDefault();
@@ -135,31 +169,67 @@ export default function DonorDetailPage() {
         busy={deleteBusy}
         error={deleteError}
         onConfirm={handleDeleteDonation}
-        onCancel={() => { if (!deleteBusy) { setPendingDelete(null); setDeleteError(undefined); } }}
+        onCancel={() => {
+          if (!deleteBusy) {
+            setPendingDelete(null);
+            setDeleteError(undefined);
+          }
+        }}
       />
 
       {/* Edit Supporter Modal */}
       {showEdit && editForm && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeEdit}>
-          <div className="modal-dialog modal-lg modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
+        <div
+          className="modal d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={closeEdit}
+        >
+          <div
+            className="modal-dialog modal-lg modal-dialog-scrollable"
+            onClick={(e) => e.stopPropagation()}
+          >
             <form onSubmit={handleEditSubmit}>
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Edit Donor — {supporter.displayName}</h5>
-                  <button type="button" className="btn-close" onClick={closeEdit} disabled={editBusy} />
+                  <h5 className="modal-title">
+                    Edit Donor — {supporter.displayName}
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeEdit}
+                    disabled={editBusy}
+                  />
                 </div>
                 <div className="modal-body">
-                  {editError && <div className="alert alert-danger">{editError}</div>}
+                  {editError && (
+                    <div className="alert alert-danger">{editError}</div>
+                  )}
                   <div className="row g-3">
                     <div className="col-md-6">
-                      <label className="form-label">Display Name <span className="text-danger">*</span></label>
-                      <input type="text" className="form-control" required value={editForm.displayName}
-                        onChange={e => setEdit('displayName', e.target.value)} />
+                      <label className="form-label">
+                        Display Name <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        required
+                        value={editForm.displayName}
+                        onChange={(e) => setEdit('displayName', e.target.value)}
+                      />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Supporter Type <span className="text-danger">*</span></label>
-                      <select className="form-select" required value={editForm.supporterType}
-                        onChange={e => setEdit('supporterType', e.target.value)}>
+                      <label className="form-label">
+                        Supporter Type <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={editForm.supporterType}
+                        onChange={(e) =>
+                          setEdit('supporterType', e.target.value)
+                        }
+                      >
                         <option>Monetary Donor</option>
                         <option>Volunteer</option>
                         <option>Skills Contributor</option>
@@ -171,63 +241,141 @@ export default function DonorDetailPage() {
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">First Name</label>
-                      <input type="text" className="form-control" value={editForm.firstName ?? ''}
-                        onChange={e => setEdit('firstName', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editForm.firstName ?? ''}
+                        onChange={(e) =>
+                          setEdit('firstName', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Last Name</label>
-                      <input type="text" className="form-control" value={editForm.lastName ?? ''}
-                        onChange={e => setEdit('lastName', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editForm.lastName ?? ''}
+                        onChange={(e) =>
+                          setEdit('lastName', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Organization Name</label>
-                      <input type="text" className="form-control" value={editForm.organizationName ?? ''}
-                        onChange={e => setEdit('organizationName', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editForm.organizationName ?? ''}
+                        onChange={(e) =>
+                          setEdit('organizationName', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Email</label>
-                      <input type="email" className="form-control" value={editForm.email ?? ''}
-                        onChange={e => setEdit('email', e.target.value || null)} />
+                      <input
+                        type="email"
+                        className="form-control"
+                        value={editForm.email ?? ''}
+                        onChange={(e) =>
+                          setEdit('email', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Phone</label>
-                      <input type="text" className="form-control" value={editForm.phone ?? ''}
-                        onChange={e => setEdit('phone', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editForm.phone ?? ''}
+                        onChange={(e) =>
+                          setEdit('phone', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Status <span className="text-danger">*</span></label>
-                      <select className="form-select" required value={editForm.status}
-                        onChange={e => setEdit('status', e.target.value)}>
+                      <label className="form-label">
+                        Status <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={editForm.status}
+                        onChange={(e) => setEdit('status', e.target.value)}
+                      >
                         <option>Active</option>
                         <option>Inactive</option>
                       </select>
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Region</label>
-                      <input type="text" className="form-control" value={editForm.region ?? ''}
-                        onChange={e => setEdit('region', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editForm.region ?? ''}
+                        onChange={(e) =>
+                          setEdit('region', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Country</label>
-                      <input type="text" className="form-control" value={editForm.country ?? ''}
-                        onChange={e => setEdit('country', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editForm.country ?? ''}
+                        onChange={(e) =>
+                          setEdit('country', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Acquisition Channel</label>
-                      <input type="text" className="form-control" value={editForm.acquisitionChannel ?? ''}
-                        onChange={e => setEdit('acquisitionChannel', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={editForm.acquisitionChannel ?? ''}
+                        onChange={(e) =>
+                          setEdit('acquisitionChannel', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">First Donation Date</label>
-                      <input type="date" className="form-control" value={editForm.firstDonationDate ?? ''}
-                        onChange={e => setEdit('firstDonationDate', e.target.value || null)} />
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={editForm.firstDonationDate ?? ''}
+                        onChange={(e) =>
+                          setEdit('firstDonationDate', e.target.value || null)
+                        }
+                      />
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={closeEdit} disabled={editBusy}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" disabled={editBusy}>
-                    {editBusy ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : 'Save Changes'}
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closeEdit}
+                    disabled={editBusy}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={editBusy}
+                  >
+                    {editBusy ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" />
+                        Saving…
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
                   </button>
                 </div>
               </div>
@@ -238,21 +386,41 @@ export default function DonorDetailPage() {
 
       {/* Add Donation Modal */}
       {showAddDonation && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={closeAddDonation}>
-          <div className="modal-dialog modal-lg" onClick={e => e.stopPropagation()}>
+        <div
+          className="modal d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={closeAddDonation}
+        >
+          <div
+            className="modal-dialog modal-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
             <form onSubmit={handleAddDonation}>
               <div className="modal-content">
                 <div className="modal-header">
                   <h5 className="modal-title">Record Donation</h5>
-                  <button type="button" className="btn-close" onClick={closeAddDonation} disabled={donationBusy} />
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={closeAddDonation}
+                    disabled={donationBusy}
+                  />
                 </div>
                 <div className="modal-body">
-                  {donationError && <div className="alert alert-danger">{donationError}</div>}
+                  {donationError && (
+                    <div className="alert alert-danger">{donationError}</div>
+                  )}
                   <div className="row g-3">
                     <div className="col-md-6">
-                      <label className="form-label">Donation Type <span className="text-danger">*</span></label>
-                      <select className="form-select" required value={donationForm.donationType}
-                        onChange={e => setDon('donationType', e.target.value)}>
+                      <label className="form-label">
+                        Donation Type <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        required
+                        value={donationForm.donationType}
+                        onChange={(e) => setDon('donationType', e.target.value)}
+                      >
                         <option>Monetary</option>
                         <option>In-Kind</option>
                         <option>Time</option>
@@ -261,62 +429,148 @@ export default function DonorDetailPage() {
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Donation Date <span className="text-danger">*</span></label>
-                      <input type="date" className="form-control" required value={donationForm.donationDate}
-                        onChange={e => setDon('donationDate', e.target.value)} />
+                      <label className="form-label">
+                        Donation Date <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        required
+                        value={donationForm.donationDate}
+                        onChange={(e) => setDon('donationDate', e.target.value)}
+                      />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Currency</label>
-                      <input type="text" className="form-control" value={donationForm.currencyCode ?? ''}
-                        onChange={e => setDon('currencyCode', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={donationForm.currencyCode ?? ''}
+                        onChange={(e) =>
+                          setDon('currencyCode', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Amount</label>
-                      <input type="number" className="form-control" min={0} step="0.01"
+                      <input
+                        type="number"
+                        className="form-control"
+                        min={0}
+                        step="0.01"
                         value={donationForm.amount ?? ''}
-                        onChange={e => setDon('amount', e.target.value ? Number(e.target.value) : null)} />
+                        onChange={(e) =>
+                          setDon(
+                            'amount',
+                            e.target.value ? Number(e.target.value) : null
+                          )
+                        }
+                      />
                     </div>
                     <div className="col-md-4">
                       <label className="form-label">Estimated Value</label>
-                      <input type="number" className="form-control" min={0} step="0.01"
+                      <input
+                        type="number"
+                        className="form-control"
+                        min={0}
+                        step="0.01"
                         value={donationForm.estimatedValue ?? ''}
-                        onChange={e => setDon('estimatedValue', e.target.value ? Number(e.target.value) : null)} />
+                        onChange={(e) =>
+                          setDon(
+                            'estimatedValue',
+                            e.target.value ? Number(e.target.value) : null
+                          )
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Channel Source</label>
-                      <input type="text" className="form-control" value={donationForm.channelSource ?? ''}
-                        onChange={e => setDon('channelSource', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={donationForm.channelSource ?? ''}
+                        onChange={(e) =>
+                          setDon('channelSource', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Campaign Name</label>
-                      <input type="text" className="form-control" value={donationForm.campaignName ?? ''}
-                        onChange={e => setDon('campaignName', e.target.value || null)} />
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={donationForm.campaignName ?? ''}
+                        onChange={(e) =>
+                          setDon('campaignName', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6">
                       <label className="form-label">Impact Unit</label>
-                      <input type="text" className="form-control" placeholder="e.g. hours, meals"
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="e.g. hours, meals"
                         value={donationForm.impactUnit ?? ''}
-                        onChange={e => setDon('impactUnit', e.target.value || null)} />
+                        onChange={(e) =>
+                          setDon('impactUnit', e.target.value || null)
+                        }
+                      />
                     </div>
                     <div className="col-md-6 d-flex align-items-end">
                       <div className="form-check mb-1">
-                        <input type="checkbox" className="form-check-input" id="isRecurring"
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          id="isRecurring"
                           checked={donationForm.isRecurring}
-                          onChange={e => setDon('isRecurring', e.target.checked)} />
-                        <label className="form-check-label" htmlFor="isRecurring">Recurring Donation</label>
+                          onChange={(e) =>
+                            setDon('isRecurring', e.target.checked)
+                          }
+                        />
+                        <label
+                          className="form-check-label"
+                          htmlFor="isRecurring"
+                        >
+                          Recurring Donation
+                        </label>
                       </div>
                     </div>
                     <div className="col-12">
                       <label className="form-label">Notes</label>
-                      <textarea className="form-control" rows={2} value={donationForm.notes ?? ''}
-                        onChange={e => setDon('notes', e.target.value || null)} />
+                      <textarea
+                        className="form-control"
+                        rows={2}
+                        value={donationForm.notes ?? ''}
+                        onChange={(e) =>
+                          setDon('notes', e.target.value || null)
+                        }
+                      />
                     </div>
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={closeAddDonation} disabled={donationBusy}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" disabled={donationBusy}>
-                    {donationBusy ? <><span className="spinner-border spinner-border-sm me-2" />Saving…</> : 'Record Donation'}
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={closeAddDonation}
+                    disabled={donationBusy}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={donationBusy}
+                  >
+                    {donationBusy ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" />
+                        Saving…
+                      </>
+                    ) : (
+                      'Record Donation'
+                    )}
                   </button>
                 </div>
               </div>
@@ -328,14 +582,20 @@ export default function DonorDetailPage() {
       <div className="page-header">
         <div className="container-fluid px-4">
           <div className="d-flex align-items-center gap-2 mb-2">
-            <Link to="/admin/donors" className="btn btn-sm btn-outline-light">← Back</Link>
+            <Link to="/admin/donors" className="btn btn-sm btn-outline-light">
+              ← Back
+            </Link>
           </div>
           <div className="d-flex align-items-center gap-2 flex-wrap">
             <h1 className="mb-0">{supporter.displayName}</h1>
-            <span className={`badge bg-${supporter.status === 'Active' ? 'success' : 'secondary'}`}>
+            <span
+              className={`badge bg-${supporter.status === 'Active' ? 'success' : 'secondary'}`}
+            >
               {supporter.status}
             </span>
-            <span className="badge bg-info text-dark">{supporter.supporterType}</span>
+            <span className="badge bg-info text-dark">
+              {supporter.supporterType}
+            </span>
           </div>
           <p>{supporter.email ?? ''}</p>
         </div>
@@ -348,33 +608,55 @@ export default function DonorDetailPage() {
             <div className="card">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <span>Supporter Profile</span>
-                <button className="btn btn-sm btn-outline-primary" onClick={openEdit}>Edit</button>
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={openEdit}
+                >
+                  Edit
+                </button>
               </div>
               <div className="card-body">
                 <dl className="row mb-0">
                   <dt className="col-sm-5">Type</dt>
                   <dd className="col-sm-7">{supporter.supporterType}</dd>
-                  {supporter.firstName && <>
-                    <dt className="col-sm-5">Name</dt>
-                    <dd className="col-sm-7">{supporter.firstName} {supporter.lastName}</dd>
-                  </>}
-                  {supporter.organizationName && <>
-                    <dt className="col-sm-5">Organization</dt>
-                    <dd className="col-sm-7">{supporter.organizationName}</dd>
-                  </>}
+                  {supporter.firstName && (
+                    <>
+                      <dt className="col-sm-5">Name</dt>
+                      <dd className="col-sm-7">
+                        {supporter.firstName} {supporter.lastName}
+                      </dd>
+                    </>
+                  )}
+                  {supporter.organizationName && (
+                    <>
+                      <dt className="col-sm-5">Organization</dt>
+                      <dd className="col-sm-7">{supporter.organizationName}</dd>
+                    </>
+                  )}
                   <dt className="col-sm-5">Email</dt>
                   <dd className="col-sm-7">{supporter.email ?? '—'}</dd>
                   <dt className="col-sm-5">Phone</dt>
                   <dd className="col-sm-7">{supporter.phone ?? '—'}</dd>
                   <dt className="col-sm-5">Region</dt>
-                  <dd className="col-sm-7">{supporter.region ?? '—'}{supporter.country ? `, ${supporter.country}` : ''}</dd>
+                  <dd className="col-sm-7">
+                    {supporter.region ?? '—'}
+                    {supporter.country ? `, ${supporter.country}` : ''}
+                  </dd>
                   <dt className="col-sm-5">Channel</dt>
-                  <dd className="col-sm-7">{supporter.acquisitionChannel ?? '—'}</dd>
+                  <dd className="col-sm-7">
+                    {supporter.acquisitionChannel ?? '—'}
+                  </dd>
                   <dt className="col-sm-5">First Donation</dt>
-                  <dd className="col-sm-7">{supporter.firstDonationDate ?? '—'}</dd>
+                  <dd className="col-sm-7">
+                    {supporter.firstDonationDate ?? '—'}
+                  </dd>
                   <dt className="col-sm-5">Total Donated</dt>
                   <dd className="col-sm-7 fw-semibold">
-                    PHP {donations.filter(d => d.amount != null).reduce((s, d) => s + (d.amount ?? 0), 0).toLocaleString()}
+                    PHP{' '}
+                    {donations
+                      .filter((d) => d.amount != null)
+                      .reduce((s, d) => s + (d.amount ?? 0), 0)
+                      .toLocaleString()}
                   </dd>
                 </dl>
               </div>
@@ -386,11 +668,18 @@ export default function DonorDetailPage() {
             <div className="card">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <span>Contributions ({donations.length})</span>
-                <button className="btn btn-sm btn-primary" onClick={openAddDonation}>+ Record Contribution</button>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={openAddDonation}
+                >
+                  + Record Contribution
+                </button>
               </div>
               <div className="card-body p-0">
                 {donations.length === 0 ? (
-                  <p className="text-muted p-3 mb-0">No contributions recorded yet.</p>
+                  <p className="text-muted p-3 mb-0">
+                    No contributions recorded yet.
+                  </p>
                 ) : (
                   <div className="table-responsive">
                     <table className="table table-hover table-sm mb-0">
@@ -404,25 +693,32 @@ export default function DonorDetailPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {donations.map(d => (
+                        {donations.map((d) => (
                           <tr key={d.donationId}>
                             <td>{d.donationDate}</td>
                             <td>
                               {d.donationType}
-                              {d.isRecurring && <span className="badge bg-primary ms-1 small">Recurring</span>}
+                              {d.isRecurring && (
+                                <span className="badge bg-primary ms-1 small">
+                                  Recurring
+                                </span>
+                              )}
                             </td>
                             <td>
                               {d.amount != null
                                 ? `${d.currencyCode ?? 'PHP'} ${d.amount.toLocaleString()}`
                                 : d.estimatedValue != null
                                   ? `~${d.currencyCode ?? 'PHP'} ${d.estimatedValue.toLocaleString()}`
-                                  : d.impactUnit ?? '—'}
+                                  : (d.impactUnit ?? '—')}
                             </td>
                             <td>{d.campaignName ?? '—'}</td>
                             <td>
                               <button
                                 className="btn btn-sm btn-outline-danger"
-                                onClick={() => { setDeleteError(undefined); setPendingDelete(d.donationId); }}
+                                onClick={() => {
+                                  setDeleteError(undefined);
+                                  setPendingDelete(d.donationId);
+                                }}
                               >
                                 Delete
                               </button>

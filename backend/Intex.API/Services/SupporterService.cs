@@ -7,6 +7,39 @@ namespace Intex.API.Services;
 
 public class SupporterService : ISupporterService
 {
+    private static readonly string[] DefaultSupporterTypes =
+    [
+        "MonetaryDonor",
+        "InKindDonor",
+        "Volunteer",
+        "SkillsContributor",
+        "SocialMediaAdvocate",
+        "PartnerOrganization",
+    ];
+
+    private static readonly string[] DefaultRelationshipTypes =
+    [
+        "Local",
+        "International",
+        "PartnerOrganization",
+    ];
+
+    private static readonly string[] DefaultAcquisitionChannels =
+    [
+        "Website",
+        "SocialMedia",
+        "Event",
+        "WordOfMouth",
+        "PartnerReferral",
+        "Church",
+    ];
+
+    private static readonly string[] DefaultStatuses =
+    [
+        "Active",
+        "Inactive",
+    ];
+
     private readonly AppDbContext _db;
 
     public SupporterService(AppDbContext db) => _db = db;
@@ -37,6 +70,37 @@ public class SupporterService : ISupporterService
             .ToListAsync();
 
         return new PagedResult<SupporterListItem>(items, total, page, pageSize);
+    }
+
+    public async Task<SupporterFormOptions> GetFormOptionsAsync()
+    {
+        var supporterTypes = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.SupporterType),
+            DefaultSupporterTypes);
+
+        var relationshipTypes = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.RelationshipType),
+            DefaultRelationshipTypes);
+
+        var regions = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.Region),
+            []);
+
+        var countries = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.Country),
+            []);
+
+        var acquisitionChannels = await GetDistinctOrderedValuesAsync(
+            _db.Supporters.Select(s => s.AcquisitionChannel),
+            DefaultAcquisitionChannels);
+
+        return new SupporterFormOptions(
+            supporterTypes,
+            relationshipTypes,
+            regions,
+            countries,
+            acquisitionChannels,
+            DefaultStatuses);
     }
 
     public async Task<IReadOnlyList<SupporterChurnItem>> GetChurnPredictionsAsync()
@@ -357,5 +421,25 @@ ORDER BY
     {
         var maxId = await _db.DonationAllocations.MaxAsync(a => (int?)a.AllocationId) ?? 0;
         return maxId + 1;
+    }
+
+    private static async Task<IReadOnlyList<string>> GetDistinctOrderedValuesAsync(
+        IQueryable<string?> query,
+        IReadOnlyCollection<string> fallbacks)
+    {
+        var values = await query
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!.Trim())
+            .Distinct()
+            .OrderBy(value => value)
+            .ToListAsync();
+
+        if (values.Count > 0)
+            return values;
+
+        return fallbacks
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(value => value)
+            .ToList();
     }
 }
