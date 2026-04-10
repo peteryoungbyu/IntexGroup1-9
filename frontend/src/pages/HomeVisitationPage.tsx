@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { HomeVisitation, ResidentListItem } from '../types/ResidentDetail';
 import {
   getResidents,
@@ -576,12 +576,21 @@ export default function HomeVisitationPage() {
                         </span>
                       </td>
                       <td className="text-end">
-                        <button
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => setDeleteTarget(v)}
-                        >
-                          Delete
-                        </button>
+                        <div className="d-flex gap-2 justify-content-end">
+                          <Link
+                            to={`/admin/residents/${v.residentId}?tab=visitations&highlightId=${v.visitationId}`}
+                            className="btn btn-sm btn-outline-primary"
+                            style={{ fontSize: '0.75rem' }}
+                          >
+                            View
+                          </Link>
+                          <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => setDeleteTarget(v)}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
