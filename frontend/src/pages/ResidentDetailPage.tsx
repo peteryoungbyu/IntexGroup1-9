@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import type {
   ResidentDetail,
+  ResidentListItem,
   ProcessRecording,
   ProcessRecordingFormData,
+  ProcessRecordingFormOptions,
+  SessionEntryRecordingRequest,
   HomeVisitation,
   HomeVisitationFormData,
   CaseConference,
@@ -13,13 +16,17 @@ import type {
 } from '../types/ResidentDetail';
 import {
   getResidentById,
-  addRecording,
+  getResidents,
+  getResidentVisitations,
+  addSessionEntryRecording,
+  getProcessRecordingFormOptions,
   updateRecording,
   deleteRecording,
   addVisitation,
   updateVisitation,
   deleteVisitation,
   updateResident,
+  ApiError,
 } from '../lib/residentAPI';
 import {
   addCaseConference,
@@ -68,6 +75,23 @@ const VISIT_OUTCOMES = [
   'Inconclusive',
 ] as const;
 
+const INTERVENTION_OPTIONS = [
+  'Legal Services',
+  'Healing',
+  'Teaching',
+  'Caring',
+] as const;
+const EMOTIONAL_STATES = [
+  'Calm',
+  'Anxious',
+  'Sad',
+  'Angry',
+  'Hopeful',
+  'Withdrawn',
+  'Happy',
+  'Distressed',
+] as const;
+
 const EMPTY_RECORDING_FORM: ProcessRecordingFormData = {
   sessionDate: '',
   socialWorker: '',
@@ -109,6 +133,36 @@ const EMPTY_CONFERENCE: Omit<CaseConference, 'conferenceId'> = {
   nextReviewDate: null,
 };
 
+const EMPTY_ADD_RECORDING_FORM = {
+  sessionDate: '',
+  socialWorker: '',
+  sessionType: '' as '' | 'Individual' | 'Group',
+  sessionDurationMinutes: '',
+  emotionalStateObserved: '',
+  emotionalStateEnd: '',
+  interventionsApplied: [] as string[],
+  followUpActions: '',
+  progressNoted: '' as '' | 'yes' | 'no',
+  concernsFlagged: '' as '' | 'yes' | 'no',
+  referralMade: '' as '' | 'yes' | 'no',
+};
+
+const EMPTY_ADD_VISITATION_FORM = {
+  residentId: '',
+  visitDate: new Date().toISOString().split('T')[0],
+  socialWorker: '',
+  visitType: '',
+  locationVisited: '',
+  familyMembersPresent: 'None',
+  purpose: '',
+  observations: '',
+  familyCooperationLevel: '',
+  safetyConcernsNoted: false,
+  followUpNeeded: false,
+  followUpNotes: '',
+  visitOutcome: '',
+};
+
 type DeleteTarget =
   | { type: 'recording'; id: number }
   | { type: 'visitation'; id: number }
@@ -117,6 +171,9 @@ type DeleteTarget =
 type EditableResident = UpdateResidentRequest;
 type RecordingFormState = ProcessRecordingFormData;
 type VisitationFormState = HomeVisitationFormData;
+
+type NewRecordingForm = typeof EMPTY_ADD_RECORDING_FORM;
+type NewVisitationForm = typeof EMPTY_ADD_VISITATION_FORM;
 
 type RecordingFormFieldsProps = {
   form: RecordingFormState;
@@ -176,7 +233,9 @@ function normalizeVisitOutcome(
   return normalizeOption(normalized, VISIT_OUTCOMES, 'Needs Improvement');
 }
 
-function toRecordingForm(recording: ProcessRecording): UpdateProcessRecordingRequest {
+function toRecordingForm(
+  recording: ProcessRecording
+): UpdateProcessRecordingRequest {
   return {
     sessionDate: recording.sessionDate,
     socialWorker: normalizeText(recording.socialWorker),
@@ -197,7 +256,9 @@ function toRecordingForm(recording: ProcessRecording): UpdateProcessRecordingReq
   };
 }
 
-function toVisitationForm(visitation: HomeVisitation): UpdateHomeVisitationRequest {
+function toVisitationForm(
+  visitation: HomeVisitation
+): UpdateHomeVisitationRequest {
   return {
     visitDate: visitation.visitDate,
     socialWorker: normalizeText(visitation.socialWorker),
@@ -475,9 +536,7 @@ function VisitationFormFields({
         <select
           className="form-select"
           value={form.familyCooperationLevel ?? 'Cooperative'}
-          onChange={(e) =>
-            onChange('familyCooperationLevel', e.target.value)
-          }
+          onChange={(e) => onChange('familyCooperationLevel', e.target.value)}
         >
           {FAMILY_COOPERATION_LEVELS.map((level) => (
             <option key={level} value={level}>
@@ -573,16 +632,30 @@ export default function ResidentDetailPage() {
   const [showEditVisitation, setShowEditVisitation] = useState(false);
   const [showAddConference, setShowAddConference] = useState(false);
 
-  const [recordingForm, setRecordingForm] = useState<RecordingFormState>({
-    ...EMPTY_RECORDING_FORM,
+  const [recordingForm, setRecordingForm] = useState<NewRecordingForm>({
+    ...EMPTY_ADD_RECORDING_FORM,
   });
+  const [recordingFormOptions, setRecordingFormOptions] =
+    useState<ProcessRecordingFormOptions>({
+      residents: [],
+      socialWorkers: [],
+      emotionalStateObserved: [],
+      emotionalStateEnd: [],
+      followUpActions: [],
+    });
   const [editRecordingId, setEditRecordingId] = useState<number | null>(null);
-  const [editRecordingForm, setEditRecordingForm] = useState<RecordingFormState>({
-    ...EMPTY_RECORDING_FORM,
+  const [editRecordingForm, setEditRecordingForm] =
+    useState<RecordingFormState>({
+      ...EMPTY_RECORDING_FORM,
+    });
+  const [visitationForm, setVisitationForm] = useState<NewVisitationForm>({
+    ...EMPTY_ADD_VISITATION_FORM,
   });
-  const [visitationForm, setVisitationForm] = useState<VisitationFormState>({
-    ...EMPTY_VISITATION_FORM,
-  });
+  const [visResidents, setVisResidents] = useState<ResidentListItem[]>([]);
+  const [visSocialWorkerOptions, setVisSocialWorkerOptions] = useState<
+    string[]
+  >([]);
+  const [visLocationOptions, setVisLocationOptions] = useState<string[]>([]);
   const [editVisitationId, setEditVisitationId] = useState<number | null>(null);
   const [editVisitationForm, setEditVisitationForm] =
     useState<VisitationFormState>({
@@ -626,10 +699,48 @@ export default function ResidentDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    setRecordingForm({ ...EMPTY_RECORDING_FORM });
+    getProcessRecordingFormOptions()
+      .then(setRecordingFormOptions)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    async function loadVisitationOptions() {
+      try {
+        const paged = await getResidents(1, 500);
+        setVisResidents(paged.items);
+        const perResident = await Promise.all(
+          paged.items.map((r) =>
+            getResidentVisitations(r.residentId).catch(
+              () => [] as HomeVisitation[]
+            )
+          )
+        );
+        const flat = perResident.flatMap((visits) => visits);
+        setVisSocialWorkerOptions(
+          Array.from(new Set(flat.map((v) => v.socialWorker).filter(Boolean)))
+        );
+        setVisLocationOptions(
+          Array.from(
+            new Set(
+              flat
+                .map((v) => v.locationVisited)
+                .filter((v): v is string => Boolean(v))
+            )
+          )
+        );
+      } catch {
+        // ignore load errors — options remain empty
+      }
+    }
+    loadVisitationOptions();
+  }, []);
+
+  useEffect(() => {
+    setRecordingForm({ ...EMPTY_ADD_RECORDING_FORM });
     setEditRecordingForm({ ...EMPTY_RECORDING_FORM });
     setEditRecordingId(null);
-    setVisitationForm({ ...EMPTY_VISITATION_FORM });
+    setVisitationForm({ ...EMPTY_ADD_VISITATION_FORM });
     setEditVisitationForm({ ...EMPTY_VISITATION_FORM });
     setEditVisitationId(null);
     setConferenceForm((f) => ({ ...f, residentId }));
@@ -711,20 +822,10 @@ export default function ResidentDetailPage() {
   const { resident, recordings, visitations, plans, conferences, predictions } =
     detail;
 
-  const setRecordingField = <K extends keyof RecordingFormState>(
-    field: K,
-    value: RecordingFormState[K]
-  ) => setRecordingForm((f) => ({ ...f, [field]: value }));
-
   const setEditRecordingField = <K extends keyof RecordingFormState>(
     field: K,
     value: RecordingFormState[K]
   ) => setEditRecordingForm((f) => ({ ...f, [field]: value }));
-
-  const setVisitationField = <K extends keyof VisitationFormState>(
-    field: K,
-    value: VisitationFormState[K]
-  ) => setVisitationForm((f) => ({ ...f, [field]: value }));
 
   const setEditVisitationField = <K extends keyof VisitationFormState>(
     field: K,
@@ -733,10 +834,41 @@ export default function ResidentDetailPage() {
 
   async function handleAddRecording(e: React.FormEvent) {
     e.preventDefault();
+    if (
+      !recordingForm.sessionDate ||
+      !recordingForm.socialWorker ||
+      !recordingForm.sessionType ||
+      !recordingForm.sessionDurationMinutes ||
+      !recordingForm.emotionalStateObserved ||
+      !recordingForm.emotionalStateEnd ||
+      recordingForm.interventionsApplied.length === 0 ||
+      !recordingForm.followUpActions ||
+      !recordingForm.progressNoted ||
+      !recordingForm.concernsFlagged ||
+      !recordingForm.referralMade
+    ) {
+      setAddRecordingError(
+        'Please complete all fields before submitting this session.'
+      );
+      return;
+    }
     setAddRecordingBusy(true);
     setAddRecordingError(null);
     try {
-      await addRecording(residentId, recordingForm);
+      await addSessionEntryRecording(residentId, {
+        sessionDate: recordingForm.sessionDate,
+        socialWorker: recordingForm.socialWorker,
+        sessionType:
+          recordingForm.sessionType as SessionEntryRecordingRequest['sessionType'],
+        sessionDurationMinutes: Number(recordingForm.sessionDurationMinutes),
+        emotionalStateObserved: recordingForm.emotionalStateObserved,
+        emotionalStateEnd: recordingForm.emotionalStateEnd,
+        interventionsApplied: recordingForm.interventionsApplied,
+        followUpActions: recordingForm.followUpActions,
+        progressNoted: recordingForm.progressNoted === 'yes',
+        concernsFlagged: recordingForm.concernsFlagged === 'yes',
+        referralMade: recordingForm.referralMade === 'yes',
+      });
       await refresh();
       closeAddRecording();
     } catch (error) {
@@ -750,16 +882,72 @@ export default function ResidentDetailPage() {
 
   async function handleAddVisitation(e: React.FormEvent) {
     e.preventDefault();
-    setAddVisitationBusy(true);
     setAddVisitationError(null);
+
+    if (
+      !visitationForm.residentId ||
+      !visitationForm.visitType ||
+      !visitationForm.socialWorker ||
+      !visitationForm.familyCooperationLevel ||
+      !visitationForm.visitOutcome
+    ) {
+      setAddVisitationError(
+        'Please select a Resident, Worker, Visit Type, Cooperation Level, and Outcome.'
+      );
+      return;
+    }
+
+    const selectedResidentId = Number(visitationForm.residentId);
+    const residentExists = visResidents.some(
+      (r) => r.residentId === selectedResidentId
+    );
+
+    if (!residentExists) {
+      setAddVisitationError(
+        'That resident is no longer available. The list has been refreshed, so please choose the resident again.'
+      );
+      return;
+    }
+
+    setAddVisitationBusy(true);
     try {
-      await addVisitation(residentId, visitationForm);
+      const payload = {
+        residentId: selectedResidentId,
+        visitDate: visitationForm.visitDate,
+        socialWorker: visitationForm.socialWorker,
+        visitType: visitationForm.visitType,
+        locationVisited: visitationForm.locationVisited || 'Field',
+        familyMembersPresent: 'None',
+        purpose:
+          visitationForm.purpose ||
+          `Visitation for ${visitationForm.visitType}`,
+        observations:
+          visitationForm.observations ||
+          `Observations recorded during ${visitationForm.visitType}.`,
+        familyCooperationLevel: visitationForm.familyCooperationLevel,
+        safetyConcernsNoted: !!visitationForm.safetyConcernsNoted,
+        followUpNeeded: !!visitationForm.followUpNeeded,
+        followUpNotes: visitationForm.followUpNeeded
+          ? visitationForm.followUpNotes
+          : null,
+        visitOutcome: visitationForm.visitOutcome,
+      };
+
+      await addVisitation(selectedResidentId, payload);
       await refresh();
       closeAddVisitation();
-    } catch (error) {
-      setAddVisitationError(
-        getErrorMessage(error, 'Failed to save visitation. Please try again.')
-      );
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        setAddVisitationError(
+          'That resident was not found when saving. Please refresh and select a current resident.'
+        );
+        return;
+      }
+      if (err instanceof ApiError && err.body) {
+        setAddVisitationError(`Submit failed: ${err.body}`);
+        return;
+      }
+      setAddVisitationError('Submit failed. Please try again.');
     } finally {
       setAddVisitationBusy(false);
     }
@@ -809,10 +997,7 @@ export default function ResidentDetailPage() {
       closeEditVisitation();
     } catch (error) {
       setEditVisitationError(
-        getErrorMessage(
-          error,
-          'Failed to update visitation. Please try again.'
-        )
+        getErrorMessage(error, 'Failed to update visitation. Please try again.')
       );
     } finally {
       setEditVisitationBusy(false);
@@ -913,7 +1098,7 @@ export default function ResidentDetailPage() {
   ) => setEditForm((f) => (f ? { ...f, [field]: value } : f));
 
   function openAddRecording() {
-    setRecordingForm({ ...EMPTY_RECORDING_FORM });
+    setRecordingForm({ ...EMPTY_ADD_RECORDING_FORM });
     setAddRecordingError(null);
     setShowAddRecording(true);
   }
@@ -921,7 +1106,7 @@ export default function ResidentDetailPage() {
     if (addRecordingBusy) return;
     setShowAddRecording(false);
     setAddRecordingError(null);
-    setRecordingForm({ ...EMPTY_RECORDING_FORM });
+    setRecordingForm({ ...EMPTY_ADD_RECORDING_FORM });
   }
   function openEditRecording(recording: ProcessRecording) {
     setEditRecordingId(recording.recordingId);
@@ -937,7 +1122,10 @@ export default function ResidentDetailPage() {
     setEditRecordingForm({ ...EMPTY_RECORDING_FORM });
   }
   function openAddVisitation() {
-    setVisitationForm({ ...EMPTY_VISITATION_FORM });
+    setVisitationForm({
+      ...EMPTY_ADD_VISITATION_FORM,
+      residentId: String(residentId),
+    });
     setAddVisitationError(null);
     setShowAddVisitation(true);
   }
@@ -945,7 +1133,7 @@ export default function ResidentDetailPage() {
     if (addVisitationBusy) return;
     setShowAddVisitation(false);
     setAddVisitationError(null);
-    setVisitationForm({ ...EMPTY_VISITATION_FORM });
+    setVisitationForm({ ...EMPTY_ADD_VISITATION_FORM });
   }
   function openEditVisitation(visitation: HomeVisitation) {
     setEditVisitationId(visitation.visitationId);
@@ -1804,17 +1992,300 @@ export default function ResidentDetailPage() {
                           disabled={addRecordingBusy}
                         />
                       </div>
-                      <div className="modal-body">
+                      <div
+                        className="modal-body"
+                        style={{ overflowY: 'auto', maxHeight: '75vh' }}
+                      >
                         {addRecordingError && (
-                          <div className="alert alert-danger">
+                          <div className="alert alert-danger py-2">
                             {addRecordingError}
                           </div>
                         )}
-                        <RecordingFormFields
-                          form={recordingForm}
-                          onChange={setRecordingField}
-                          idPrefix="add-recording"
-                        />
+                        <div className="row g-3">
+                          <div className="col-12 col-md-6">
+                            <label className="form-label fw-semibold">
+                              Session Date{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              value={recordingForm.sessionDate}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  sessionDate: e.target.value,
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <label className="form-label fw-semibold">
+                              Social Worker{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={recordingForm.socialWorker}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  socialWorker: e.target.value,
+                                })
+                              }
+                              required
+                            >
+                              <option value="">Select social worker…</option>
+                              {recordingFormOptions.socialWorkers.map(
+                                (name) => (
+                                  <option key={name} value={name}>
+                                    {name}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <label className="form-label fw-semibold">
+                              Session Type{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={recordingForm.sessionType}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  sessionType: e.target
+                                    .value as NewRecordingForm['sessionType'],
+                                })
+                              }
+                              required
+                            >
+                              <option value="">Select…</option>
+                              {RECORDING_SESSION_TYPES.map((t) => (
+                                <option key={t}>{t}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <label className="form-label fw-semibold">
+                              Session Duration (minutes){' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              className="form-control"
+                              min={1}
+                              placeholder="e.g. 60"
+                              value={recordingForm.sessionDurationMinutes}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  sessionDurationMinutes: e.target.value,
+                                })
+                              }
+                              required
+                            />
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <label className="form-label fw-semibold">
+                              Emotional State (Start){' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={recordingForm.emotionalStateObserved}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  emotionalStateObserved: e.target.value,
+                                })
+                              }
+                              required
+                            >
+                              <option value="">Select…</option>
+                              {(recordingFormOptions.emotionalStateObserved
+                                .length > 0
+                                ? recordingFormOptions.emotionalStateObserved
+                                : EMOTIONAL_STATES
+                              ).map((s) => (
+                                <option key={s}>{s}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <label className="form-label fw-semibold">
+                              Emotional State (End){' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={recordingForm.emotionalStateEnd}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  emotionalStateEnd: e.target.value,
+                                })
+                              }
+                              required
+                            >
+                              <option value="">Select…</option>
+                              {(recordingFormOptions.emotionalStateEnd.length >
+                              0
+                                ? recordingFormOptions.emotionalStateEnd
+                                : EMOTIONAL_STATES
+                              ).map((s) => (
+                                <option key={s}>{s}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <label className="form-label fw-semibold">
+                              Interventions Applied{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <div
+                              className="border rounded p-3"
+                              style={{ background: '#fff' }}
+                            >
+                              <div className="d-flex flex-column gap-2">
+                                {INTERVENTION_OPTIONS.map((option) => {
+                                  const isChecked =
+                                    recordingForm.interventionsApplied.includes(
+                                      option
+                                    );
+                                  return (
+                                    <label
+                                      key={option}
+                                      className="form-check-label d-flex align-items-center gap-2"
+                                    >
+                                      <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          setRecordingForm({
+                                            ...recordingForm,
+                                            interventionsApplied: e.target
+                                              .checked
+                                              ? [
+                                                  ...recordingForm.interventionsApplied,
+                                                  option,
+                                                ]
+                                              : recordingForm.interventionsApplied.filter(
+                                                  (v) => v !== option
+                                                ),
+                                          });
+                                        }}
+                                      />
+                                      <span>{option}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            {recordingForm.interventionsApplied.length ===
+                              0 && (
+                              <div className="form-text text-danger">
+                                Select at least one intervention.
+                              </div>
+                            )}
+                          </div>
+                          <div className="col-12 col-md-6">
+                            <label className="form-label fw-semibold">
+                              Follow-Up Actions{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={recordingForm.followUpActions}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  followUpActions: e.target.value,
+                                })
+                              }
+                              required
+                            >
+                              <option value="">Select follow-up action…</option>
+                              {recordingFormOptions.followUpActions.map(
+                                (action) => (
+                                  <option key={action} value={action}>
+                                    {action}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <label className="form-label fw-semibold">
+                              Progress Noted?{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={recordingForm.progressNoted}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  progressNoted: e.target
+                                    .value as NewRecordingForm['progressNoted'],
+                                })
+                              }
+                              required
+                            >
+                              <option value="">Select…</option>
+                              <option value="yes">Yes</option>
+                              <option value="no">No</option>
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <label className="form-label fw-semibold">
+                              Large Concerns?{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={recordingForm.concernsFlagged}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  concernsFlagged: e.target
+                                    .value as NewRecordingForm['concernsFlagged'],
+                                })
+                              }
+                              required
+                            >
+                              <option value="">Select…</option>
+                              <option value="yes">Yes</option>
+                              <option value="no">No</option>
+                            </select>
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <label className="form-label fw-semibold">
+                              Referral Made?{' '}
+                              <span className="text-danger">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={recordingForm.referralMade}
+                              onChange={(e) =>
+                                setRecordingForm({
+                                  ...recordingForm,
+                                  referralMade: e.target
+                                    .value as NewRecordingForm['referralMade'],
+                                })
+                              }
+                              required
+                            >
+                              <option value="">Select…</option>
+                              <option value="yes">Yes</option>
+                              <option value="no">No</option>
+                            </select>
+                          </div>
+                        </div>
                       </div>
                       <div className="modal-footer">
                         <button
@@ -2058,11 +2529,206 @@ export default function ResidentDetailPage() {
                             {addVisitationError}
                           </div>
                         )}
-                        <VisitationFormFields
-                          form={visitationForm}
-                          onChange={setVisitationField}
-                          idPrefix="add-visitation"
-                        />
+                        <div className="row g-3">
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">
+                              Resident (Case No)
+                            </label>
+                            <select
+                              className="form-select"
+                              required
+                              value={visitationForm.residentId}
+                              onChange={(e) =>
+                                setVisitationForm({
+                                  ...visitationForm,
+                                  residentId: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">Select Resident...</option>
+                              {visResidents.map((r) => (
+                                <option key={r.residentId} value={r.residentId}>
+                                  {r.caseControlNo}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">
+                              Visit Date
+                            </label>
+                            <input
+                              type="date"
+                              className="form-control"
+                              required
+                              value={visitationForm.visitDate}
+                              onChange={(e) =>
+                                setVisitationForm({
+                                  ...visitationForm,
+                                  visitDate: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">
+                              Social Worker
+                            </label>
+                            <select
+                              className="form-select"
+                              required
+                              value={visitationForm.socialWorker}
+                              onChange={(e) =>
+                                setVisitationForm({
+                                  ...visitationForm,
+                                  socialWorker: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">Select...</option>
+                              {visSocialWorkerOptions.map((sw) => (
+                                <option key={sw} value={sw}>
+                                  {sw}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">
+                              Visit Type
+                            </label>
+                            <select
+                              className="form-select"
+                              required
+                              value={visitationForm.visitType}
+                              onChange={(e) =>
+                                setVisitationForm({
+                                  ...visitationForm,
+                                  visitType: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">Select...</option>
+                              {VISITATION_TYPES.map((t) => (
+                                <option key={t} value={t}>
+                                  {t}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">
+                              Location Visited
+                            </label>
+                            <select
+                              className="form-select"
+                              value={visitationForm.locationVisited}
+                              onChange={(e) =>
+                                setVisitationForm({
+                                  ...visitationForm,
+                                  locationVisited: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">Select or Type...</option>
+                              {visLocationOptions.map((l) => (
+                                <option key={l} value={l}>
+                                  {l}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">
+                              Cooperation Level
+                            </label>
+                            <select
+                              className="form-select"
+                              required
+                              value={visitationForm.familyCooperationLevel}
+                              onChange={(e) =>
+                                setVisitationForm({
+                                  ...visitationForm,
+                                  familyCooperationLevel: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">Select...</option>
+                              {FAMILY_COOPERATION_LEVELS.map((c) => (
+                                <option key={c} value={c}>
+                                  {c}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label fw-bold">
+                              Outcome
+                            </label>
+                            <select
+                              className="form-select"
+                              required
+                              value={visitationForm.visitOutcome}
+                              onChange={(e) =>
+                                setVisitationForm({
+                                  ...visitationForm,
+                                  visitOutcome: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">Select...</option>
+                              {VISIT_OUTCOMES.map((o) => (
+                                <option key={o} value={o}>
+                                  {o}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-md-3">
+                            <div className="form-check form-switch mt-4">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id="add-vis-safety"
+                                checked={visitationForm.safetyConcernsNoted}
+                                onChange={(e) =>
+                                  setVisitationForm({
+                                    ...visitationForm,
+                                    safetyConcernsNoted: e.target.checked,
+                                  })
+                                }
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor="add-vis-safety"
+                              >
+                                Safety Concerns?
+                              </label>
+                            </div>
+                          </div>
+                          <div className="col-md-3">
+                            <div className="form-check form-switch mt-4">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id="add-vis-follow"
+                                checked={visitationForm.followUpNeeded}
+                                onChange={(e) =>
+                                  setVisitationForm({
+                                    ...visitationForm,
+                                    followUpNeeded: e.target.checked,
+                                  })
+                                }
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor="add-vis-follow"
+                              >
+                                Follow-up?
+                              </label>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                       <div className="modal-footer">
                         <button
