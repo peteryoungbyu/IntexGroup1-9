@@ -880,9 +880,6 @@ export default function CaseloadPage() {
               </select>
             </div>
             <div className="col-lg-2 col-md-12 d-flex gap-2">
-              <button type="submit" className="btn btn-primary flex-fill">
-                Search
-              </button>
               <button
                 type="button"
                 className="btn btn-outline-secondary"
