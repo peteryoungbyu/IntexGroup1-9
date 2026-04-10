@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Intex.API.Data;
 using Intex.API.Models;
 using Intex.API.Services;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -136,10 +137,24 @@ public class ResidentController : ControllerBase
 
     [HttpPut("{id:int}")]
     [Authorize(Policy = AuthPolicies.AdminManage)]
-    public async Task<IActionResult> Update(int id, [FromBody] Resident resident)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateResidentRequest resident)
     {
-        var result = await _service.UpdateAsync(id, resident);
-        return result is null ? NotFound() : Ok(result);
+        try
+        {
+            var result = await _service.UpdateAsync(id, resident);
+            return result is null ? NotFound() : Ok(result);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new
+            {
+                error = "Failed to update resident because one or more values conflict with existing data."
+            });
+        }
     }
 
     [HttpDelete("{id:int}")]
@@ -151,9 +166,19 @@ public class ResidentController : ControllerBase
             var deleted = await _service.DeleteAsync(id);
             return deleted ? NoContent() : NotFound();
         }
-        catch (Exception ex)
+        catch (DbUpdateException)
         {
-            return StatusCode(500, new { error = ex.Message });
+            return Conflict(new
+            {
+                error = "Failed to delete resident because related records still exist in another table."
+            });
+        }
+        catch (SqlException ex) when (ex.Number == 547)
+        {
+            return Conflict(new
+            {
+                error = "Failed to delete resident because related records still exist in another table."
+            });
         }
     }
 

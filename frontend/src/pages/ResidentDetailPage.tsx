@@ -5,6 +5,7 @@ import type {
   ProcessRecording,
   HomeVisitation,
   CaseConference,
+  UpdateResidentRequest,
 } from '../types/ResidentDetail';
 import {
   getResidentById,
@@ -14,7 +15,6 @@ import {
   deleteVisitation,
   updateResident,
 } from '../lib/residentAPI';
-import type { Resident } from '../types/ResidentDetail';
 import {
   addCaseConference,
   deleteCaseConference,
@@ -24,6 +24,7 @@ import {
   RESIDENT_CASE_CATEGORIES,
   RESIDENT_CASE_STATUSES,
   RESIDENT_REFERRAL_SOURCES,
+  RESIDENT_RISK_LEVELS,
   RESIDENT_REINTEGRATION_STATUSES,
   RESIDENT_REINTEGRATION_TYPES,
   RESIDENT_SAFEHOUSE_IDS,
@@ -88,7 +89,7 @@ type DeleteTarget =
   | { type: 'visitation'; id: number }
   | { type: 'conference'; id: number };
 
-type EditableResident = Omit<Resident, 'residentId' | 'createdAt'>;
+type EditableResident = UpdateResidentRequest;
 
 export default function ResidentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -296,8 +297,45 @@ export default function ResidentDetailPage() {
   }
 
   function openEdit() {
-    const { residentId: _id, createdAt: _ca, ...fields } = resident as Resident;
-    setEditForm(fields);
+    setEditForm({
+      safehouseId: resident.safehouseId,
+      caseStatus: resident.caseStatus,
+      sex: resident.sex,
+      dateOfBirth: resident.dateOfBirth,
+      birthStatus: resident.birthStatus,
+      placeOfBirth: resident.placeOfBirth,
+      religion: resident.religion,
+      caseCategory: resident.caseCategory,
+      subCatOrphaned: resident.subCatOrphaned,
+      subCatTrafficked: resident.subCatTrafficked,
+      subCatChildLabor: resident.subCatChildLabor,
+      subCatPhysicalAbuse: resident.subCatPhysicalAbuse,
+      subCatSexualAbuse: resident.subCatSexualAbuse,
+      subCatOsaec: resident.subCatOsaec,
+      subCatCicl: resident.subCatCicl,
+      subCatAtRisk: resident.subCatAtRisk,
+      subCatStreetChild: resident.subCatStreetChild,
+      subCatChildWithHiv: resident.subCatChildWithHiv,
+      isPwd: resident.isPwd,
+      pwdType: resident.pwdType,
+      hasSpecialNeeds: resident.hasSpecialNeeds,
+      specialNeedsDiagnosis: resident.specialNeedsDiagnosis,
+      familyIs4Ps: resident.familyIs4Ps,
+      familySoloParent: resident.familySoloParent,
+      familyIndigenous: resident.familyIndigenous,
+      familyParentPwd: resident.familyParentPwd,
+      familyInformalSettler: resident.familyInformalSettler,
+      dateOfAdmission: resident.dateOfAdmission,
+      referralSource: resident.referralSource,
+      referringAgencyPerson: resident.referringAgencyPerson,
+      assignedSocialWorker: resident.assignedSocialWorker,
+      initialCaseAssessment: resident.initialCaseAssessment,
+      reintegrationType: resident.reintegrationType,
+      reintegrationStatus: resident.reintegrationStatus,
+      initialRiskLevel: resident.initialRiskLevel,
+      currentRiskLevel: resident.currentRiskLevel,
+      dateClosed: resident.dateClosed,
+    });
     setEditError(null);
     setShowEdit(true);
   }
@@ -316,8 +354,12 @@ export default function ResidentDetailPage() {
       await updateResident(residentId, editForm);
       await refresh();
       setShowEdit(false);
-    } catch {
-      setEditError('Failed to save changes. Please try again.');
+    } catch (error) {
+      setEditError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to save changes. Please try again.'
+      );
     } finally {
       setEditBusy(false);
     }
@@ -438,11 +480,8 @@ export default function ResidentDetailPage() {
                         <input
                           type="text"
                           className="form-control"
-                          required
-                          value={editForm.caseControlNo}
-                          onChange={(e) =>
-                            setEdit('caseControlNo', e.target.value)
-                          }
+                          readOnly
+                          value={resident.caseControlNo}
                         />
                       </div>
                       <div className="col-md-4">
@@ -452,11 +491,8 @@ export default function ResidentDetailPage() {
                         <input
                           type="text"
                           className="form-control"
-                          required
-                          value={editForm.internalCode}
-                          onChange={(e) =>
-                            setEdit('internalCode', e.target.value)
-                          }
+                          readOnly
+                          value={resident.internalCode}
                         />
                       </div>
                       <div className="col-md-4">
@@ -507,10 +543,13 @@ export default function ResidentDetailPage() {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Place of Birth</label>
+                        <label className="form-label">
+                          Place of Birth <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="text"
                           className="form-control"
+                          required
                           value={editForm.placeOfBirth ?? ''}
                           onChange={(e) =>
                             setEdit('placeOfBirth', e.target.value || null)
@@ -518,9 +557,12 @@ export default function ResidentDetailPage() {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Birth Status</label>
+                        <label className="form-label">
+                          Birth Status <span className="text-danger">*</span>
+                        </label>
                         <select
                           className="form-select"
+                          required
                           value={editForm.birthStatus ?? ''}
                           onChange={(e) =>
                             setEdit('birthStatus', e.target.value || null)
@@ -535,10 +577,13 @@ export default function ResidentDetailPage() {
                         </select>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Religion</label>
+                        <label className="form-label">
+                          Religion <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="text"
                           className="form-control"
+                          required
                           value={editForm.religion ?? ''}
                           onChange={(e) =>
                             setEdit('religion', e.target.value || null)
@@ -757,11 +802,13 @@ export default function ResidentDetailPage() {
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">
-                          Assigned Social Worker
+                          Assigned Social Worker{' '}
+                          <span className="text-danger">*</span>
                         </label>
                         <input
                           type="text"
                           className="form-control"
+                          required
                           value={editForm.assignedSocialWorker ?? ''}
                           onChange={(e) =>
                             setEdit(
@@ -772,9 +819,12 @@ export default function ResidentDetailPage() {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Referral Source</label>
+                        <label className="form-label">
+                          Referral Source <span className="text-danger">*</span>
+                        </label>
                         <select
                           className="form-select"
+                          required
                           value={editForm.referralSource ?? ''}
                           onChange={(e) =>
                             setEdit('referralSource', e.target.value || null)
@@ -805,44 +855,56 @@ export default function ResidentDetailPage() {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Initial Risk Level</label>
+                        <label className="form-label">
+                          Initial Risk Level{' '}
+                          <span className="text-danger">*</span>
+                        </label>
                         <select
                           className="form-select"
+                          required
                           value={editForm.initialRiskLevel ?? ''}
                           onChange={(e) =>
                             setEdit('initialRiskLevel', e.target.value || null)
                           }
                         >
                           <option value="">— None —</option>
-                          <option>Low</option>
-                          <option>Medium</option>
-                          <option>High</option>
-                          <option>Critical</option>
+                          {RESIDENT_RISK_LEVELS.map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label">Current Risk Level</label>
+                        <label className="form-label">
+                          Current Risk Level{' '}
+                          <span className="text-danger">*</span>
+                        </label>
                         <select
                           className="form-select"
+                          required
                           value={editForm.currentRiskLevel ?? ''}
                           onChange={(e) =>
                             setEdit('currentRiskLevel', e.target.value || null)
                           }
                         >
                           <option value="">— None —</option>
-                          <option>Low</option>
-                          <option>Medium</option>
-                          <option>High</option>
-                          <option>Critical</option>
+                          {RESIDENT_RISK_LEVELS.map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-12">
                         <label className="form-label">
-                          Initial Case Assessment
+                          Initial Case Assessment{' '}
+                          <span className="text-danger">*</span>
                         </label>
                         <textarea
                           className="form-control"
                           rows={2}
+                          required
                           value={editForm.initialCaseAssessment ?? ''}
                           onChange={(e) =>
                             setEdit(

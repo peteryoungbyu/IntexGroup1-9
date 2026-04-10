@@ -196,17 +196,83 @@ public class ResidentService : IResidentService
         return resident;
     }
 
-    public async Task<Resident?> UpdateAsync(int id, Resident updated)
+    public async Task<Resident?> UpdateAsync(int id, UpdateResidentRequest updated)
     {
         var existing = await _db.Residents.FindAsync(id);
         if (existing is null) return null;
 
-        existing.CaseStatus = updated.CaseStatus;
-        existing.CurrentRiskLevel = updated.CurrentRiskLevel;
-        existing.ReintegrationStatus = updated.ReintegrationStatus;
-        existing.ReintegrationType = updated.ReintegrationType;
-        existing.AssignedSocialWorker = updated.AssignedSocialWorker;
-        existing.NotesRestricted = updated.NotesRestricted;
+        ValidateRequiredDate(updated.DateOfBirth, nameof(updated.DateOfBirth));
+        ValidateRequiredDate(updated.DateOfAdmission, nameof(updated.DateOfAdmission));
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        ValidateResidentTimeline(updated.DateOfBirth, updated.DateOfAdmission, today, updated.DateClosed);
+
+        if (!ResidentOptionCatalog.SafehouseIds.Contains(updated.SafehouseId))
+            throw new ValidationException("SafehouseId must be between 1 and 9.");
+
+        if (!await _db.Safehouses.AsNoTracking().AnyAsync(safehouse => safehouse.SafehouseId == updated.SafehouseId))
+            throw new ValidationException("The selected safehouse does not exist.");
+
+        var caseStatus = NormalizeRequiredOption(updated.CaseStatus, ResidentOptionCatalog.CaseStatuses, nameof(updated.CaseStatus));
+        var birthStatus = NormalizeRequiredOption(updated.BirthStatus, ResidentOptionCatalog.BirthStatuses, nameof(updated.BirthStatus));
+        var caseCategory = NormalizeRequiredOption(updated.CaseCategory, ResidentOptionCatalog.CaseCategories, nameof(updated.CaseCategory));
+        var referralSource = NormalizeRequiredOption(updated.ReferralSource, ResidentOptionCatalog.ReferralSources, nameof(updated.ReferralSource));
+        var initialRiskLevel = NormalizeRequiredOption(updated.InitialRiskLevel, ResidentOptionCatalog.RiskLevels, nameof(updated.InitialRiskLevel));
+        var currentRiskLevel = NormalizeRequiredOption(updated.CurrentRiskLevel, ResidentOptionCatalog.RiskLevels, nameof(updated.CurrentRiskLevel));
+        var reintegrationType = NormalizeOptionalOption(updated.ReintegrationType, ResidentOptionCatalog.ReintegrationTypes, nameof(updated.ReintegrationType));
+        var reintegrationStatus = NormalizeOptionalOption(updated.ReintegrationStatus, ResidentOptionCatalog.ReintegrationStatuses, nameof(updated.ReintegrationStatus));
+
+        var sex = NormalizeRequiredText(updated.Sex, nameof(updated.Sex)).ToUpperInvariant();
+        if (sex.Length != 1)
+            throw new ValidationException("Sex must be a single character.");
+
+        var placeOfBirth = NormalizeRequiredText(updated.PlaceOfBirth, nameof(updated.PlaceOfBirth));
+        var religion = NormalizeRequiredText(updated.Religion, nameof(updated.Religion));
+        var assignedSocialWorker = NormalizeRequiredText(updated.AssignedSocialWorker, nameof(updated.AssignedSocialWorker));
+        var initialCaseAssessment = NormalizeRequiredText(updated.InitialCaseAssessment, nameof(updated.InitialCaseAssessment));
+        var referringAgencyPerson = NormalizeOptionalText(updated.ReferringAgencyPerson);
+        var pwdType = updated.IsPwd ? NormalizeOptionalText(updated.PwdType) : null;
+        var specialNeedsDiagnosis = updated.HasSpecialNeeds ? NormalizeOptionalText(updated.SpecialNeedsDiagnosis) : null;
+        existing.SafehouseId = updated.SafehouseId;
+        existing.CaseStatus = caseStatus;
+        existing.Sex = sex;
+        existing.DateOfBirth = updated.DateOfBirth;
+        existing.BirthStatus = birthStatus;
+        existing.PlaceOfBirth = placeOfBirth;
+        existing.Religion = religion;
+        existing.CaseCategory = caseCategory;
+        existing.SubCatOrphaned = updated.SubCatOrphaned;
+        existing.SubCatTrafficked = updated.SubCatTrafficked;
+        existing.SubCatChildLabor = updated.SubCatChildLabor;
+        existing.SubCatPhysicalAbuse = updated.SubCatPhysicalAbuse;
+        existing.SubCatSexualAbuse = updated.SubCatSexualAbuse;
+        existing.SubCatOsaec = updated.SubCatOsaec;
+        existing.SubCatCicl = updated.SubCatCicl;
+        existing.SubCatAtRisk = updated.SubCatAtRisk;
+        existing.SubCatStreetChild = updated.SubCatStreetChild;
+        existing.SubCatChildWithHiv = updated.SubCatChildWithHiv;
+        existing.IsPwd = updated.IsPwd;
+        existing.PwdType = pwdType;
+        existing.HasSpecialNeeds = updated.HasSpecialNeeds;
+        existing.SpecialNeedsDiagnosis = specialNeedsDiagnosis;
+        existing.FamilyIs4Ps = updated.FamilyIs4Ps;
+        existing.FamilySoloParent = updated.FamilySoloParent;
+        existing.FamilyIndigenous = updated.FamilyIndigenous;
+        existing.FamilyParentPwd = updated.FamilyParentPwd;
+        existing.FamilyInformalSettler = updated.FamilyInformalSettler;
+        existing.DateOfAdmission = updated.DateOfAdmission;
+        existing.AgeUponAdmission = FormatDateSpan(updated.DateOfBirth, updated.DateOfAdmission, nameof(updated.DateOfAdmission));
+        existing.PresentAge = FormatDateSpan(updated.DateOfBirth, today, nameof(updated.DateOfBirth));
+        existing.LengthOfStay = FormatDateSpan(updated.DateOfAdmission, today, nameof(updated.DateOfAdmission));
+        existing.ReferralSource = referralSource;
+        existing.ReferringAgencyPerson = referringAgencyPerson;
+        existing.AssignedSocialWorker = assignedSocialWorker;
+        existing.InitialCaseAssessment = initialCaseAssessment;
+        existing.ReintegrationType = reintegrationType;
+        existing.ReintegrationStatus = reintegrationStatus;
+        existing.InitialRiskLevel = initialRiskLevel;
+        existing.CurrentRiskLevel = currentRiskLevel;
+        existing.DateEnrolled = updated.DateOfAdmission;
         existing.DateClosed = updated.DateClosed;
 
         await _db.SaveChangesAsync();
@@ -215,40 +281,49 @@ public class ResidentService : IResidentService
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var resident = await _db.Residents.FindAsync(id);
-        if (resident is null) return false;
+        if (!await _db.Residents.AsNoTracking().AnyAsync(r => r.ResidentId == id))
+            return false;
 
-        var processRecordings = await _db.ProcessRecordings
-            .Where(x => x.ResidentId == id).ToListAsync();
-        _db.ProcessRecordings.RemoveRange(processRecordings);
+        await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var homeVisitations = await _db.HomeVisitations
-            .Where(x => x.ResidentId == id).ToListAsync();
-        _db.HomeVisitations.RemoveRange(homeVisitations);
+        await _db.CaseConferences
+            .Where(record => record.ResidentId == id)
+            .ExecuteDeleteAsync();
 
-        var educationRecords = await _db.EducationRecords
-            .Where(x => x.ResidentId == id).ToListAsync();
-        _db.EducationRecords.RemoveRange(educationRecords);
+        await _db.EducationRecords
+            .Where(record => record.ResidentId == id)
+            .ExecuteDeleteAsync();
 
-        var healthRecords = await _db.HealthWellbeingRecords
-            .Where(x => x.ResidentId == id).ToListAsync();
-        _db.HealthWellbeingRecords.RemoveRange(healthRecords);
+        await _db.HealthWellbeingRecords
+            .Where(record => record.ResidentId == id)
+            .ExecuteDeleteAsync();
 
-        var interventionPlans = await _db.InterventionPlans
-            .Where(x => x.ResidentId == id).ToListAsync();
-        _db.InterventionPlans.RemoveRange(interventionPlans);
+        await _db.HomeVisitations
+            .Where(record => record.ResidentId == id)
+            .ExecuteDeleteAsync();
 
-        var incidentReports = await _db.IncidentReports
-            .Where(x => x.ResidentId == id).ToListAsync();
-        _db.IncidentReports.RemoveRange(incidentReports);
+        await _db.IncidentReports
+            .Where(record => record.ResidentId == id)
+            .ExecuteDeleteAsync();
 
-        var caseConferences = await _db.CaseConferences
-            .Where(x => x.ResidentId == id).ToListAsync();
-        _db.CaseConferences.RemoveRange(caseConferences);
+        await _db.InterventionPlans
+            .Where(record => record.ResidentId == id)
+            .ExecuteDeleteAsync();
 
-        _db.Residents.Remove(resident);
-        await _db.SaveChangesAsync();
-        return true;
+        await _db.PredictionResults
+            .Where(record => record.ResidentId == id)
+            .ExecuteDeleteAsync();
+
+        await _db.ProcessRecordings
+            .Where(record => record.ResidentId == id)
+            .ExecuteDeleteAsync();
+
+        var deletedResidents = await _db.Residents
+            .Where(resident => resident.ResidentId == id)
+            .ExecuteDeleteAsync();
+
+        await transaction.CommitAsync();
+        return deletedResidents > 0;
     }
 
     private async Task<IReadOnlyList<string>> GetDistinctResidentValuesAsync(Expression<Func<Resident, string?>> selector)
@@ -305,6 +380,27 @@ public class ResidentService : IResidentService
     {
         if (value == default)
             throw new ValidationException($"{fieldName} is required.");
+    }
+
+    private static void ValidateResidentTimeline(DateOnly dateOfBirth, DateOnly dateOfAdmission, DateOnly today, DateOnly? dateClosed = null)
+    {
+        if (dateOfBirth > today)
+            throw new ValidationException("DateOfBirth cannot be in the future.");
+
+        if (dateOfAdmission > today)
+            throw new ValidationException("DateOfAdmission cannot be in the future.");
+
+        if (dateOfAdmission < dateOfBirth)
+            throw new ValidationException("DateOfAdmission cannot be earlier than DateOfBirth.");
+
+        if (dateClosed is null)
+            return;
+
+        if (dateClosed.Value > today)
+            throw new ValidationException("DateClosed cannot be in the future.");
+
+        if (dateClosed.Value < dateOfAdmission)
+            throw new ValidationException("DateClosed cannot be earlier than DateOfAdmission.");
     }
 
     private static string NormalizeRequiredText(string? value, string fieldName)

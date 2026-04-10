@@ -40,6 +40,6 @@ public interface IResidentService
     Task<ResidentDetail?> GetByIdAsync(int id);
     Task<ResidentFormOptions> GetFormOptionsAsync();
     Task<Resident> CreateAsync(CreateResidentRequest request);
-    Task<Resident?> UpdateAsync(int id, Resident resident);
+    Task<Resident?> UpdateAsync(int id, UpdateResidentRequest resident);
     Task<bool> DeleteAsync(int id);
 }

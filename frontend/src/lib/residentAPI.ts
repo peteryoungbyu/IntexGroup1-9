@@ -5,6 +5,7 @@ import type {
   ResidentFormOptions,
   ResidentListItem,
   ResidentSafehouseOption,
+  UpdateResidentRequest,
   PagedResult,
   ProcessRecording,
   HomeVisitation,
@@ -41,8 +42,16 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
       const errorBody = JSON.parse(body);
       if (typeof errorBody?.error === 'string' && errorBody.error.length > 0) {
         message = errorBody.error;
-      } else if (body.length > 0) {
-        message = body;
+      } else if (typeof errorBody?.title === 'string' && errorBody.title.length > 0) {
+        const validationMessages = errorBody?.errors && typeof errorBody.errors === 'object'
+          ? Object.values(errorBody.errors)
+              .flatMap(value => Array.isArray(value) ? value : [])
+              .filter((value): value is string => typeof value === 'string' && value.length > 0)
+          : [];
+
+        message = validationMessages.length > 0
+          ? `${errorBody.title}: ${validationMessages.join(' ')}`
+          : errorBody.title;
       }
     } catch {
       if (body.length > 0) {
@@ -99,7 +108,7 @@ export async function createResident(data: CreateResidentRequest): Promise<Resid
   return res.json();
 }
 
-export async function updateResident(id: number, data: Omit<Resident, 'residentId' | 'createdAt'>): Promise<Resident> {
+export async function updateResident(id: number, data: UpdateResidentRequest): Promise<Resident> {
   const res = await apiFetch(`/api/residents/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
