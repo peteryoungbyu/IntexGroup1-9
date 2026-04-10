@@ -5,14 +5,17 @@ export interface Supporter {
   organizationName: string | null;
   firstName: string | null;
   lastName: string | null;
+  relationshipType: string | null;
+  region: string | null;
+  country: string | null;
   email: string | null;
   phone: string | null;
   status: string;
-  region: string | null;
-  country: string | null;
   firstDonationDate: string | null;
   acquisitionChannel: string | null;
   createdAt: string;
+  churnProbability?: number | null;
+  likelyChurn?: boolean | null;
 }
 
 export interface Donation {

@@ -4,6 +4,13 @@ namespace Intex.API.Services;
 
 public record SupporterListItem(int SupporterId, string DisplayName, string SupporterType, string Status, decimal TotalDonated, DateOnly? FirstDonationDate);
 public record SupporterChurnItem(int SupporterId, string DisplayName, decimal? ChurnProbability, bool? LikelyChurn);
+public record SupporterFormOptions(
+    IReadOnlyList<string> SupporterTypes,
+    IReadOnlyList<string> RelationshipTypes,
+    IReadOnlyList<string> Regions,
+    IReadOnlyList<string> Countries,
+    IReadOnlyList<string> AcquisitionChannels,
+    IReadOnlyList<string> Statuses);
 public record SupporterDetail(
     Supporter Supporter,
     IReadOnlyList<Donation> Donations,
@@ -17,6 +24,7 @@ public record PagedResult<T>(IReadOnlyList<T> Items, int TotalCount, int Page, i
 public interface ISupporterService
 {
     Task<PagedResult<SupporterListItem>> GetAllAsync(int page, int pageSize, string? search, string? status);
+    Task<SupporterFormOptions> GetFormOptionsAsync();
     Task<IReadOnlyList<SupporterChurnItem>> GetChurnPredictionsAsync();
     Task<SupporterDetail?> GetByIdAsync(int id);
     Task<SupporterDetail?> GetByUserAsync(string userId, string? email);

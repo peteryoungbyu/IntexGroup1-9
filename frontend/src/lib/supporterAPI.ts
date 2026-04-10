@@ -30,6 +30,30 @@ export interface DonorPledgeOptions {
   safehouseIds: number[];
 }
 
+export interface SupporterFormOptions {
+  supporterTypes: string[];
+  relationshipTypes: string[];
+  regions: string[];
+  countries: string[];
+  acquisitionChannels: string[];
+  statuses: string[];
+}
+
+export interface CreateSupporterRequest {
+  supporterType: string;
+  organizationName: string | null;
+  firstName: string;
+  lastName: string;
+  relationshipType: string;
+  region: string;
+  country: string;
+  email: string;
+  phone: string;
+  status: string;
+  firstDonationDate: string;
+  acquisitionChannel: string;
+}
+
 function extractErrorMessage(status: number): string {
   switch (status) {
     case 401:
@@ -88,8 +112,13 @@ export async function deleteSupporter(id: number): Promise<void> {
   await apiFetch(`/api/supporters/${id}`, { method: 'DELETE' });
 }
 
+export async function getSupporterFormOptions(): Promise<SupporterFormOptions> {
+  const res = await apiFetch('/api/supporters/form-options');
+  return res.json();
+}
+
 export async function createSupporter(
-  data: Omit<Supporter, 'supporterId' | 'createdAt'>
+  data: CreateSupporterRequest
 ): Promise<Supporter> {
   const res = await apiFetch('/api/supporters', {
     method: 'POST',

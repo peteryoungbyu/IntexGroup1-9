@@ -32,6 +32,10 @@ public class SupporterController : ControllerBase
         [FromQuery] string? status = null)
         => Ok(await _service.GetAllAsync(page, pageSize, search, status));
 
+    [HttpGet("form-options")]
+    public async Task<IActionResult> GetFormOptions()
+        => Ok(await _service.GetFormOptionsAsync());
+
     [HttpGet("churn")]
     public async Task<IActionResult> GetChurnPredictions()
         => Ok(await _service.GetChurnPredictionsAsync());
@@ -45,8 +49,11 @@ public class SupporterController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = AuthPolicies.AdminManage)]
-    public async Task<IActionResult> Create([FromBody] Supporter supporter)
+    public async Task<IActionResult> Create([FromBody] CreateSupporterRequest request)
     {
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+        var supporter = request.ToSupporter();
         var created = await _service.CreateAsync(supporter);
         return CreatedAtAction(nameof(GetById), new { id = created.SupporterId }, created);
     }
@@ -121,6 +128,72 @@ public class SupporterController : ControllerBase
                 Status = StatusCodes.Status500InternalServerError,
             });
         }
+    }
+}
+
+public sealed class CreateSupporterRequest
+{
+    [Required]
+    public string SupporterType { get; set; } = string.Empty;
+
+    public string? OrganizationName { get; set; }
+
+    [Required]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required]
+    public string RelationshipType { get; set; } = string.Empty;
+
+    [Required]
+    public string Region { get; set; } = string.Empty;
+
+    [Required]
+    public string Country { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [RegularExpression(@"^\+\d{1,3} \(\d{3}\) \d{3}-\d{4}$", ErrorMessage = "Phone must match +1 (347) 358-4878.")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Required]
+    public string Status { get; set; } = string.Empty;
+
+    [Required]
+    public DateOnly? FirstDonationDate { get; set; }
+
+    [Required]
+    public string AcquisitionChannel { get; set; } = string.Empty;
+
+    public Supporter ToSupporter()
+    {
+        var firstName = FirstName.Trim();
+        var lastName = LastName.Trim();
+
+        return new Supporter
+        {
+            SupporterType = SupporterType.Trim(),
+            DisplayName = $"{firstName} {lastName}".Trim(),
+            OrganizationName = string.IsNullOrWhiteSpace(OrganizationName) ? null : OrganizationName.Trim(),
+            FirstName = firstName,
+            LastName = lastName,
+            RelationshipType = RelationshipType.Trim(),
+            Region = Region.Trim(),
+            Country = Country.Trim(),
+            Email = Email.Trim(),
+            Phone = Phone.Trim(),
+            Status = Status.Trim(),
+            CreatedAt = DateTime.UtcNow,
+            FirstDonationDate = FirstDonationDate,
+            AcquisitionChannel = AcquisitionChannel.Trim(),
+            LikelyChurn = false,
+            ChurnProbability = 0.000m,
+        };
     }
 }
 
