@@ -14,6 +14,60 @@ export interface ResidentSafehouseOption {
   name: string;
 }
 
+export interface CreateResidentRequest {
+  safehouseId: number;
+  caseStatus: string;
+  dateOfBirth: string;
+  birthStatus: string;
+  placeOfBirth: string;
+  religion: string;
+  caseCategory: string;
+  subCatOrphaned: boolean;
+  subCatTrafficked: boolean;
+  subCatChildLabor: boolean;
+  subCatPhysicalAbuse: boolean;
+  subCatSexualAbuse: boolean;
+  subCatOsaec: boolean;
+  subCatCicl: boolean;
+  subCatAtRisk: boolean;
+  subCatStreetChild: boolean;
+  subCatChildWithHiv: boolean;
+  isPwd: boolean;
+  pwdType: string | null;
+  hasSpecialNeeds: boolean;
+  specialNeedsDiagnosis: string | null;
+  familyIs4Ps: boolean;
+  familySoloParent: boolean;
+  familyIndigenous: boolean;
+  familyParentPwd: boolean;
+  familyInformalSettler: boolean;
+  dateOfAdmission: string;
+  referralSource: string;
+  referringAgencyPerson: string | null;
+  assignedSocialWorker: string;
+  initialCaseAssessment: string;
+  reintegrationType: string | null;
+  reintegrationStatus: string | null;
+  initialRiskLevel: string;
+  currentRiskLevel: string;
+}
+
+export interface ResidentFormOptions {
+  nextCaseControlNo: string;
+  nextInternalCode: string;
+  safehouses: ResidentSafehouseOption[];
+  caseStatuses: string[];
+  birthStatuses: string[];
+  caseCategories: string[];
+  referralSources: string[];
+  reintegrationTypes: string[];
+  reintegrationStatuses: string[];
+  riskLevels: string[];
+  religions: string[];
+  assignedSocialWorkers: string[];
+  initialCaseAssessments: string[];
+}
+
 export interface Resident {
   residentId: number;
   caseControlNo: string;

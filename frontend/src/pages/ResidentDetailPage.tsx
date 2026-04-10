@@ -19,6 +19,15 @@ import {
   addCaseConference,
   deleteCaseConference,
 } from '../lib/caseConferenceAPI';
+import {
+  RESIDENT_BIRTH_STATUSES,
+  RESIDENT_CASE_CATEGORIES,
+  RESIDENT_CASE_STATUSES,
+  RESIDENT_REFERRAL_SOURCES,
+  RESIDENT_REINTEGRATION_STATUSES,
+  RESIDENT_REINTEGRATION_TYPES,
+  RESIDENT_SAFEHOUSE_IDS,
+} from '../lib/residentOptions';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import Pagination from '../components/Pagination';
 
@@ -454,16 +463,20 @@ export default function ResidentDetailPage() {
                         <label className="form-label">
                           Safehouse ID <span className="text-danger">*</span>
                         </label>
-                        <input
-                          type="number"
-                          className="form-control"
+                        <select
+                          className="form-select"
                           required
-                          min={1}
                           value={editForm.safehouseId}
                           onChange={(e) =>
                             setEdit('safehouseId', Number(e.target.value))
                           }
-                        />
+                        >
+                          {RESIDENT_SAFEHOUSE_IDS.map((safehouseId) => (
+                            <option key={safehouseId} value={safehouseId}>
+                              {`Safehouse ${safehouseId}`}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">
@@ -475,8 +488,8 @@ export default function ResidentDetailPage() {
                           value={editForm.sex}
                           onChange={(e) => setEdit('sex', e.target.value)}
                         >
-                          <option>Female</option>
-                          <option>Male</option>
+                          <option value="F">F</option>
+                          <option value="M">M</option>
                         </select>
                       </div>
                       <div className="col-md-4">
@@ -506,14 +519,20 @@ export default function ResidentDetailPage() {
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Birth Status</label>
-                        <input
-                          type="text"
-                          className="form-control"
+                        <select
+                          className="form-select"
                           value={editForm.birthStatus ?? ''}
                           onChange={(e) =>
                             setEdit('birthStatus', e.target.value || null)
                           }
-                        />
+                        >
+                          <option value="">None</option>
+                          {RESIDENT_BIRTH_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Religion</label>
@@ -538,9 +557,11 @@ export default function ResidentDetailPage() {
                             setEdit('caseStatus', e.target.value)
                           }
                         >
-                          <option>Active</option>
-                          <option>Closed</option>
-                          <option>Transferred</option>
+                          {RESIDENT_CASE_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -561,11 +582,11 @@ export default function ResidentDetailPage() {
                             setEdit('caseCategory', e.target.value)
                           }
                         >
-                          <option>Child in Need of Special Protection</option>
-                          <option>Child in Conflict with the Law</option>
-                          <option>Child at Risk</option>
-                          <option>Abandoned</option>
-                          <option>Neglected</option>
+                          {RESIDENT_CASE_CATEGORIES.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-6">
@@ -752,14 +773,20 @@ export default function ResidentDetailPage() {
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">Referral Source</label>
-                        <input
-                          type="text"
-                          className="form-control"
+                        <select
+                          className="form-select"
                           value={editForm.referralSource ?? ''}
                           onChange={(e) =>
                             setEdit('referralSource', e.target.value || null)
                           }
-                        />
+                        >
+                          <option value="">None</option>
+                          {RESIDENT_REFERRAL_SOURCES.map((source) => (
+                            <option key={source} value={source}>
+                              {source}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-md-4">
                         <label className="form-label">
@@ -841,11 +868,11 @@ export default function ResidentDetailPage() {
                           }
                         >
                           <option value="">— None —</option>
-                          <option>Family Reintegration</option>
-                          <option>Community Reintegration</option>
-                          <option>Independent Living</option>
-                          <option>Foster Care</option>
-                          <option>Adoption</option>
+                          {RESIDENT_REINTEGRATION_TYPES.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-4">
@@ -863,10 +890,11 @@ export default function ResidentDetailPage() {
                           }
                         >
                           <option value="">— None —</option>
-                          <option>Ongoing</option>
-                          <option>Completed</option>
-                          <option>Failed</option>
-                          <option>Pending</option>
+                          {RESIDENT_REINTEGRATION_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-md-4">
