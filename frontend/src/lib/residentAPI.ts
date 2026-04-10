@@ -16,6 +16,18 @@ import { API_BASE_URL } from './apiBase';
 
 const BASE = API_BASE_URL;
 
+export class ApiError extends Error {
+  status: number;
+  body: string;
+
+  constructor(status: number, body: string) {
+    super(`Request failed: ${status}`);
+    this.name = 'ApiError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
@@ -23,10 +35,11 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
     ...init,
   });
   if (!res.ok) {
+    const body = await res.text();
     let message = `Request failed: ${res.status}`;
 
     try {
-      const errorBody = await res.json();
+      const errorBody = JSON.parse(body);
       if (typeof errorBody?.error === 'string' && errorBody.error.length > 0) {
         message = errorBody.error;
       } else if (typeof errorBody?.title === 'string' && errorBody.title.length > 0) {
@@ -41,10 +54,13 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
           : errorBody.title;
       }
     } catch {
-      // Ignore non-JSON error bodies and fall back to the status-based message.
+      if (body.length > 0) {
+        message = body;
+      }
     }
 
-    throw new Error(message);
+    throw new ApiError(res.status, message);
+
   }
   return res;
 }
