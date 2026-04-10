@@ -62,6 +62,8 @@ public class HomeVisitationController(AppDbContext db) : ControllerBase
     [Authorize(Policy = AuthPolicies.AdminManage)]
     public async Task<IActionResult> Create([FromBody] HomeVisitation visitation)
     {
+        var nextVisitationId = (await _db.HomeVisitations.MaxAsync(v => (int?)v.VisitationId) ?? 0) + 1;
+        visitation.VisitationId = nextVisitationId;
         _db.HomeVisitations.Add(visitation);
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAll), new { }, visitation);
