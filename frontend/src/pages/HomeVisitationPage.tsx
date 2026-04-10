@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { HomeVisitation, ResidentListItem } from '../types/ResidentDetail';
 import { getResidents, getResidentVisitations, addVisitation, deleteVisitation } from '../lib/residentAPI';
 
@@ -55,6 +55,7 @@ const EMPTY_FORM = {
 };
 
 export default function HomeVisitationPage() {
+  const location = useLocation();
   const [visitations, setVisitations] = useState<FlatVisitation[]>([]);
   const [residents, setResidents] = useState<ResidentListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +102,15 @@ export default function HomeVisitationPage() {
   }
 
   useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    const rid = new URLSearchParams(location.search).get('residentId');
+    if (rid) {
+      setForm({ ...EMPTY_FORM, residentId: rid });
+      setFormError('');
+      setShowModal(true);
+    }
+  }, []);
 
   // Metrics (current calendar month)
   const now = new Date();
@@ -356,7 +366,7 @@ export default function HomeVisitationPage() {
                       <td>
                         <div className="d-flex gap-2">
                           <Link
-                            to={`/admin/residents/${v.residentId}`}
+                            to={`/admin/residents/${v.residentId}?tab=visitations&highlightId=${v.visitationId}`}
                             className="btn btn-sm btn-outline-primary"
                             style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}
                           >

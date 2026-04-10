@@ -18,5 +18,5 @@ public class ProcessRecording
     public bool ReferralMade { get; set; }
     public string? NotesRestricted { get; set; }
 
-    public Resident Resident { get; set; } = null!;
+    public Resident? Resident { get; set; }
 }
