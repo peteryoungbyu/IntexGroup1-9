@@ -1810,35 +1810,6 @@ export default function ResidentDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="col-md-6">
-              <div className="card">
-                <div className="card-header">ML Predictions</div>
-                <div className="card-body">
-                  {predictions.length === 0 ? (
-                    <p className="text-muted">No predictions available.</p>
-                  ) : (
-                    <table className="table table-sm mb-0">
-                      <thead>
-                        <tr>
-                          <th>Model</th>
-                          <th>Score</th>
-                          <th>Label</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {predictions.map((p) => (
-                          <tr key={p.predictionId}>
-                            <td>{p.modelName}</td>
-                            <td>{(p.score * 100).toFixed(1)}%</td>
-                            <td>{p.label ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
